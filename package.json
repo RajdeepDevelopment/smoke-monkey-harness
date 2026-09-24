@@ -2,7 +2,19 @@
   "name": "@smoke-monkey/harness",
   "version": "0.1.0",
   "description": "Build agentic tools, AI code editors, and agent harnesses in a few lines — the agent loop, tools, permissions, and LLM client behind the Smoke Monkey code editor.",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
+  "author": {
+    "name": "Rajdeep Development",
+    "url": "https://github.com/RajdeepDevelopment"
+  },
+  "homepage": "https://github.com/RajdeepDevelopment/smoke-monkey-harness",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RajdeepDevelopment/smoke-monkey-harness.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RajdeepDevelopment/smoke-monkey-harness/issues"
+  },
   "sideEffects": false,
   "type": "module",
   "main": "./dist/index.js",
@@ -29,17 +41,25 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "packageManager": "pnpm@9.15.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/postbuild.mjs",
     "clean": "rm -rf dist",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test 'tests/*.test.ts'",
+    "test:fixtures": "tsx scripts/fixtures/test-manager.ts && tsx scripts/fixtures/test-integration.ts && tsx scripts/fixtures/test-skills.ts && tsx scripts/fixtures/test-plugin-mcp.ts",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "example": "tsx examples/basic-agent.ts",
     "demo": "tsx examples/mcp-demo.ts",
     "demo:skills": "tsx examples/skills-demo.ts",
     "demo:plugin": "tsx examples/plugin-demo.ts",
     "plugin:install": "bash plugin/install.sh",
-    "test:fixtures": "tsx scripts/fixtures/test-manager.ts && tsx scripts/fixtures/test-integration.ts && tsx scripts/fixtures/test-skills.ts && tsx scripts/fixtures/test-plugin-mcp.ts",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "pnpm clean && pnpm build"
   },
   "keywords": [
     "agent",
@@ -48,11 +68,20 @@
     "llm",
     "tool-use",
     "harness",
-    "agentic"
+    "agentic",
+    "mcp",
+    "skills",
+    "claude-code",
+    "codex",
+    "opencode"
   ],
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.14.0",
+    "eslint": "^10.11.0",
+    "prettier": "^3.9.9",
     "tsx": "^4.16.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.70.1"
   }
 }

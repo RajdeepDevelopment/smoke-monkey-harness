@@ -9,7 +9,7 @@
     "url": "https://github.com/RajdeepDevelopment"
   },
   "repository": "https://github.com/RajdeepDevelopment/smoke-monkey-harness",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "keywords": ["agent", "harness", "loop", "mcp", "ai"],
   "skills": "./skills",
   "mcpServers": "./.mcp.json"

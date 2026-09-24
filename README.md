@@ -1,5 +1,10 @@
 # @smoke-monkey/harness
 
+[![npm version](https://img.shields.io/npm/v/@smoke-monkey/harness?label=npm)](https://www.npmjs.com/package/@smoke-monkey/harness)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![CI](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)](tsconfig.json)
+
 Build agentic tools and AI code editors in a few lines. A framework-agnostic
 rewrite of the agent core behind **[Smoke Monkey](https://github.com/RajdeepDevelopment/smoke-monkey-desktop)** —
 the agent loop, 24 tools, permissions, compaction, an LLM client, MCP (Model
@@ -241,9 +246,9 @@ claude plugin install smoke-monkey-harness@smoke-monkey-harness
 **Codex / opencode / local:** 
 
 ```sh
-npm run plugin:install            # copies the plugin into your home skills dirs
-npm run plugin:install -- --local # + project-local install, .mcp.json, opencode.json
-npm run plugin:install -- --help  # see options (--force, --repo)
+pnpm run plugin:install            # copies the plugin into your home skills dirs
+pnpm run plugin:install -- --local # + project-local install, .mcp.json, opencode.json
+pnpm run plugin:install -- --help  # see options (--force, --repo)
 ```
 
 Once installed, ask your agent to "build me an agent that …" — it will load the
@@ -254,16 +259,23 @@ the same full workflow. Details in [plugin/README.md](./plugin/README.md).
 ## Development
 
 ```sh
-npm install
-npm run build   # tsc ESM (dist/) + CJS (dist/cjs/)
-npm run typecheck
-npm run test:fixtures        # offline MCP client + skill + tool checks (no LLM)
-NVIDIA_API_KEY=nvapi-... npm run example     # examples/basic-agent.ts
-NVIDIA_API_KEY=nvapi-... npm run demo        # examples/mcp-demo.ts (MCP + custom sub-contexts)
-NVIDIA_API_KEY=nvapi-... npm run demo:skills # examples/skills-demo.ts (SKILL.md just-in-time)
+pnpm install
+pnpm run build   # tsc ESM (dist/) + CJS (dist/cjs/)
+pnpm run typecheck
+pnpm test                  # unit tests (node:test)
+pnpm run test:fixtures     # offline MCP client + skill + plugin manifest checks (no LLM)
+pnpm lint
+NVIDIA_API_KEY=nvapi-... pnpm run example     # examples/basic-agent.ts
+NVIDIA_API_KEY=nvapi-... pnpm run demo        # examples/mcp-demo.ts (MCP + custom sub-contexts)
+NVIDIA_API_KEY=nvapi-... pnpm run demo:skills # examples/skills-demo.ts (SKILL.md just-in-time)
 ```
+
+Deeper material lives in [docs/](./docs/getting-started.md); see
+[CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.
 
 ## License
 
-PolyForm Noncommercial License 1.0.0 — free to use and modify for non-commercial
-projects. See [LICENSE](./LICENSE).
+MIT — free to use and modify, including commercially.
+See [LICENSE](./LICENSE). Contributions are welcome under the same terms
+([CONTRIBUTING.md](./CONTRIBUTING.md),
+[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)).

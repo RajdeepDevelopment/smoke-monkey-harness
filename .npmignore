@@ -1,0 +1,15 @@
+node_modules/
+coverage/
+.github/
+docs/
+examples/
+scripts/
+tests/
+src/
+tsconfig*.json
+eslint.config.js
+.prettierrc.json
+.prettierignore
+.editorconfig
+.nvmrc
+pnpm-lock.yaml
