@@ -224,8 +224,9 @@ classifiers (`classifyTaskGroups`, phases), and the loop guards.
 This repo ships as a **plugin** (at `plugin/`): a `SKILL.md` (the universal
 skill format Claude Code, Codex, and opencode all read) plus a dependency-free
 **MCP server** that guides any agent to *build a new looping agent* on this
-library. The plugin dir carries native manifests (`.claude-plugin/plugin.json`,
-`.codex-plugin/plugin.json`) and the repo root carries the distribution files.
+library. The plugin dir carries native manifests: a portable `plugin.json`
+(any portable-agent host), `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`,
+and the repo root carries the distribution files plus an `AGENTS.md` all agents read.
 
 **Claude Code:**
 
@@ -244,7 +245,8 @@ npm run plugin:install -- --help  # see options (--force, --repo)
 
 Once installed, ask your agent to "build me an agent that …" — it will load the
 smoke-monkey-harness skill, read `harness_guide`, and `harness_scaffold` a
-starter project on disk. Details in [plugin/README.md](./plugin/README.md).
+starter project on disk. Any agent that reads `AGENTS.md` at the repo root gets
+the same full workflow. Details in [plugin/README.md](./plugin/README.md).
 
 ## Development
 

@@ -181,13 +181,15 @@ try {
 
   // plugin package + native manifests (plugin/ is the plugin root)
   const pluginPkg = path.join(root, 'plugin');
-  for (const rel of ['.claude-plugin/plugin.json', '.codex-plugin/plugin.json', '.mcp.json', 'skills/smoke-monkey-harness/SKILL.md', 'mcp/server.mjs']) {
+  for (const rel of ['.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'plugin.json', '.mcp.json', 'skills/smoke-monkey-harness/SKILL.md', 'mcp/server.mjs']) {
     if (!fs.existsSync(path.join(pluginPkg, rel))) throw new Error(`plugin package missing ${rel}`);
   }
   const claude = JSON.parse(fs.readFileSync(path.join(pluginPkg, '.claude-plugin', 'plugin.json'), 'utf8'));
   if (claude.name !== 'smoke-monkey-harness' || claude.skills !== './skills' || claude.mcpServers !== './.mcp.json') throw new Error('claude manifest invalid');
   const codex = JSON.parse(fs.readFileSync(path.join(pluginPkg, '.codex-plugin', 'plugin.json'), 'utf8'));
   if (codex.name !== 'smoke-monkey-harness' || !codex.interface?.defaultPrompt?.length) throw new Error('codex manifest invalid');
+  const portable = JSON.parse(fs.readFileSync(path.join(pluginPkg, 'plugin.json'), 'utf8'));
+  if (portable.name !== 'smoke-monkey-harness' || portable.skills !== './skills') throw new Error('portable manifest invalid');
   const mcp = JSON.parse(fs.readFileSync(path.join(pluginPkg, '.mcp.json'), 'utf8'));
   if (!mcp.mcpServers?.['smoke-monkey-harness']?.args?.[0]?.includes('CLAUDE_PLUGIN_ROOT')) throw new Error('.mcp.json should use ${CLAUDE_PLUGIN_ROOT}');
   const marketplace = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin', 'marketplace.json'), 'utf8'));

@@ -15,6 +15,7 @@ the way it consumes any plugin:
 
 ```
 plugin/                       # the plugin package (plugin root)
+  plugin.json                 # portable manifest (Codex / any portable-agent host)
   .claude-plugin/plugin.json  # Claude Code manifest
   .codex-plugin/plugin.json   # Codex manifest
   .mcp.json                   # MCP wiring (uses ${CLAUDE_PLUGIN_ROOT})
@@ -25,10 +26,19 @@ plugin/                       # the plugin package (plugin root)
 Repo root adds the distribution files:
 
 ```
-.claude-plugin/marketplace.json   # Claude marketplace → installs ./plugin
-.agents/plugins/marketplace.json  # Codex marketplace entry
+AGENTS.md                             # onboarding for ANY agent that reads AGENTS.md
+.claude-plugin/marketplace.json       # Claude marketplace → installs ./plugin
+.agents/plugins/marketplace.json      # Codex marketplace entry
 .opencode/skills/smoke-monkey-harness/  # opencode auto-load when this repo is the workspace
 ```
+
+| host | manifest used | install |
+| --- | --- | --- |
+| Claude Code | `.claude-plugin/plugin.json` | `claude plugin marketplace add <repo>` → `claude plugin install smoke-monkey-harness@smoke-monkey-harness`, or `plugin/install.sh` (skills-dir plugin) |
+| Codex | `plugin.json` + `.codex-plugin/plugin.json` | `codex plugin install smoke-monkey-harness@personal`, or `plugin/install.sh` |
+| opencode | `.opencode/skills/` + `opencode.json` mcp | `plugin/install.sh [--local]` |
+| any portable host | `plugin.json` | copy the `plugin/` package into the host's plugin location |
+| any agent at all | `SKILL.md` + `AGENTS.md` | point the agent at this repo |
 
 ## Install
 
@@ -118,6 +128,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":
 
 ```
 plugin/                          # plugin package (plugin root)
+  plugin.json                    # portable manifest (any portable-agent host)
   .claude-plugin/plugin.json     # Claude Code manifest
   .codex-plugin/plugin.json      # Codex manifest
   .mcp.json                      # MCP server config (${CLAUDE_PLUGIN_ROOT})
@@ -134,7 +145,8 @@ plugin/                          # plugin package (plugin root)
       examples/                  # sample agents (harness_examples)
   install.sh                     # per-host installer (Claude / Codex / opencode)
 
-.claude-plugin/marketplace.json      # repo-root Claude marketplace (installs ./plugin)
+AGENTS.md                              # any agent reads this to build with the harness
+.claude-plugin/marketplace.json        # repo-root Claude marketplace (installs ./plugin)
 .agents/plugins/marketplace.json     # repo-root Codex marketplace (personal installs mirror it)
 .opencode/skills/smoke-monkey-harness/  # opencode project skill (this repo as a project)
 ```
