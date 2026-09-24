@@ -219,6 +219,21 @@ every tool factory (`getRunCommandTool()`, `getEditFileTool()`, `getInspectMcpSt
 `SubContextManager` + `registerSubContext`, `SkillRegistry` + `loadSkillsFromDirs`,
 classifiers (`classifyTaskGroups`, phases), and the loop guards.
 
+## Use it from Claude Code, Codex, opencode (or any agent)
+
+This repo ships as a **plugin**: a `SKILL.md` (the universal skill format Claude
+Code, Codex, AniGravity, and opencode all read) plus a dependency-free **MCP
+server** that guides any agent to *build a new looping agent* on this library.
+
+```sh
+plugin/install.sh          # installs the skill into ~/.claude, ~/.codex, ~/.opencode skills
+plugin/install.sh --local  # + project-local skill and a .mcp.json exposing the MCP server
+```
+
+Once installed, ask your agent to "build me an agent that …" — it will load the
+smoke-monkey-harness skill, read `harness_guide`, and `harness_scaffold` a
+starter project on disk. Details in [plugin/README.md](./plugin/README.md).
+
 ## Development
 
 ```sh
