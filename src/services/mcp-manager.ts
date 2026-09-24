@@ -220,7 +220,7 @@ function createHttpClient(
       await sendRequest('initialize', {
         protocolVersion: '2025-03-26',
         capabilities: {},
-        clientInfo: { name: 'smoke-monkey', version: '1.0.2' },
+        clientInfo: { name: 'smoke-monkey', version: '1.0.3' },
       });
       await sendNotification('notifications/initialized');
       const toolsResult = (await sendRequest('tools/list', {})) as Record<string, unknown>;
@@ -370,7 +370,7 @@ function createStdioClient(
       await sendRequest('initialize', {
           protocolVersion: '2024-11-05',
           capabilities: {},
-          clientInfo: { name: 'smoke-monkey', version: '1.0.2' },
+          clientInfo: { name: 'smoke-monkey', version: '1.0.3' },
         });
       sendNotification('notifications/initialized');
       const toolsResult = (await sendRequest('tools/list', {})) as Record<string, unknown>;

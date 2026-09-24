@@ -1,19 +1,55 @@
-# smoke-monkey-harness
+# 🐒 Smoke Monkey Harness
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" alt="Smoke Monkey Harness" width="900" />
+</p>
+
+### Build production-ready AI agents and coding agents in TypeScript.
+
+An embeddable, framework-agnostic agent runtime for building **AI coding
+assistants, autonomous developer tools, desktop agents, and MCP-powered
+applications**.
+
+Smoke Monkey Harness is **not an AI model**. It is the runtime that turns an
+LLM into an agent capable of **planning, calling tools, editing files,
+interacting with MCP servers, managing context, asking for permission,
+recovering from failures, and resuming work**.
+
+**No NestJS. No database. Just the agent runtime.**
 
 [![npm version](https://img.shields.io/npm/v/smoke-monkey-harness?label=npm)](https://www.npmjs.com/package/smoke-monkey-harness)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)](tsconfig.json)
 
-Build agentic tools and AI code editors in a few lines. A framework-agnostic
-rewrite of the agent core behind **[Smoke Monkey](https://github.com/RajdeepDevelopment/smoke-monkey-desktop)** —
-the agent loop, 24 tools, permissions, compaction, an LLM client, MCP (Model
-Context Protocol) client/manager, and a sub-context system — with no NestJS and
-no database.
+---
+
+## Why Smoke Monkey?
+
+Building an agent from scratch means implementing the loop, tool execution,
+permissions, context management, MCP integration, recovery, sessions, and
+provider abstraction yourself. Smoke Monkey provides those primitives out of
+the box.
+
+| Capability                    | Smoke Monkey |
+| ----------------------------- | ------------ |
+| Agent loop                    | ✅            |
+| Tool calling                  | ✅            |
+| 24 built-in tools             | ✅            |
+| MCP                           | ✅            |
+| Skills / `SKILL.md`           | ✅            |
+| Human-in-the-loop permissions | ✅            |
+| Automatic context compaction  | ✅            |
+| Resumable sessions            | ✅            |
+| Multiple LLM providers        | ✅            |
+| Custom tools                  | ✅            |
+| Custom storage                | ✅            |
+| Framework independent         | ✅            |
+| Database required             | ❌            |
+
+---
 
 ## Install
-
-Published on **npm** as [`smoke-monkey-harness`](https://www.npmjs.com/package/smoke-monkey-harness):
 
 ```bash
 pnpm add smoke-monkey-harness
@@ -21,15 +57,7 @@ pnpm add smoke-monkey-harness
 # or: yarn add smoke-monkey-harness
 ```
 
-Works with any LLM provider: NVIDIA (default), OpenAI, OpenRouter, Google
-Gemini, xAI, Ollama, or any OpenAI-compatible endpoint.
-
-### Install from GitHub Packages
-
-The same package is also published to the **GitHub Packages npm registry** as
-[`@rajdeepdevelopment/smoke-monkey-harness`](https://github.com/RajdeepDevelopment/smoke-monkey-harness/pkgs/npm/smoke-monkey-harness).
-Point the scope at GitHub's registry and authenticate with a token that has
-`read:packages`:
+**GitHub Packages** (same package, scoped):
 
 ```ini
 # .npmrc
@@ -45,12 +73,13 @@ pnpm add @rajdeepdevelopment/smoke-monkey-harness
 > [fine-grained PAT](https://github.com/settings/tokens?type=beta) with
 > `read:packages` permission on this repository.
 
+---
+
 ## Quickstart
 
 ```ts
 import { createAgent } from 'smoke-monkey-harness'
 
-// Model needs tool-call support — NVIDIA Hosted NIM by default:
 const agent = createAgent({
   provider: 'nvidia',
   model: 'nvidia/nemotron-3-super-120b-a12b',
@@ -58,89 +87,146 @@ const agent = createAgent({
   workspacePath: process.cwd(),
 })
 
-// Route permission prompts to your UI (or set autoApprove: true)
+const result = await agent.run(
+  'Refactor the auth middleware to use JWTs, then run its tests.',
+)
+console.log(result.status)
+```
+
+That's it. Smoke Monkey handles the agent loop, tool execution, planning,
+verification, recovery, and context management — no framework, no database.
+
+### Add human-in-the-loop permissions
+
+Route permission prompts and questions to your UI (or set `autoApprove: true`):
+
+```ts
 agent.on('permission.required', (e) => {
   const { toolCallId, toolName } = e.data
   agent.resolvePermission(toolCallId, /* allow | deny */ 'allow')
 })
 
-// Route ask_user questions to your UI
 agent.on('ask_user.required', (e) => {
   agent.respond(e.data.toolCallId, await promptUser(e.data.question))
 })
-
-const result = await agent.run('Refactor the auth middleware to use JWTs, then run its tests.')
-console.log(result.status, result.messages.at(-1)?.content)
 ```
 
-No key handy? Any OpenAI-compatible endpoint works (`openrouter`, `xai`,
-`gemini`, …), or run locally with Ollama:
+Any OpenAI-compatible endpoint works — `openrouter`, `gemini`, `xai`, … or run
+locally with Ollama:
 
 ```ts
 const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath: process.cwd() })
 ```
 
-## What you get
+---
 
-- **Agent loop** — LLM turn orchestration, tool-call parsing, phase machine
-  (explore → plan → edit → verify → recover → complete), step / no-progress /
-  runaway / spin guards, `finish_task` + report detection, interruption + resume.
-- **24 built-in tools** in 5 groups — `filesystem`, `terminal`, `search`, `git`,
-  `agent`. Disable groups with `tools` or register your own.
+## Core capabilities
 
-| Group | Tools |
-| --- | --- |
+**🤖 Agent Runtime**
+Multi-step planning through a phase machine
+(`explore → plan → edit → verify → recover → complete`), with step /
+no-progress / runaway / spin guards, `finish_task` detection, interruption and
+resume.
+
+**🛠️ 24 Built-in Tools**
+Filesystem, terminal, search, Git, and agent-management tools in five groups.
+Disable groups with `tools` or register your own.
+
+| Group      | Tools |
+| ---        | --- |
 | filesystem | read_file, write_file, edit_file, line_edit, replace_lines, apply_patch, delete_file, list_directory, inspect |
-| terminal | run_command, run_test |
-| search | glob, grep |
-| git | git_status, git_diff, git_log |
-| agent | ask_user, context_manage, todo_write, finish_task, list_skills, use_skill |
+| terminal   | run_command, run_test |
+| search     | glob, grep |
+| git        | git_status, git_diff, git_log |
+| agent      | ask_user, context_manage, todo_write, finish_task, list_skills, use_skill |
 
-- **MCP (Model Context Protocol)** — connect stdio servers
-  (`command`/`args`, e.g. `npx`). or streamable-HTTP servers (`url`, e.g.
-  Google/remote endpoints). Tools surface as `<server>__<tool>` while the
-  matching `mcp_<id>` sub-context is active. Servers connect lazily on first
-  use and close at run end — nothing spawns until the agent needs it.
-  `inspect_mcp_stock` / `request_mcp_approval` recommend + gate disabled
-  servers via a user approval pause (`mcp.approval_required` →
-  `resolveMcpDecision`). A curated stock catalog (`flattenStock` /
-  `stockToMcpConfig`) helps you provision well-known servers.
-- **Sub-contexts** — load/unload domain guidance with the `context_manage`
-  tool (activate / deactivate / swap / set). Register your OWN contexts with
-  `options.subContexts` or `registerSubContext()`; they activate exactly like
-  the built-ins and appear in the per-turn context panel.
-- **Operating rules injected at initialization** — every run's system prompt
-  starts with a standing block (`renderRunOperatingRules`) covering loop
-  discipline, sub-context usage, and MCP operation, so the model holds the same
-  invariants the whole run.
-- **Skills** — Claude Code / Codex / AniGravity / opencode-style `SKILL.md`
-  folders, loaded **just-in-time**. The system prompt carries only a
-  one-line catalog; the model browses it with `list_skills` and pulls the
-  full instructions into the run context with `use_skill` when a task
-  matches — no context bloat from skills that don't apply. Point at any
-  folders with `skillsDir` (or `skills` objects directly); unset, it scans
-  `.opencode/skills`, `.claude/skills`, `.codex/skills` under the workspace
-  plus your home equivalents, so existing skill repos just work.
-- **Permissions** — `allow-all` / `deny-all` / `ask-default`, or a function
-  `({ toolName, args, workspacePath, userId }) => 'allow' | 'deny' | 'ask'`.
-  Read-only tools default to allow.
-- **Compaction** — auto-summarises when the conversation crosses the token
-  budget, so long runs keep going without blowing the context window.
-- **Events** — `run.started`, `step.started/ended`, `tool.started/output/progress/completed/failed`,
-  `text.delta/thought/end`, `phase.changed`, `agent.state`, `context.updated`,
-  `ask_user.required`, `permission.required`, `mcp.approval_required`,
-  `mcp.resolved`, `compaction.started/completed`, `llm.thinking`,
-  `todo.updated`, `run.completed/failed/interrupted`.
-  Subscribe with `agent.on(type, handler)` or `agent.onAny(handler)`.
-- **Providers** — `openai`, `openrouter`, `nvidia`, `xai`, `gemini`, `opencode`,
-  `omniroute`, `ollama` (REST + SSE streaming). Override the base URL with
-  `baseUrl` for any OpenAI-compatible endpoint.
-- **Swappable storage** — default is an in-memory store; implement the small
-  `Storage` interface to persist sessions, runs, and messages anywhere.
-- **Resumable sessions** — pass `sessionId` to continue work across runs with
-  memory of what happened.
+**🔌 MCP Native**
+Connect local stdio or remote Streamable HTTP MCP servers
+(`<server>__<tool>` tool names, lazy connect, close at run end). A curated
+stock catalog (`flattenStock` / `stockToMcpConfig`) provisions well-known
+servers, and `inspect_mcp_stock` / `request_mcp_approval` recommend + gate
+disabled servers behind a user approval pause.
 
-### MCP configuration
+**🧠 Skills**
+Claude Code / Codex / AniGravity / opencode-style `SKILL.md` folders, loaded
+**just-in-time**: the system prompt carries only a one-line catalog; the model
+pulls full instructions with `use_skill` when the task matches — no context
+bloat from skills that don't apply. Point anywhere with `skillsDir`, or let it
+scan `.opencode/skills`, `.claude/skills`, `.codex/skills` in the workspace and
+home dirs.
+
+**🔐 Permissions**
+`allow-all` / `deny-all` / `ask-default`, or your own resolver:
+
+```ts
+permissions: ({ toolName, args }) => {
+  // your policy
+  return 'allow' // 'deny' | 'ask'
+}
+```
+
+**📦 Context Management**
+Automatic compaction summarizes the conversation when it crosses the token
+budget, so long-running tasks keep going without blowing the context window.
+
+**💾 Resumable Sessions**
+Continue work across runs with a persistent `sessionId`:
+
+```ts
+const agent = createAgent({ /* ... */, sessionId: 'project-123' })
+```
+
+**🌐 Multi-provider LLMs**
+`openai`, `openrouter`, `nvidia`, `xai`, `gemini`, `opencode`, `omniroute`,
+`ollama` (REST + SSE streaming), or any OpenAI-compatible endpoint via
+`baseUrl` override.
+
+---
+
+## Built for
+
+- AI coding assistants
+- Autonomous code editors
+- Desktop AI applications
+- Developer copilots
+- MCP-powered agents
+- Internal engineering agents
+- Agentic automation tools
+- Research and experimentation platforms
+
+---
+
+## Architecture
+
+```
+                 Your Application
+                        │
+                        ▼
+         ┌──────────────────────────┐
+         │   Smoke Monkey Harness   │
+         ├──────────────────────────┤
+         │      Agent Loop          │
+         │                          │
+         │ Tools · MCP · Skills     │
+         │ Permissions · Context    │
+         │ Sessions · Events        │
+         └────────────┬─────────────┘
+                      │
+          ┌───────────┴───────────┐
+          ▼                       ▼
+    LLM Providers            MCP Servers
+  NVIDIA · OpenAI          Local / Remote
+  Gemini · Ollama          Custom Tools
+  OpenRouter · xAI
+```
+
+---
+
+## MCP configuration
+
+**Connect your agent to the outside world.** Smoke Monkey supports MCP servers
+over stdio and Streamable HTTP. Servers connect lazily and can require explicit
+user approval before activation.
 
 ```ts
 import { createAgent, stockToMcpConfig, findStockEntry } from 'smoke-monkey-harness'
@@ -170,50 +256,39 @@ const agent = createAgent({
       enabled: false, // disabled servers need user approval before use
     },
     // ...or pull a config from the stock catalog:
-    stockToMcpConfig(findStockEntry('playwright-mcp')!) ,
+    stockToMcpConfig(findStockEntry('playwright-mcp')!),
   ],
-  // User-owned sub-contexts, registered at init:
-  subContexts: [
-    {
-      id: 'team_api_guide',
-      title: 'Team API conventions',
-      summary: 'Internal API routing + error conventions for this repo.',
-      content: 'All routes live under src/routes. Errors use { code, message }.',
-    },
-  ],
-})
-
-agent.on('mcp.approval_required', (e) => {
-  // the run pauses here — enable the recommended servers or skip
-  agent.resolveMcpDecision(e.data.toolCallId, {
-    action: 'enable',
-    names: e.data.payload.recommendedToEnableIds,
-  })
 })
 ```
 
-### Skills
+**Supported connection types**
+
+- Local stdio servers
+- Remote Streamable HTTP servers
+- Authentication headers
+- Lazy connection
+- Approval gates
+- Runtime server management (`addMcpServer` / `removeMcpServer` / `listMcpServers`)
+- Stock server catalog
+
+---
+
+## Skills
 
 Reusable instruction bundles in the same `SKILL.md` folder format used by
-Claude Code, Codex, AniGravity, and opencode. The run's system prompt lists
-only id + description; the model loads the full body with `use_skill` when the
-task matches (just-in-time, no context bloat).
+Claude Code, Codex, AniGravity, and opencode — loaded just-in-time so the
+system prompt stays small.
 
 ```ts
-import { createAgent } from 'smoke-monkey-harness'
-
 const agent = createAgent({
   provider: 'nvidia',
   model: 'nvidia/nemotron-3-super-120b-a12b',
   apiKey: process.env.NVIDIA_API_KEY,
   workspacePath: process.cwd(),
-  skillsDir: ['examples/skills'],   // scans for <dir>/<skill>/SKILL.md + <dir>/<skill>.md
-  // skills: [{ id, name, description, content, path, dir }], // or explicit objects
+  skillsDir: ['examples/skills'], // scans for <dir>/<skill>/SKILL.md + <dir>/<skill>.md
   autoApprove: true,
 })
 ```
-
-A skill file looks like:
 
 ```markdown
 ---
@@ -224,37 +299,40 @@ description: Write conventional, concise git commit messages for the uncommitted
 …instructions the agent follows while the task matches…
 ```
 
-Discovery defaults (when `skillsDir` is unset) to `.opencode/skills`,
-`.claude/skills`, `.codex/skills` under the workspace plus `~/.claude/skills`,
-`~/.codex/skills`, `~/.opencode/skills`, `~/.config/opencode/skills` — drop skill
-folders in any of those and they show up. The tools `list_skills` (browse
-catalog) and `use_skill` (load instructions) are registered automatically when
-at least one skill is present. Lower-level pieces: `loadSkillsFromDir(s)`,
+Discovery defaults to `.opencode/skills`, `.claude/skills`, `.codex/skills`
+under the workspace plus `~/.claude/skills`, `~/.codex/skills`,
+`~/.opencode/skills`, `~/.config/opencode/skills`. The tools `list_skills`
+(browse catalog) and `use_skill` (load instructions) register automatically
+when at least one skill is present. Lower-level pieces: `loadSkillsFromDirs()`,
 `defaultSkillDirs()`, and `SkillRegistry` (all exported from the package root).
 
-## API shape
+---
+
+## API
 
 `createAgent(options)` → `AgentHarness`
 
-- `agent.run(task, opts?)` — run the agent to completion, pausing on questions /
-  permission prompts.
-- `agent.respond(toolCallId, text)` — answer a pending `ask_user` (questions are also sent as events).
+- `agent.run(task, opts?)` — run the agent to completion, pausing on questions / permission prompts.
+- `agent.respond(toolCallId, text)` — answer a pending `ask_user`.
 - `agent.resolvePermission(toolCallId, 'allow' | 'deny')` — resolve a `permission.required` pause.
-- `agent.resolveMcpDecision(toolCallId, { action: 'enable' | 'add' | 'skip', names })` —
-  resolve an `mcp.approval_required` pause (enabling turns the server on for this and later runs).
-- `agent.addMcpServer(config)` / `agent.removeMcpServer(id)` / `agent.listMcpServers()` —
-  manage configured MCP servers at runtime.
+- `agent.resolveMcpDecision(toolCallId, { action: 'enable' | 'add' | 'skip', names })` — resolve an `mcp.approval_required` pause.
+- `agent.addMcpServer(config)` / `agent.removeMcpServer(id)` / `agent.listMcpServers()` — manage MCP servers at runtime.
 - `agent.skills` — the live `SkillRegistry` (`.all()`, `.get(id)`, `.count`).
 - `agent.abort()` — stop the current run.
 - `agent.on(type, cb)` / `agent.onAny(cb)` — subscribe to events.
 - `agent.events` / `agent.store` — the raw emitter and store, for advanced wiring.
 
-Lower-level pieces are exported for custom builds: `AgentLoop` + `AgentLoopDeps`,
-every tool factory (`getRunCommandTool()`, `getEditFileTool()`, `getInspectMcpStockTool()`,
-`getListSkillsTool()`, `getUseSkillTool()`, …), `McpManager` + MCP clients,
-`LLMClient`, `ContextCompactionService`, `buildSystemPrompt` / `renderRunOperatingRules`,
-`SubContextManager` + `registerSubContext`, `SkillRegistry` + `loadSkillsFromDirs`,
-classifiers (`classifyTaskGroups`, phases), and the loop guards.
+**Events:** `run.started`, `step.started/ended`, `tool.started/output/progress/completed/failed`,
+`text.delta/thought/end`, `phase.changed`, `agent.state`, `context.updated`,
+`ask_user.required`, `permission.required`, `mcp.approval_required`,
+`mcp.resolved`, `compaction.started/completed`, `llm.thinking`,
+`todo.updated`, `run.completed/failed/interrupted`.
+
+For the full sliced-by-area surface (tools, providers, subcontexts, loop,
+permissions) see **[docs/api.md](docs/api.md)**, and start with
+**[docs/getting-started.md](docs/getting-started.md)**.
+
+---
 
 ## Use it from Claude Code, Codex, opencode, Antigravity, Copilot (or any agent)
 
@@ -275,7 +353,7 @@ claude plugin marketplace add https://github.com/RajdeepDevelopment/smoke-monkey
 claude plugin install smoke-monkey-harness@smoke-monkey-harness
 ```
 
-**Codex / opencode / local:** 
+**Codex / opencode / local:**
 
 ```sh
 pnpm run plugin:install            # copies the plugin into your home skills dirs
@@ -287,6 +365,8 @@ Once installed, ask your agent to "build me an agent that …" — it will load 
 smoke-monkey-harness skill, read `harness_guide`, and `harness_scaffold` a
 starter project on disk. Any agent that reads `AGENTS.md` at the repo root gets
 the same full workflow. Details in [plugin/README.md](./plugin/README.md).
+
+---
 
 ## Development
 
@@ -302,12 +382,12 @@ NVIDIA_API_KEY=nvapi-... pnpm run demo        # examples/mcp-demo.ts (MCP + cust
 NVIDIA_API_KEY=nvapi-... pnpm run demo:skills # examples/skills-demo.ts (SKILL.md just-in-time)
 ```
 
-Deeper material lives in [docs/](./docs/getting-started.md); see
+Deeper material lives in [docs/](./docs/); see
 [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.
 
 ## License
 
-MIT — free to use and modify, including commercially.
+MIT — free to use, modify, and distribute, including commercially.
 See [LICENSE](./LICENSE). Contributions are welcome under the same terms
 ([CONTRIBUTING.md](./CONTRIBUTING.md),
 [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)).
