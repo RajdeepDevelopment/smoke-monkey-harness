@@ -50,9 +50,11 @@ import {
   COMPACTION_THRESHOLD,
   KEEP_RECENT_MESSAGES,
 } from './services/run-context.js';
-import { renderContextPanel, SubContextManager, getSubContext } from './context/sub-context.js';
+import { renderContextPanel, SubContextManager, getSubContext, registerSubContext } from './context/sub-context.js';
+import type { SubContext } from './context/sub-context.js';
 import { ToolRegistry, type ToolDefinition } from './tools/tool-registry.js';
 import { shapeSpilledOutput } from './services/artifact-store.js';
+import { McpManager, type McpServerConfig } from './services/mcp-manager.js';
 import {
   getReadFileTool,
   getWriteFileTool,
@@ -71,7 +73,8 @@ import {
 import { getGlobTool, getGrepTool } from './tools/search.tools.js';
 import { getGitStatusTool, getGitDiffTool, getGitLogTool } from './tools/git.tools.js';
 import { getAskUserTool, getContextManageTool, getFinishTaskTool, getTodoWriteTool } from './tools/agent.tools.js';
-import { buildSystemPrompt } from './lib/system-prompt.js';
+import { getInspectMcpStockTool, getRequestMcpApprovalTool } from './tools/mcp.tools.js';
+import { buildSystemPrompt, renderRunOperatingRules } from './lib/system-prompt.js';
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -129,6 +132,16 @@ export interface AgentOptions {
   userId?: string;
   /** Optional per-project instruction loader for the system prompt. */
   loadProjectConfig?: (workspacePath?: string) => Promise<string | null | undefined> | string | null | undefined;
+  /** Register custom sub-contexts (activatable via context_manage like the built-ins). */
+  subContexts?: SubContext[];
+  /** Sub-context ids to leave ACTIVE at run start (besides persisted session state). */
+  defaultSubContexts?: string[];
+  /**
+   * MCP servers to manage for every run. Each is a stdio (`command`/`args`) or
+   * streamable-HTTP (`url`) server; tools appear as `<name>__<tool>` while the
+   * matching `mcp_<id>` sub-context is active. Read-only wishes: no approvals.
+   */
+  mcp?: McpServerConfig[];
   /** Logger configuration. */
   logger?: LoggerOptions;
 }
@@ -214,9 +227,13 @@ export class AgentHarness {
   private readonly pendingResponseAnswers = new Map<string, string>();
   private readonly pendingPermissions = new Map<string, (value: PermissionEffect) => void>();
   private readonly pendingPermissionAnswers = new Map<string, PermissionEffect>();
+  private readonly pendingMcpDecisions = new Map<string, (decision: McpApprovalDecision) => void>();
+  private readonly pendingMcpDecisionAnswers = new Map<string, McpApprovalDecision>();
   private activeSignal: AbortController | null = null;
   private activeWaits = 0;
   private keepAliveTimer: NodeJS.Timeout | null = null;
+  /** Live MCP manager (undefined when no servers configured). Populated by options.mcp or addMcpServer(). */
+  mcp?: McpManager;
 
   constructor(options: AgentOptions) {
     if (!options.workspacePath) throw new Error('AgentHarness requires workspacePath');
@@ -227,6 +244,16 @@ export class AgentHarness {
     this.store = options.store ?? new MemoryStore();
     this.permissionPolicy = options.permission ?? 'ask-default';
     this.autoApprove = options.autoApprove ?? false;
+
+    for (const sub of options.subContexts ?? []) {
+      const res = registerSubContext(sub);
+      if (!res.ok) this.logger.warn(`subContext "${sub.id}" skipped: ${res.error}`);
+    }
+
+    this.mcp = options.mcp?.length ? new McpManager(options.mcp, { logger: this.logger }) : undefined;
+    if (this.mcp && this.mcp.configs.length > 0) {
+      this.logger.log(`MCP configured: ${this.mcp.configs.map((c) => `${c.id}${c.enabled ? '' : ' (disabled)'}`).join(', ')}`);
+    }
 
     const getApiKey: KeyResolver =
       typeof options.apiKey === 'string'
@@ -249,6 +276,10 @@ export class AgentHarness {
     });
 
     const toolRegistry = buildToolRegistry(options.tools);
+    if (this.mcp) {
+      toolRegistry.register(getInspectMcpStockTool(this.mcp));
+      toolRegistry.register(getRequestMcpApprovalTool(this.mcp));
+    }
 
     this.loopDeps = {
       toolRegistry,
@@ -301,7 +332,7 @@ export class AgentHarness {
       maybeCompact: (ctx) => this.maybeCompact(ctx),
       waitForUserResponse: (ctx, toolCallId) => this.waitForUserResponse(ctx, toolCallId),
       waitForPermission: (ctx, toolCallId, meta) => this.waitForPermission(ctx, toolCallId, meta),
-      waitForMcpDecision: async () => ({ action: 'skip', names: [] } as McpApprovalDecision),
+      waitForMcpDecision: (ctx, toolCallId) => this.waitForMcpDecision(ctx, toolCallId),
       persistToolStatus: (assistantMsg, toolCallId, status, output, result) =>
         this.persistToolStatus(assistantMsg, toolCallId, status, output, result),
     };
@@ -372,6 +403,37 @@ export class AgentHarness {
     }
   }
 
+  /**
+   * Resolve a pending MCP-approval pause (emitted as `mcp.approval_required`).
+   * `enable` turns the named servers on for this and future runs (the loop
+   * appends the decision note to the conversation); `skip` leaves them off.
+   */
+  resolveMcpDecision(toolCallId: string, decision: McpApprovalDecision): void {
+    const resolve = this.pendingMcpDecisions.get(toolCallId);
+    if (resolve) {
+      this.pendingMcpDecisions.delete(toolCallId);
+      resolve(decision);
+    } else {
+      this.pendingMcpDecisionAnswers.set(toolCallId, decision);
+    }
+  }
+
+  /** Add an MCP server config at runtime. Takes effect on the next run (and for new tool calls in an active run). */
+  addMcpServer(config: McpServerConfig): { ok: boolean; error?: string } {
+    if (!this.mcp) this.mcp = new McpManager(undefined, { logger: this.logger });
+    return this.mcp.addServer(config);
+  }
+
+  /** Remove a configured MCP server (closing its live handle). */
+  removeMcpServer(id: string): void {
+    this.mcp?.removeServer(id);
+  }
+
+  /** Live status of every configured MCP server. */
+  listMcpServers(): Array<{ id: string; name: string; description: string; enabled: boolean; active: boolean; activeInRun: boolean; toolCount: number }> {
+    return this.mcp?.describe() ?? [];
+  }
+
   /** Abort the currently running agent run. */
   abort(): void {
     this.activeSignal?.abort();
@@ -421,6 +483,7 @@ export class AgentHarness {
       this.store.setRunStatus(runId, 'failed');
       this.events.emitRunFailed(sessionId, runId, err instanceof Error ? err.message : String(err));
     } finally {
+      try { this.mcp?.closeAll(); } catch {}
       this.activeSignals.delete(sessionId);
       this.activeSignal = null;
       this.activeRunId = undefined;
@@ -479,16 +542,28 @@ export class AgentHarness {
       : await buildSystemPrompt(agentId, workspacePath, projectDir, {}, {
           loadProjectConfig: this.opts.loadProjectConfig ?? (async () => null),
         });
-    const systemPrompt = this.opts.subSystemPrompt
-      ? `${basePrompt}\n\n## Sub-context\n\n${Array.isArray(this.opts.subSystemPrompt) ? this.opts.subSystemPrompt.join('\n\n') : this.opts.subSystemPrompt}`
-      : basePrompt;
+    const subPrompt = this.opts.subSystemPrompt
+      ? `## Sub-context\n\n${Array.isArray(this.opts.subSystemPrompt) ? this.opts.subSystemPrompt.join('\n\n') : this.opts.subSystemPrompt}`
+      : null;
+    const runRules = renderRunOperatingRules({
+      subContextCount: this.opts.subContexts?.length ?? 0,
+      mcpEnabled: !!this.mcp && this.mcp.configs.length > 0,
+      provider: provider ?? this.opts.provider,
+    });
+    const systemPrompt = [basePrompt, subPrompt, runRules].filter(Boolean).join('\n\n');
 
     const session = this.store.getSession(sessionId);
     const snapshot: ContextSnapshot = (session?.snapshot as ContextSnapshot) ?? createEmptySnapshot(task);
 
     const manager = new SubContextManager();
-    if (snapshot.activeSubContexts?.length) {
-      manager.setActive(snapshot.activeSubContexts);
+    if (this.mcp) {
+      for (const cfg of this.mcp.configs) {
+        manager.registerMcpServer(`mcp_${cfg.id}`, cfg.name, cfg.description);
+      }
+    }
+    const initialActive = [...(snapshot.activeSubContexts ?? []), ...(this.opts.defaultSubContexts ?? [])];
+    if (initialActive.length) {
+      manager.setActive(initialActive);
     }
 
     const messages = this.replayHistory(sessionId, snapshot);
@@ -526,7 +601,8 @@ export class AgentHarness {
       lastToolCalls: [],
       lastCompactTokens: 0,
       contextManager: manager,
-      mcpConfigured: new Map(),
+      mcpRuntime: this.mcp,
+      mcpConfigured: new Map(this.mcp?.configs.map((c) => [c.name.toLowerCase(), c.enabled]) ?? []),
     };
     return ctx;
   }
@@ -720,6 +796,44 @@ export class AgentHarness {
       };
       ctx.abortController.signal.addEventListener('abort', onAbort, { once: true });
     });
+  }
+
+  private async waitForMcpDecision(ctx: RunContext, toolCallId: string): Promise<McpApprovalDecision> {
+    const pre = this.pendingMcpDecisionAnswers.get(toolCallId);
+    if (pre) {
+      this.pendingMcpDecisionAnswers.delete(toolCallId);
+      this.applyMcpDecision(ctx, pre);
+      return pre;
+    }
+    return new Promise<McpApprovalDecision>((resolve) => {
+      const release = this.holdWait();
+      this.pendingMcpDecisions.set(toolCallId, (decision) => {
+        this.pendingMcpDecisions.delete(toolCallId);
+        release();
+        this.applyMcpDecision(ctx, decision);
+        resolve(decision);
+      });
+      const onAbort = () => {
+        const pending = this.pendingMcpDecisions.get(toolCallId);
+        if (pending) {
+          this.pendingMcpDecisions.delete(toolCallId);
+          pending({ action: 'skip', names: [] });
+        }
+        release();
+        resolve({ action: 'skip', names: [] });
+      };
+      ctx.abortController.signal.addEventListener('abort', onAbort, { once: true });
+    });
+  }
+
+  /** Apply an MCP decision to the live manager and this run's configured map. */
+  private applyMcpDecision(ctx: RunContext, decision: McpApprovalDecision): void {
+    if (decision.action === 'enable' || decision.action === 'add') {
+      for (const id of decision.names) {
+        this.mcp?.enable(id);
+        ctx.mcpConfigured.set(id.toLowerCase(), true);
+      }
+    }
   }
 
   private async persistToolStatus(

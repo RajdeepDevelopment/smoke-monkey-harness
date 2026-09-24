@@ -2,28 +2,12 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import type { TodoItem, AgentState } from '../models.js';
 import { SubContextManager } from '../context/sub-context.js';
+import type { McpRuntime, McpToolDef } from './mcp-manager.js';
 
-export interface McpToolDescriptor {
-  name: string;
-  description: string;
-  inputSchema: Record<string, unknown>;
-}
+export type { McpRuntime, McpServerHandle, McpToolDef, McpToolResult, McpServerConfig } from './mcp-manager.js';
 
-export interface McpHandle {
-  tools: McpToolDescriptor[];
-  callTool(
-    name: string,
-    args: Record<string, unknown>,
-  ): Promise<{ content: Array<{ type: string; text?: string }>; isError?: boolean }>;
-}
-
-/** Placeholder MCP runtime — the library ships without MCP infra. */
-export interface McpRuntime {
-  configs: Array<{ name: string; id: string; icon?: string | null }>;
-  handles: Map<string, McpHandle>;
-  closeAll(): Promise<void> | void;
-  activateServer(id: string): Promise<never>;
-}
+/** @deprecated Use McpToolDef (imported from ./mcp-manager.js). */
+export type McpToolDescriptor = McpToolDef;
 
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -528,6 +512,8 @@ export const READ_ONLY_TOOLS = new Set([
   'git_diff',
   'git_log',
   'docker_list',
+  'inspect_mcp_stock',
+  'request_mcp_approval',
 ]);
 
 /**

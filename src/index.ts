@@ -59,7 +59,6 @@ export {
   type ContextSnapshot,
   type AgentPhase,
   type ModelCaps,
-  type McpRuntime,
   type ToolGroupName as RunToolGroupName,
 } from './services/run-context.js';
 
@@ -109,6 +108,27 @@ export { getRunCommandTool, getRunTestTool } from './tools/terminal.tools.js';
 export { getGlobTool, getGrepTool } from './tools/search.tools.js';
 export { getGitStatusTool, getGitDiffTool, getGitLogTool } from './tools/git.tools.js';
 export { getAskUserTool, getContextManageTool, getFinishTaskTool, getTodoWriteTool } from './tools/agent.tools.js';
+export { getInspectMcpStockTool, getRequestMcpApprovalTool, type McpStockRow } from './tools/mcp.tools.js';
+
+// MCP client + manager
+export {
+  McpManager,
+  type McpRuntime,
+  type McpServerConfig,
+  type McpServerHandle,
+  type McpToolDef,
+  type McpToolResult,
+} from './services/mcp-manager.js';
+
+// MCP stock catalog
+export {
+  flattenStock,
+  findStockEntry,
+  listStockCategories,
+  countStock,
+  stockToMcpConfig,
+  type StockEntry,
+} from './mcp.js';
 
 // Events
 export {
@@ -155,17 +175,20 @@ export {
 } from './services/tool-library.js';
 
 // System prompt + context
-export { buildSystemPrompt, renderModeBlock, renderPromptTop, type BuildSystemPromptOptions, type BuildSystemPromptDeps } from './lib/system-prompt.js';
+export { buildSystemPrompt, renderModeBlock, renderPromptTop, renderRunOperatingRules, type RunOperatingRulesOpts, type BuildSystemPromptOptions, type BuildSystemPromptDeps } from './lib/system-prompt.js';
 export {
   SubContextManager,
   renderContextPanel,
   renderSystemPromptCatalog,
   getSubContext,
+  registerSubContext,
+  allSubContextIds,
   recommendSubContextsForTask,
   SUBCONTEXTS,
   ALL_SUBCONTEXTS,
   DEFAULT_SUBCONTEXTS,
   MAX_ACTIVE_CONTEXTS,
+  MAX_ACTIVE_MCP,
   type SubContext,
 } from './context/sub-context.js';
 

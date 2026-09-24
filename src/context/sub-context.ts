@@ -838,8 +838,50 @@ OUTPUT: state sheets, row count, features used, and the path in <file-SM-st>path
 
 const byId = new Map(SUBCONTEXTS.map((c) => [c.id, c]));
 
+/**
+ * User-defined sub-contexts registered at runtime via `registerSubContext()`
+ * (or AgentOptions.subContexts). Merged into `byId` so they are activatable,
+ * listed, and rendered exactly like the built-ins.
+ */
+const userSubContexts: SubContext[] = [];
+
 export function getSubContext(id: string): SubContext | undefined {
   return byId.get(id);
+}
+
+export function allSubContextIds(): readonly string[] {
+  return [...ALL_SUBCONTEXTS, ...userSubContexts.map((c) => c.id)];
+}
+
+/** All built-in + user-defined static sub-context records (not MCP dynamic). */
+function allStaticSubContexts(): readonly SubContext[] {
+  return [...SUBCONTEXTS, ...userSubContexts];
+}
+
+/**
+ * Register a custom sub-context so the agent can activate it via
+ * `context_manage`. Returns { ok: false, error } when the id is invalid or
+ * already taken. Registered contexts persist for the process lifetime and are
+ * re-discovered by every run.
+ */
+export function registerSubContext(def: SubContext): { ok: boolean; error?: string } {
+  const id = String(def.id ?? '').trim();
+  if (!id || !/^[a-z0-9_-]+$/i.test(id)) {
+    return { ok: false, error: `Invalid sub-context id "${id}" — use [a-z0-9_-].` };
+  }
+  if (byId.has(id)) {
+    return { ok: false, error: `Sub-context "${id}" already exists — choose a unique id.` };
+  }
+  const normalized: SubContext = {
+    ...def,
+    id,
+    title: def.title || id,
+    summary: def.summary || '',
+    content: def.content || def.summary || '',
+  };
+  userSubContexts.push(normalized);
+  byId.set(id, normalized);
+  return { ok: true };
 }
 
 export const ALL_SUBCONTEXTS: readonly string[] = Object.freeze(SUBCONTEXTS.map((c) => c.id));
@@ -949,7 +991,7 @@ export class SubContextManager {
   get activeIds(): readonly string[] { return [...this.active]; }
 
   get availableIds(): readonly string[] {
-    const staticAvailable = SUBCONTEXTS.filter((c) => !this.active.has(c.id)).map((c) => c.id);
+    const staticAvailable = allStaticSubContexts().filter((c) => !this.active.has(c.id)).map((c) => c.id);
     const dynamicAvailable = [...this.dynamicMap.keys()].filter((id) => !this.active.has(id));
     return [...staticAvailable, ...dynamicAvailable];
   }
@@ -963,7 +1005,7 @@ export class SubContextManager {
     const isMcp = this.dynamicMap.has(id);
     const isStatic = byId.has(id);
     if (!isMcp && !isStatic) {
-      const all = [...ALL_SUBCONTEXTS, ...[...this.dynamicMap.keys()]].join(', ');
+      const all = [...allSubContextIds(), ...[...this.dynamicMap.keys()]].join(', ');
       return { ok: false, error: `Unknown sub-context "${id}". Available: ${all}.` };
     }
     if (this.active.has(id)) return { ok: true, alreadyActive: true };
@@ -992,7 +1034,7 @@ export class SubContextManager {
     }
     if (!this.active.has(id)) {
       if (!byId.has(id) && !this.dynamicMap.has(id)) {
-        const all = [...ALL_SUBCONTEXTS, ...[...this.dynamicMap.keys()]].join(', ');
+        const all = [...allSubContextIds(), ...[...this.dynamicMap.keys()]].join(', ');
         return { ok: false, error: `Unknown sub-context "${id}". Available ids: ${all}.` };
       }
       return { ok: true, alreadyInactive: true };
@@ -1011,7 +1053,7 @@ export class SubContextManager {
     const normalized = ids.map(String).filter((id) => id.length > 0);
     const unknown = normalized.filter((id) => !byId.has(id) && !this.dynamicMap.has(id));
     if (unknown.length > 0) {
-      const all = [...ALL_SUBCONTEXTS, ...[...this.dynamicMap.keys()]].join(', ');
+      const all = [...allSubContextIds(), ...[...this.dynamicMap.keys()]].join(', ');
       return { ok: false, error: `Unknown sub-context(s): ${unknown.join(', ')}. Available ids: ${all}.` };
     }
     if (normalized.length > this.maxActive) {
@@ -1070,6 +1112,9 @@ export function renderSystemPromptCatalog(): string {
   }
   const lines: string[] = [];
   for (const [group, ids] of grouped) lines.push(`[${group}] ${ids.join(', ')}`);
+  if (userSubContexts.length > 0) {
+    lines.push(`[user-defined] ${userSubContexts.map((c) => c.id).join(', ')}`);
+  }
   return lines.join('\n');
 }
 
@@ -1172,7 +1217,7 @@ export function renderContextPanel(manager: SubContextManager, task = '', config
   }
 
   header.push('');
-  const available = SUBCONTEXTS.filter((c) => !manager.isActive(c.id));
+  const available = allStaticSubContexts().filter((c) => !manager.isActive(c.id));
   const ranked = [...available].sort((a, b) => {
     if (task) {
       const d = relevanceScore(task, b) - relevanceScore(task, a);

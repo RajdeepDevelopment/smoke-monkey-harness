@@ -1,18 +1,18 @@
 /**
- * Basic usage — run an agent against a local Ollama instance (no API key).
+ * Basic usage — run an agent against NVIDIA Hosted NIM (or any OpenAI-compatible provider).
  *
- *   npm run example
+ *   NVIDIA_API_KEY=nvapi-... npm run example
  *
- * Or swap the provider for any supported cloud:
- *   createAgent({ provider: 'openrouter', model: 'anthropic/claude-3.7-sonnet',
- *                 apiKey: process.env.OPENROUTER_API_KEY, workspacePath })
+ * The model needs tool support (e.g. nvidia/nemotron-3-super-120b-a12b).
+ * To use local Ollama instead:
+ *   createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath })   // no key needed
  */
 import { createAgent } from '../src/index.js';
 
 const agent = createAgent({
-  provider: 'ollama',
-  model: process.env.OLLAMA_MODEL || 'qwen3:8b',
-  apiKey: process.env.OLLAMA_API_KEY,
+  provider: 'nvidia',
+  model: process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-super-120b-a12b',
+  apiKey: process.env.NVIDIA_API_KEY,
   workspacePath: process.cwd(),
 });
 

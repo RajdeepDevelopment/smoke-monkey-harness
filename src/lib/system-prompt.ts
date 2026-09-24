@@ -1319,3 +1319,60 @@ export function renderActiveWorkingSet(manager: SubContextManager): string {
   lines.push('Do NOT re-open what is already active; open only what is MISSING for this phase.');
   return lines.join('\n');
 }
+
+export interface RunOperatingRulesOpts {
+  /** Number of user-defined sub-contexts registered via options.subContexts. */
+  subContextCount?: number;
+  /** True when at least one MCP server is configured and managed this run. */
+  mcpEnabled?: boolean;
+  /** Human display name for the active provider (informational only). */
+  provider?: string;
+}
+
+/**
+ * Compact operating-rules block baked into the system prompt AT INIT for the
+ * whole run: loop discipline, sub-context usage, and MCP operation. Rendered
+ * once per run (not per turn), so the model gets a stable set of standing rules
+ * instead of turn-by-turn reminders.
+ */
+export function renderRunOperatingRules(opts: RunOperatingRulesOpts = {}): string {
+  const lines: string[] = ['===== RUN OPERATING RULES (standing, initialised with this run) ====='];
+
+  lines.push(
+    'LOOP: proceed in small verifiable steps. After every change run the relevant check; read its output before the next step. ' +
+      'Never fire the same failing tool call unchanged — each retry must differ (fix the cause, check the inputs, or narrow the scope). ' +
+      'If you are blocked on something you cannot infer (a choice, credentials, an external fact), call ask_user instead of guessing. ' +
+      'When the objective is met, call finish_task with a concise completion report — do not keep acting. Respect the current phase and ' +
+      'switch tool sets via context_manage only when the phase genuinely changes.',
+  );
+
+  lines.push(
+    'SUB-CONTEXTS: open the matching sub-context (context_manage activate) BEFORE entering a domain, and deactivate it when that domain ends. ' +
+      'Active contexts appear in the panel every turn — read that panel as your starting point. Never re-activate what is already active; ' +
+      'the active set persists, so deactivation is the ONLY way to close something.',
+  );
+
+  if ((opts.subContextCount ?? 0) > 0) {
+    lines.push(
+      `USER-DEFINED SUB-CONTEXTS: ${opts.subContextCount} custom sub-context${
+        opts.subContextCount === 1 ? ' is' : 's are'
+      } registered for this run. Activate them by id via context_manage exactly like the built-ins — their guidance becomes part of the panel while active.`,
+    );
+  }
+
+  if (opts.mcpEnabled) {
+    lines.push(
+      'MCP OPERATION: MCP servers are configured and running for this run. Their tools are exposed ONLY while the matching ' +
+        '`mcp_<id>` sub-context is ACTIVE, named `<server>__<tool>`. To operate: (1) inspect_mcp_stock to see configured/enabled servers, ' +
+        '(2) for a server that is disabled or needs keys → request_mcp_approval and wait for the user decision (the run pauses), ' +
+        '(3) context_manage(action="activate", contextId="mcp_<id>") to bring its tools online, (4) call `<server>__<tool>`, ' +
+        '(5) deactivate `mcp_<id>` when the domain ends. Never call an MCP tool for a server whose sub-context is not active.',
+    );
+  } else {
+    lines.push(
+      'MCP: no MCP servers are configured for this run — operate with the built-in tools and sub-contexts only.',
+    );
+  }
+
+  return lines.join('\n');
+}
