@@ -168,7 +168,7 @@ try {
   const pkg = JSON.parse(fs.readFileSync(path.join(tmp, 'package.json'), 'utf8'));
   if (pkg.name !== 'my-agent') throw new Error(`scaffold name substitution failed: ${pkg.name}`);
   const idx = fs.readFileSync(path.join(tmp, 'src/index.ts'), 'utf8');
-  if (!idx.includes('@smoke-monkey/harness')) throw new Error('scaffold src missing import');
+  if (!idx.includes('smoke-monkey-harness')) throw new Error('scaffold src missing import');
   console.log(`  harness_scaffold ok into ${tmp} (package ${pkg.name}, .mcp.json present)`);
   fs.rmSync(tmp, { recursive: true, force: true });
 

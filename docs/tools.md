@@ -43,7 +43,7 @@ automatically. Restrict with `options.tools: ['core', 'search']`.
 Pass `ToolDefinition[]` in `options.tools`:
 
 ```ts
-import { createAgent, buildToolRegistry } from '@smoke-monkey/harness';
+import { createAgent, buildToolRegistry } from 'smoke-monkey-harness';
 
 const timeTool = {
   name: 'current_time',
@@ -71,7 +71,7 @@ Codex, and opencode.
   next turn — just-in-time.
 
 ```ts
-import { loadSkillsFromDirs } from '@smoke-monkey/harness';
+import { loadSkillsFromDirs } from 'smoke-monkey-harness';
 
 const skills = loadSkillsFromDirs([`${process.cwd()}/.mine/skills`]);
 const agent = createAgent({ /* … */, skills });

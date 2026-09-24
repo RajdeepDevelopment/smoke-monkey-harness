@@ -1,6 +1,6 @@
-# Build a looping AI agent with @smoke-monkey/harness — end-to-end playbook
+# Build a looping AI agent with smoke-monkey-harness — end-to-end playbook
 
-You are holding the master instructions for **@smoke-monkey/harness**, a
+You are holding the master instructions for **smoke-monkey-harness**, a
 framework-agnostic library for building **looping AI agents** — the same agent
 core behind the Smoke Monkey code editor. It provides an agent-loop (LLM-turn
 orchestration), 24 tools, permissions, sub-contexts, skills, MCP clients, and
@@ -24,7 +24,7 @@ loop guards and compaction). You wire a provider key and a UI, then ship.
 
 ### Step 1 — Install the library
 ```sh
-npm install @smoke-monkey/harness            # published release
+npm install smoke-monkey-harness            # published release
 # or, while pre-release:
 npm install github:RajdeepDevelopment/smoke-monkey-harness#main
 ```
@@ -58,7 +58,7 @@ In the scaffold's `src/index.ts`, route every interactive pause to your UI —
 or keep `autoApprove: true` for a local/demo agent:
 
 ```ts
-import { createAgent } from '@smoke-monkey/harness'
+import { createAgent } from 'smoke-monkey-harness'
 
 const agent = createAgent({
   provider: process.env.PROVIDER ?? 'nvidia',            // openai | openrouter | nvidia | xai | gemini | opencode | omniroute | ollama

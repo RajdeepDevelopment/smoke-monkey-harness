@@ -1,7 +1,7 @@
 {
   "name": "smoke-monkey-harness",
   "version": "0.1.0",
-  "description": "Build a new looping AI agent on @smoke-monkey/harness (skill + MCP guide server).",
+  "description": "Build a new looping AI agent on smoke-monkey-harness (skill + MCP guide server).",
   "author": {
     "name": "Rajdeep Development",
     "url": "https://github.com/RajdeepDevelopment"
@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "Smoke Monkey Harness",
     "shortDescription": "Build looping AI agents on the harness library",
-    "longDescription": "Guides agents to scaffold, wire, verify and ship a new looping AI agent using @smoke-monkey/harness and its MCP server.",
+    "longDescription": "Guides agents to scaffold, wire, verify and ship a new looping AI agent using smoke-monkey-harness and its MCP server.",
     "developerName": "Rajdeep Development",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Write"],

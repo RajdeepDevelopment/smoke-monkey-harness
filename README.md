@@ -1,6 +1,6 @@
-# @smoke-monkey/harness
+# smoke-monkey-harness
 
-[![npm version](https://img.shields.io/npm/v/@smoke-monkey/harness?label=npm)](https://www.npmjs.com/package/@smoke-monkey/harness)
+[![npm version](https://img.shields.io/npm/v/smoke-monkey-harness?label=npm)](https://www.npmjs.com/package/smoke-monkey-harness)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)](tsconfig.json)
@@ -11,10 +11,21 @@ the agent loop, 24 tools, permissions, compaction, an LLM client, MCP (Model
 Context Protocol) client/manager, and a sub-context system — with no NestJS and
 no database.
 
+## Install
+
+```bash
+pnpm add smoke-monkey-harness
+# or: npm install smoke-monkey-harness
+# or: yarn add smoke-monkey-harness
+```
+
+Works with any LLM provider: NVIDIA (default), OpenAI, OpenRouter, Google
+Gemini, xAI, Ollama, or any OpenAI-compatible endpoint.
+
 ## Quickstart
 
 ```ts
-import { createAgent } from '@smoke-monkey/harness'
+import { createAgent } from 'smoke-monkey-harness'
 
 // Model needs tool-call support — NVIDIA Hosted NIM by default:
 const agent = createAgent({
@@ -71,8 +82,6 @@ const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath
   servers via a user approval pause (`mcp.approval_required` →
   `resolveMcpDecision`). A curated stock catalog (`flattenStock` /
   `stockToMcpConfig`) helps you provision well-known servers.
-- **Skills** (agent-side, `SKILL.md` folders — see [Skills](#skills)) —
-  `list_skills` + `use_skill` load reusable instruction bundles on demand.
 - **Sub-contexts** — load/unload domain guidance with the `context_manage`
   tool (activate / deactivate / swap / set). Register your OWN contexts with
   `options.subContexts` or `registerSubContext()`; they activate exactly like
@@ -111,7 +120,7 @@ const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath
 ### MCP configuration
 
 ```ts
-import { createAgent, stockToMcpConfig, findStockEntry } from '@smoke-monkey/harness'
+import { createAgent, stockToMcpConfig, findStockEntry } from 'smoke-monkey-harness'
 
 const agent = createAgent({
   provider: 'nvidia',
@@ -168,7 +177,7 @@ only id + description; the model loads the full body with `use_skill` when the
 task matches (just-in-time, no context bloat).
 
 ```ts
-import { createAgent } from '@smoke-monkey/harness'
+import { createAgent } from 'smoke-monkey-harness'
 
 const agent = createAgent({
   provider: 'nvidia',

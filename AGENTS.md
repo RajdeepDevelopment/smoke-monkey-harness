@@ -8,7 +8,7 @@ knowledge quickly.
 
 ## What this repo builds
 
-- **`src/`** — the `@smoke-monkey/harness` library: the agent loop
+- **`src/`** — the `smoke-monkey-harness` library: the agent loop
   (`AgentLoop`), tool factories, permissions, sub-contexts, just-in-time
   skills, MCP manager, providers (LLM clients), storage, and an LLM client.
 - **`plugin/`** — an installable *plugin package* (the plugin for Claude Code,

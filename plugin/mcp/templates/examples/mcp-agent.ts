@@ -1,7 +1,7 @@
 // mcp-agent.ts — connect external MCP servers
 // Tools surface as <server>__<tool> while the matching mcp_<id> sub-context is
 // active. Disabled servers pause for user approval (mcp.approval_required).
-import { createAgent } from '@smoke-monkey/harness';
+import { createAgent } from 'smoke-monkey-harness';
 
 const agent = createAgent({
   provider: process.env.PROVIDER ?? 'nvidia',

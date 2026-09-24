@@ -2,13 +2,13 @@
 name: smoke-monkey-harness
 description: >-
   Build a new looping AI agent (autonomous coding agent, code editor, RAG/Q&A
-  bot, research or dev-tool assistant) on the @smoke-monkey/harness library. Use
+  bot, research or dev-tool assistant) on the smoke-monkey-harness library. Use
   whenever the user wants to create, scaffold, or start a new agent,
   assistant, or agentic tool; or asks how to use or install this harness
   library and its plugin/MCP server.
 ---
 
-# Build a looping AI agent with @smoke-monkey/harness
+# Build a looping AI agent with smoke-monkey-harness
 
 Framework-agnostic: `agent = prompt + loop + tools + context`. The library
 ships the loop (LLM-turn orchestration), 24 tools in 5 groups, permissions,
@@ -44,7 +44,7 @@ Decide which path is available:
 2. Scaffold manually (or `npx create-…` if one exists) from this skeleton:
 
 ```ts
-import { createAgent } from '@smoke-monkey/harness'
+import { createAgent } from 'smoke-monkey-harness'
 const agent = createAgent({
   provider: process.env.PROVIDER ?? 'nvidia',
   model: process.env.MODEL ?? 'nvidia/nemotron-3-super-120b-a12b',

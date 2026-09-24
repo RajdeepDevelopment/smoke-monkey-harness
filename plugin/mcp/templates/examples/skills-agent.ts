@@ -2,7 +2,7 @@
 // Point skillsDir at a folder of SKILL.md bundles. The model browses with
 // list_skills and loads what it needs with use_skill — nothing is in context
 // until used. Compatible with Claude Code / Codex / opencode skill folders.
-import { createAgent } from '@smoke-monkey/harness';
+import { createAgent } from 'smoke-monkey-harness';
 
 const agent = createAgent({
   provider: process.env.PROVIDER ?? 'nvidia',

@@ -7,7 +7,7 @@ editor.
 ## Install
 
 ```bash
-pnpm add @smoke-monkey/harness
+pnpm add smoke-monkey-harness
 ```
 
 Requires **Node >= 18**. TypeScript types ship with the package.
@@ -25,7 +25,7 @@ Keys are read from environment variables at runtime; they never live in code.
 ## First agent
 
 ```ts
-import { createAgent } from '@smoke-monkey/harness';
+import { createAgent } from 'smoke-monkey-harness';
 
 const agent = createAgent({
   provider: 'nvidia',

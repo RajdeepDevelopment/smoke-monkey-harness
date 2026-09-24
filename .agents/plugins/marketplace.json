@@ -1,7 +1,7 @@
 {
   "name": "smoke-monkey-harness",
   "version": "0.1.0",
-  "description": "Developer tools marketplace for building looping AI agents on the @smoke-monkey/harness library",
+  "description": "Developer tools marketplace for building looping AI agents on the smoke-monkey-harness library",
   "interface": {
     "displayName": "Smoke Monkey Harness"
   },

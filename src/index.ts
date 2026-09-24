@@ -1,5 +1,5 @@
 /**
- * @smoke-monkey/harness — build agentic tools, AI code editors, and agent
+ * smoke-monkey-harness — build agentic tools, AI code editors, and agent
  * harnesses in a few lines. A framework-agnostic rewrite of the core agent
  * loop behind the Smoke Monkey code editor.
  */

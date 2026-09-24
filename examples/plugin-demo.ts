@@ -26,7 +26,7 @@ const agent = createAgent({
     {
       id: 'smh-plugin',
       name: 'smoke-monkey-harness',
-      description: 'Build-an-agent plugin for @smoke-monkey/harness (guide + scaffold).',
+      description: 'Build-an-agent plugin for smoke-monkey-harness (guide + scaffold).',
       command: process.execPath,
       args: [path.join(process.cwd(), 'plugin', 'mcp', 'server.mjs')],
       enabled: true,

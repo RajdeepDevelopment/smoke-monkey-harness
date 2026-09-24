@@ -1,5 +1,5 @@
 /**
- * {{AGENT_NAME}} — a looping AI agent built on @smoke-monkey/harness.
+ * {{AGENT_NAME}} — a looping AI agent built on smoke-monkey-harness.
  *
  *   npm install
  *   export NVIDIA_API_KEY=nvapi-...
@@ -9,7 +9,7 @@
  * gemini, ollama, ...). This file is your entry point — wire UI events,
  * load mcp servers, register skills/sub-contexts, then run().
  */
-import { createAgent } from '@smoke-monkey/harness';
+import { createAgent } from 'smoke-monkey-harness';
 
 function promptUser(question: string): Promise<string> {
   // Point this at your UI — a chat input, a form, a RPC call, anywhere the

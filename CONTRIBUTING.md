@@ -1,6 +1,6 @@
 # Contributing to Smoke Monkey Harness
 
-Thanks for helping make `@smoke-monkey/harness` better. This project welcomes
+Thanks for helping make `smoke-monkey-harness` better. This project welcomes
 contributions: bug reports, feature requests, docs, and code.
 
 ## Table of contents

@@ -1,6 +1,6 @@
 /**
  * smoke-monkey-harness MCP server — guides ANY agent (Claude Code, Codex,
- * opencode, ...) to build a new looping agent on @smoke-monkey/harness.
+ * opencode, ...) to build a new looping agent on smoke-monkey-harness.
  *
  *   Tools:
  *     - harness_guide({ topic? })          → the master instructions (guide.md)
@@ -326,7 +326,7 @@ const toolDefs = [
   {
     name: 'harness_guide',
     description:
-      'Return the master instructions for building a looping AI agent on @smoke-monkey/harness: ' +
+      'Return the master instructions for building a looping AI agent on smoke-monkey-harness: ' +
       'the mental model, quickstart code, options, tools, sub-contexts, skills, MCP, and events. ' +
       'READ THIS FIRST. topic is optional free-text to ask a specific question about the library.',
     inputSchema: {

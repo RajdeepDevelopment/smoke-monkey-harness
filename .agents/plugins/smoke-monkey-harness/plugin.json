@@ -1,5 +1,5 @@
 {
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "smoke-monkey-harness",
-  "description": "Build a new looping AI agent on @smoke-monkey/harness (skill + MCP guide server)."
+  "description": "Build a new looping AI agent on smoke-monkey-harness (skill + MCP guide server)."
 }

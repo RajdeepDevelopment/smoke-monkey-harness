@@ -1,5 +1,5 @@
 // basic-agent.ts — the minimal looping agent (read verbatim by harness_read_example)
-import { createAgent } from '@smoke-monkey/harness';
+import { createAgent } from 'smoke-monkey-harness';
 
 const agent = createAgent({
   provider: process.env.PROVIDER ?? 'nvidia',

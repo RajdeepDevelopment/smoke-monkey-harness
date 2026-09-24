@@ -44,7 +44,7 @@ Each is `(ctx: ToolContext) => ToolDefinition` — import and reuse in `tools:`.
 ## Groups & the default toolset
 
 ```ts
-import { TOOL_GROUPS, READ_ONLY_TOOLS, FILE_MUTATING_TOOLS } from '@smoke-monkey/harness'
+import { TOOL_GROUPS, READ_ONLY_TOOLS, FILE_MUTATING_TOOLS } from 'smoke-monkey-harness'
 ```
 
 `TOOL_GROUPS` — `core`, `filesystem`, `terminal`, `search`, `git`, `agent`,

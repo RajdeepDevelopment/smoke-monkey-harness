@@ -1,4 +1,4 @@
-# @smoke-monkey/harness — condensed reference
+# smoke-monkey-harness — condensed reference
 
 > Companion files in this folder: `features.md` (9 building-block digests) and
 > `mcp-tools.md` (the 18 tools of the bundled MCP server). Deeper, live docs

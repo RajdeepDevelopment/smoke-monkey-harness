@@ -4,7 +4,7 @@ Turn **any** agent into a "build a looping agent" machine. This repo ships a
 plugin at `plugin/` that bundles:
 
 - **A skill** (`skills/smoke-monkey-harness/SKILL.md`, universal `SKILL.md`
-  format) that teaches the agent that `@smoke-monkey/harness` exists, when to
+  format) that teaches the agent that `smoke-monkey-harness` exists, when to
   use it, and the exact workflow for scaffolding a new agent on it.
 - **An MCP server** (`mcp/server.mjs`, zero dependencies) that guides the
   agent hands-on: master instructions, feature deep-dives, a plan wizard, a
@@ -95,7 +95,7 @@ project `--local` installs write `.opencode/skills/`). MCP goes in
 | request | what happens |
 | --- | --- |
 | "Build me an agent that reads my repo and writes docs" | skill loads → `harness_guide` → `harness_scaffold({ targetDir })` writes a project → agent wires + verifies it |
-| "What can @smoke-monkey/harness do?" | `harness_status` + `harness_guide` answer from the live bundle |
+| "What can smoke-monkey-harness do?" | `harness_status` + `harness_guide` answer from the live bundle |
 | "How do permissions/subcontexts/skills work?" | `harness_plan` → `harness_guide_<feature>` deep dives |
 | "Show me an example agent" | `harness_examples` + `harness_read_example` |
 
@@ -156,5 +156,5 @@ AGENTS.md                              # any agent reads this to build with the 
 .opencode/skills/smoke-monkey-harness/  # opencode project skill (this repo as a project)
 ```
 
-The plugin is itself part of the `@smoke-monkey/harness` repo; the harness
+The plugin is itself part of the `smoke-monkey-harness` repo; the harness
 library that agents build on is the same repo's `src/`.

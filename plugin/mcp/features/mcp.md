@@ -43,7 +43,7 @@ Field | purpose
 ## Curated stock catalog (no config guessing)
 
 ```ts
-import { listStockCategories, findStockEntry, stockToMcpConfig } from '@smoke-monkey/harness'
+import { listStockCategories, findStockEntry, stockToMcpConfig } from 'smoke-monkey-harness'
 listStockCategories()                     // e.g. ['DevOps & CI/CD', 'Databases & Storage', ...]
 const entry = findStockEntry('postgres-mcp-server')
 const cfg = stockToMcpConfig(entry)       // ready-made McpServerConfig

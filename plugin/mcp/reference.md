@@ -1,4 +1,4 @@
-# @smoke-monkey/harness — API reference
+# smoke-monkey-harness — API reference
 
 Authoritative reference for writing agents on the library. Sliced by area with
 `harness_api({ area })`. Areas: `options` · `surface` · `events` · `tools` ·
