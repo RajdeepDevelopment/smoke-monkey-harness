@@ -1,0 +1,230 @@
+import { Logger } from '../logger.js';
+
+export interface AgentEvent {
+  type: string;
+  sessionId: string;
+  runId?: string;
+  timestamp: number;
+  data: Record<string, unknown>;
+}
+
+export type AgentEventListener = (event: AgentEvent) => void;
+export type AgentEventFilter = (event: AgentEvent) => boolean;
+
+/**
+ * Harness event bus. All agent lifecycle events flow through here as flat
+ * `AgentEvent` objects, each with `type`, `sessionId`, `runId`, `timestamp` and
+ * `data`. Subscribe with `.subscribe(filter)` or wire the whole stream with
+ * `.onAny(listener)`. Framework-agnostic (node:events under the hood).
+ */
+export class AgentEventEmitter {
+  private readonly logger = new Logger('AgentEventEmitter');
+  private readonly anyListeners = new Set<AgentEventListener>();
+  private readonly filters = new Set<{ filter: AgentEventFilter; listener: AgentEventListener }>();
+
+  /** Emit helpers keep the flat event payload → timestamps/IDs consistent. */
+  emit(sessionId: string, event: Omit<AgentEvent, 'timestamp'>): void {
+    const full: AgentEvent = { ...event, timestamp: Date.now() };
+    for (const l of this.anyListeners) {
+      try {
+        l(full);
+      } catch (err) {
+        this.logger.warn(`agent event listener failed for ${full.type}: ${err}`);
+      }
+    }
+    for (const { filter, listener } of this.filters) {
+      try {
+        if (filter(full)) listener(full);
+      } catch (err) {
+        this.logger.warn(`agent filtered listener failed for ${full.type}: ${err}`);
+      }
+    }
+  }
+
+  emitRun(sessionId: string, runId: string, type: string, data: Record<string, unknown> = {}): void {
+    this.emit(sessionId, { type, sessionId, runId, data });
+  }
+
+  /** Receive every event. Returns an unsubscribe function. */
+  onAny(listener: AgentEventListener): () => void {
+    this.anyListeners.add(listener);
+    return () => this.anyListeners.delete(listener);
+  }
+
+  /** Receive events matching a predicate. Returns an unsubscribe function. */
+  subscribe(filter: AgentEventFilter, listener: AgentEventListener): () => void {
+    const entry = { filter, listener };
+    this.filters.add(entry);
+    return () => this.filters.delete(entry);
+  }
+
+  /** Subscribe to one event type (e.g. `tool.completed` or `run.completed`). */
+  on(type: string, listener: AgentEventListener): () => void {
+    return this.subscribe((e) => e.type === type, listener);
+  }
+
+  emitTextDelta(sessionId: string, runId: string, messageId: string, delta: string): void {
+    this.emitRun(sessionId, runId, 'text.delta', { messageId, delta });
+  }
+
+  /**
+   * Streams the model's internal reasoning/thinking ("Thought phase") as it
+   * arrives, so the UI can render a live foldable section while the model is
+   * still deliberating. Mirrors text.delta but carries reasoning content.
+   */
+  emitTextThought(sessionId: string, runId: string, messageId: string, delta: string): void {
+    this.emitRun(sessionId, runId, 'text.thought', { messageId, delta });
+  }
+
+  emitTextEnd(
+    sessionId: string,
+    runId: string,
+    messageId: string,
+    content: string,
+    toolCalls?: unknown[],
+    reasoning?: string | null,
+  ): void {
+    this.emitRun(sessionId, runId, 'text.end', { messageId, content, toolCalls, reasoning });
+  }
+
+  emitToolStarted(sessionId: string, runId: string, toolCallId: string, toolName: string, args: unknown): void {
+    this.emitRun(sessionId, runId, 'tool.started', { toolCallId, toolName, args });
+  }
+
+  emitToolOutput(sessionId: string, runId: string, toolCallId: string, output: string): void {
+    this.emitRun(sessionId, runId, 'tool.output', { toolCallId, output });
+  }
+
+  /**
+   * Streams live execution detail for a long-running tool (e.g. write_file
+   * writing content chunk-by-chunk, apply_patch applying hunks file-by-file)
+   * so the UI can show real progress + a streaming preview while the tool is
+   * still running — not just a spinner that stays silent until completion.
+   *
+   * @param progress - Flat payload (toolName, path, percent, bytes, lines,
+   *                   preview, …). The `toolCallId` is merged in automatically.
+   */
+  emitToolProgress(sessionId: string, runId: string, toolCallId: string, progress: Record<string, unknown>): void {
+    this.emitRun(sessionId, runId, 'tool.progress', { toolCallId, ...progress });
+  }
+
+  emitToolCompleted(sessionId: string, runId: string, toolCallId: string, result: unknown): void {
+    this.emitRun(sessionId, runId, 'tool.completed', { toolCallId, result });
+  }
+
+  emitToolFailed(sessionId: string, runId: string, toolCallId: string, error: string): void {
+    this.emitRun(sessionId, runId, 'tool.failed', { toolCallId, error });
+  }
+
+  emitTodoUpdated(sessionId: string, runId: string, todos: unknown[]): void {
+    this.emitRun(sessionId, runId, 'todo.updated', { todos });
+  }
+
+  emitPermissionRequired(sessionId: string, runId: string, toolCallId: string, toolName: string, args: unknown): void {
+    this.emitRun(sessionId, runId, 'permission.required', { toolCallId, toolName, args });
+  }
+
+  emitRunStarted(sessionId: string, runId: string, agentId: string): void {
+    this.emitRun(sessionId, runId, 'run.started', { agentId });
+  }
+
+  emitRunCompleted(sessionId: string, runId: string): void {
+    this.emitRun(sessionId, runId, 'run.completed');
+  }
+
+  emitRunInterrupted(sessionId: string, runId: string, reason: string): void {
+    this.emitRun(sessionId, runId, 'run.interrupted', { reason });
+  }
+
+  emitRunFailed(sessionId: string, runId: string, error: string): void {
+    this.emitRun(sessionId, runId, 'run.failed', { error });
+  }
+
+  emitStepStarted(sessionId: string, runId: string, step: number): void {
+    this.emitRun(sessionId, runId, 'step.started', { step });
+  }
+
+  emitPhaseChanged(sessionId: string, runId: string, from: string, to: string): void {
+    this.emitRun(sessionId, runId, 'phase.changed', { from, to });
+  }
+
+  emitStepEnded(sessionId: string, runId: string, step: number): void {
+    this.emitRun(sessionId, runId, 'step.ended', { step });
+  }
+
+  emitLlmThinking(sessionId: string, runId: string, step: number): void {
+    this.emitRun(sessionId, runId, 'llm.thinking', { step });
+  }
+
+  emitCompactionStarted(sessionId: string, runId: string, tokensBefore: number): void {
+    this.emitRun(sessionId, runId, 'compaction.started', { tokensBefore });
+  }
+
+  emitCompactionCompleted(
+    sessionId: string,
+    runId: string,
+    metrics: { tokensBefore: number; tokensAfter: number; tokensSaved: number; messagesCompacted: number; summary?: string },
+  ) {
+    this.emitRun(sessionId, runId, 'compaction.completed', metrics);
+  }
+
+  emitAskUserRequired(sessionId: string, runId: string, toolCallId: string, question: string, options: unknown[], multiple: boolean): void {
+    this.emitRun(sessionId, runId, 'ask_user.required', { toolCallId, question, options, multiple });
+  }
+
+  emitAskUserResponse(sessionId: string, runId: string, toolCallId: string, response: string): void {
+    this.emitRun(sessionId, runId, 'ask_user.response', { toolCallId, response });
+  }
+
+  /** Emitted when an MCP stock recommendation needs the user's decision: the
+   *  run PAUSES (status waiting_mcp_approval) until the user enables, adds, or
+   *  skips via the resolve endpoint / mcp.resolved event below. */
+  emitMcpApprovalRequired(
+    sessionId: string,
+    runId: string,
+    toolCallId: string,
+    payload: { task: string | null; servers: unknown[]; recommendedToEnableIds: string[]; recommendedToAddIds: string[] },
+  ): void {
+    this.emitRun(sessionId, runId, 'mcp.approval_required', { toolCallId, payload });
+  }
+
+  emitMcpResolved(
+    sessionId: string,
+    runId: string,
+    toolCallId: string,
+    decision: { action: 'enable' | 'add' | 'skip'; names: string[] },
+  ): void {
+    this.emitRun(sessionId, runId, 'mcp.resolved', { toolCallId, action: decision.action, names: decision.names });
+  }
+
+  /**
+   * Emits the run's live sub-context state every time the agent opens/closes
+   * a context, so the UI streams "frontend_ui opened · backend_scale closed"
+   * in real time.
+   */
+  emitContextUpdated(
+    sessionId: string,
+    runId: string,
+    active: Array<{ id: string; title: string }>,
+    count: number,
+    maxActive: number,
+  ): void {
+    this.emitRun(sessionId, runId, 'context.updated', { active, count, maxActive });
+  }
+
+  /**
+   * Emits a structured agent state event for the UI:
+   *   ● Understanding task  ✓ Searching codebase  ✓ Reading AuthService
+   *   ● Editing files  ○ Running tests  ○ Complete
+   * @param status - 'active' (●), 'completed' (✓), 'pending' (○)
+   */
+  emitAgentState(
+    sessionId: string,
+    runId: string,
+    phase: string,
+    status: 'active' | 'completed' | 'pending',
+    detail?: string,
+  ): void {
+    this.emitRun(sessionId, runId, 'agent.state', { phase, status, detail });
+  }
+}
