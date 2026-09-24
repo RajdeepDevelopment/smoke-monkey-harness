@@ -43,7 +43,10 @@ async function main() {
 
   // Route interactive pauses to your UI. With autoApprove: true, only ask_user pauses.
   agent.on('ask_user.required', (e) => {
-    agent.respond((e.data as { toolCallId: string }).toolCallId, promptUser((e.data as { payload?: { question?: string } }).payload?.question ?? ''));
+    void (async () => {
+      const question = (e.data as { payload?: { question?: string } }).payload?.question ?? '';
+      await agent.respond((e.data as { toolCallId: string }).toolCallId, await promptUser(question));
+    })();
   });
   agent.on('permission.required', (e) => {
     agent.resolvePermission((e.data as { toolCallId: string }).toolCallId, 'allow');

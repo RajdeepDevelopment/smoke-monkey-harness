@@ -12,10 +12,11 @@ your product on it; it provides the loop.
 
 ## Workflow
 
-1. **Get the guide.** Prefer the harness MCP server (`harness_guide`, then
-   `harness_examples` / `harness_read_example`) when it is connected — it has
-   the live guide and bundled examples. Without MCP, read the package
-   README at https://github.com/RajdeepDevelopment/smoke-monkey-harness
+1. **Get the guide.** Prefer the harness MCP server — `harness_guide` returns
+   the full **end-to-end playbook** (install → scaffold → wire → verify →
+   extend → ship), then `harness_examples` / `harness_read_example`. Without
+   MCP, read the package README at
+   https://github.com/RajdeepDevelopment/smoke-monkey-harness
    (`src/` + `examples/` are the reference).
 2. **Scaffold a project** with `harness_scaffold({ targetDir })` (a starter
    `package.json`, `tsconfig.json`, `src/index.ts`, sample skill, README). If
