@@ -1,6 +1,6 @@
 {
   "name": "smoke-monkey-harness",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Build agentic tools, AI code editors, and agent harnesses in a few lines. Framework-agnostic TypeScript agent loop with MCP (Model Context Protocol) client, just-in-time SKILL.md skills, permissions, and LLM providers — behind the Smoke Monkey code editor.",
   "license": "MIT",
   "author": {
@@ -69,6 +69,10 @@
     "ai-agents",
     "code-editor",
     "llm",
+    "llm-agent",
+    "ai-coding-assistant",
+    "coding-agent",
+    "autonomous-agent",
     "tool-use",
     "tool-calling",
     "harness",
@@ -76,10 +80,14 @@
     "mcp",
     "model-context-protocol",
     "skills",
+    "skill-md",
     "agent-framework",
+    "zero-dependency",
+    "zero-dependencies",
     "claude-code",
     "codex",
     "opencode",
+    "sdk",
     "typescript"
   ],
   "devDependencies": {

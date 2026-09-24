@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "smoke-monkey-harness",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Build a new looping AI agent on smoke-monkey-harness",
   "author": {
     "name": "Rajdeep Development",

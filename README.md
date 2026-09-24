@@ -6,50 +6,23 @@
 
 An embeddable, framework-agnostic agent runtime for building **AI coding
 assistants, autonomous developer tools, desktop agents, and MCP-powered
-applications**.
+applications** — with **zero runtime dependencies**.
 
-<img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" alt="Smoke Monkey Harness" width="900" />
+<img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" alt="Smoke Monkey Harness — TypeScript agent runtime, MCP client, SKILL.md skills, permissions, and context management" width="900" />
 
 Smoke Monkey Harness is **not an AI model**. It is the runtime that turns an
 LLM into an agent capable of **planning, calling tools, editing files,
 interacting with MCP servers, managing context, asking for permission,
 recovering from failures, and resuming work**.
 
-**No NestJS. No database. Just the agent runtime.**
+**No NestJS. No database. Zero dependencies. Just the agent runtime.**
 
 [![npm version](https://img.shields.io/npm/v/smoke-monkey-harness?label=npm)](https://www.npmjs.com/package/smoke-monkey-harness)
+[![npm downloads](https://img.shields.io/npm/dm/smoke-monkey-harness)](https://www.npmjs.com/package/smoke-monkey-harness)
+[![dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)](https://www.npmjs.com/package/smoke-monkey-harness)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)](tsconfig.json)
-
-</div>
-
----
-
-## Why Smoke Monkey?
-
-Building an agent from scratch means implementing the loop, tool execution,
-permissions, context management, MCP integration, recovery, sessions, and
-provider abstraction yourself. Smoke Monkey provides those primitives out of
-the box.
-
-<div align="center">
-
-| Capability | Smoke Monkey |
-| :--- | :---: |
-| Agent loop | ✅ |
-| Tool calling | ✅ |
-| 24 built-in tools | ✅ |
-| MCP | ✅ |
-| Skills / `SKILL.md` | ✅ |
-| Human-in-the-loop permissions | ✅ |
-| Automatic context compaction | ✅ |
-| Resumable sessions | ✅ |
-| Multiple LLM providers | ✅ |
-| Custom tools | ✅ |
-| Custom storage | ✅ |
-| Framework independent | ✅ |
-| Database required | ❌ |
 
 </div>
 
@@ -123,6 +96,35 @@ locally with Ollama:
 ```ts
 const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath: process.cwd() })
 ```
+
+---
+
+## Why Smoke Monkey?
+
+Building an agent from scratch means implementing the loop, tool execution,
+permissions, context management, MCP integration, recovery, sessions, and
+provider abstraction yourself. Smoke Monkey provides those primitives out of
+the box.
+
+<div align="center">
+
+| Capability | Smoke Monkey |
+| :--- | :---: |
+| Agent loop | ✅ |
+| Tool calling | ✅ |
+| 24 built-in tools | ✅ |
+| MCP | ✅ |
+| Skills / `SKILL.md` | ✅ |
+| Human-in-the-loop permissions | ✅ |
+| Automatic context compaction | ✅ |
+| Resumable sessions | ✅ |
+| Multiple LLM providers | ✅ |
+| Custom tools | ✅ |
+| Custom storage | ✅ |
+| Framework independent | ✅ |
+| Database required | ❌ |
+
+</div>
 
 ---
 
