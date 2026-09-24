@@ -1,14 +1,14 @@
-# 🐒 Smoke Monkey Harness
+<div align="center">
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" alt="Smoke Monkey Harness" width="900" />
-</p>
+# Smoke Monkey Harness
 
-### Build production-ready AI agents and coding agents in TypeScript.
+**Build production-ready AI agents and coding agents in TypeScript.**
 
 An embeddable, framework-agnostic agent runtime for building **AI coding
 assistants, autonomous developer tools, desktop agents, and MCP-powered
 applications**.
+
+<img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" alt="Smoke Monkey Harness" width="900" />
 
 Smoke Monkey Harness is **not an AI model**. It is the runtime that turns an
 LLM into an agent capable of **planning, calling tools, editing files,
@@ -21,6 +21,8 @@ recovering from failures, and resuming work**.
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)](tsconfig.json)
+
+</div>
 
 ---
 
@@ -198,26 +200,20 @@ const agent = createAgent({ /* ... */, sessionId: 'project-123' })
 
 ## Architecture
 
-```
-                 Your Application
-                        │
-                        ▼
-         ┌──────────────────────────┐
-         │   Smoke Monkey Harness   │
-         ├──────────────────────────┤
-         │      Agent Loop          │
-         │                          │
-         │ Tools · MCP · Skills     │
-         │ Permissions · Context    │
-         │ Sessions · Events        │
-         └────────────┬─────────────┘
-                      │
-          ┌───────────┴───────────┐
-          ▼                       ▼
-    LLM Providers            MCP Servers
-  NVIDIA · OpenAI          Local / Remote
-  Gemini · Ollama          Custom Tools
-  OpenRouter · xAI
+```mermaid
+flowchart TB
+    App["Your Application"]
+    SMH["Smoke Monkey Harness"]
+    Loop["Agent Loop"]
+    Core["Tools · MCP · Skills · Permissions · Context · Sessions · Events"]
+    Provider["LLM Providers"]
+    Mcp["MCP Servers + Custom Tools"]
+
+    App --> SMH
+    SMH --> Loop
+    Loop --> Core
+    Core --> Provider
+    Core --> Mcp
 ```
 
 ---

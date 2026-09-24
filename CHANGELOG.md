@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] — 2026-09-24
+
+Published to npm as `smoke-monkey-harness@1.0.4`.
+
+### Changed
+
+- README hero: removed the monkey icon, centered the intro (title, tagline,
+  banner, badges), and replaced the ASCII architecture diagram with a compact
+  Mermaid flowchart.
+- Scaffold dependency bumped to `smoke-monkey-harness@^1.0.4`.
+
 ## [1.0.3] — 2026-09-24
 
 Published to npm as `smoke-monkey-harness@1.0.3`.
@@ -72,6 +83,7 @@ Initial public release.
 
 - Relicensed from **PolyForm Noncommercial 1.0.0** to **MIT**.
 
+[1.0.4]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.4
 [1.0.3]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.3
 [1.0.2]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.2
 [1.0.1]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.1
