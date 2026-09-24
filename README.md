@@ -33,21 +33,25 @@ permissions, context management, MCP integration, recovery, sessions, and
 provider abstraction yourself. Smoke Monkey provides those primitives out of
 the box.
 
-| Capability                    | Smoke Monkey |
-| ----------------------------- | ------------ |
-| Agent loop                    | ✅            |
-| Tool calling                  | ✅            |
-| 24 built-in tools             | ✅            |
-| MCP                           | ✅            |
-| Skills / `SKILL.md`           | ✅            |
-| Human-in-the-loop permissions | ✅            |
-| Automatic context compaction  | ✅            |
-| Resumable sessions            | ✅            |
-| Multiple LLM providers        | ✅            |
-| Custom tools                  | ✅            |
-| Custom storage                | ✅            |
-| Framework independent         | ✅            |
-| Database required             | ❌            |
+<div align="center">
+
+| Capability | Smoke Monkey |
+| :--- | :---: |
+| Agent loop | ✅ |
+| Tool calling | ✅ |
+| 24 built-in tools | ✅ |
+| MCP | ✅ |
+| Skills / `SKILL.md` | ✅ |
+| Human-in-the-loop permissions | ✅ |
+| Automatic context compaction | ✅ |
+| Resumable sessions | ✅ |
+| Multiple LLM providers | ✅ |
+| Custom tools | ✅ |
+| Custom storage | ✅ |
+| Framework independent | ✅ |
+| Database required | ❌ |
+
+</div>
 
 ---
 
@@ -200,20 +204,25 @@ const agent = createAgent({ /* ... */, sessionId: 'project-123' })
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    App["Your Application"]
-    SMH["Smoke Monkey Harness"]
-    Loop["Agent Loop"]
-    Core["Tools · MCP · Skills · Permissions · Context · Sessions · Events"]
-    Provider["LLM Providers"]
-    Mcp["MCP Servers + Custom Tools"]
-
-    App --> SMH
-    SMH --> Loop
-    Loop --> Core
-    Core --> Provider
-    Core --> Mcp
+```
+┌──────────────────┐
+│ Your Application  │
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│  Agent Harness   │
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│    Agent Loop    │
+└────────┬─────────┘
+         ▼
+ Tools · MCP · Skills · Permissions · Context · Sessions · Events
+         │
+   ┌─────┴─────┐
+   ▼           ▼
+ LLM        MCP Servers
+Providers   + Custom Tools
 ```
 
 ---
