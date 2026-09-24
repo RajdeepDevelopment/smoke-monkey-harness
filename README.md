@@ -13,6 +13,8 @@ no database.
 
 ## Install
 
+Published on **npm** as [`smoke-monkey-harness`](https://www.npmjs.com/package/smoke-monkey-harness):
+
 ```bash
 pnpm add smoke-monkey-harness
 # or: npm install smoke-monkey-harness
@@ -21,6 +23,27 @@ pnpm add smoke-monkey-harness
 
 Works with any LLM provider: NVIDIA (default), OpenAI, OpenRouter, Google
 Gemini, xAI, Ollama, or any OpenAI-compatible endpoint.
+
+### Install from GitHub Packages
+
+The same package is also published to the **GitHub Packages npm registry** as
+[`@rajdeepdevelopment/smoke-monkey-harness`](https://github.com/RajdeepDevelopment/smoke-monkey-harness/pkgs/npm/smoke-monkey-harness).
+Point the scope at GitHub's registry and authenticate with a token that has
+`read:packages`:
+
+```ini
+# .npmrc
+@rajdeepdevelopment:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=GITHUB_PAT
+```
+
+```bash
+pnpm add @rajdeepdevelopment/smoke-monkey-harness
+```
+
+> GitHub Packages requires auth even for public packages — create a
+> [fine-grained PAT](https://github.com/settings/tokens?type=beta) with
+> `read:packages` permission on this repository.
 
 ## Quickstart
 
