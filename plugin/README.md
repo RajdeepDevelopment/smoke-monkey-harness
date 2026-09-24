@@ -1,38 +1,42 @@
-# smoke-monkey-harness plugin — for Claude Code, Codex, opencode (and more)
+# smoke-monkey-harness plugin — for Claude Code, Codex, opencode
 
 Turn **any** agent into a "build a looping agent" machine. This plugin bundles:
 
-- **A skill** (`skills/smoke-monkey-harness/`) in the universal `SKILL.md`
-  format that Claude Code, Codex, AniGravity, and opencode all read. Once
-  installed, the agent knows that `@smoke-monkey/harness` exists, when to use
-  it, and the exact workflow for scaffolding a new agent on it.
+- **A skill** (`skills/build-agents-with-harness/`) in the universal `SKILL.md`
+  format that Claude Code, Codex, and opencode all read. Installed it teaches
+  the agent that `@smoke-monkey/harness` exists, when to use it, and the exact
+  workflow for scaffolding a new agent on it.
 - **An MCP server** (`mcp/server.mjs`, zero dependencies) that guides the
-  agent hands-on: it serves the master instructions and can scaffold a real
-  starter project on disk.
+  agent hands-on: it serves the master instructions, feature deep-dives, a
+  plan wizard, a verifier, and can scaffold a real starter project on disk.
 
-## Install
+The package is built with **native per-host manifests**:
+
+| host | manifest | how it's discovered |
+| --- | --- | --- |
+| Claude Code | `.claude-plugin/plugin.json` (+ `.claude-plugin/marketplace.json`) | installed under `~/.claude/skills/` as a skills-dir plugin; or add the repo as a marketplace |
+| Codex | `.codex-plugin/plugin.json` | installed under `~/.codex/skills/` as a skill folder; project wiring via `.mcp.json` |
+| opencode | skill folder + `opencode.json` "mcp" block | `~/.config/opencode/skills/` (global) or `.opencode/skills/` (project); opencode also auto-loads `~/.claude/skills` |
+| portable | `plugin.json` (agent-plugins.org) | generic distribution |
+
+## Build + install
 
 ```sh
-plugin/install.sh          # copies the skill into ~/.claude, ~/.codex, ~/.opencode skills
-plugin/install.sh --local  # + project-local skills and a .mcp.json for the MCP server
+plugin/build-dist.sh          # assemble the self-contained bundle → plugin/dist/smoke-monkey-harness/
+plugin/install.sh             # install into home skills dirs for Claude Code / Codex / opencode
+plugin/install.sh --local     # + project-local install, .mcp.json, and opencode.json mcp block
+plugin/install.sh --force     # overwrite existing installs
 ```
 
-The skill is picked up on the next session in Claude Code, Codex, and opencode —
-no agent-specific code. The MCP server is registered via a project `.mcp.json`
-(Claude Code, Codex). For opencode, add the snippet printed by the installer to
-`opencode.json`:
+The bundle includes the MCP server **and** everything it reads (`guide.md`,
+`reference.md`, `features/`, `templates/`), so each install is self-contained.
+MCP wiring points `command` at the installed `mcp/server.mjs`:
 
 ```jsonc
-// opencode.json
-{
-  "mcp": {
-    "smoke-monkey-harness": {
-      "type": "local",
-      "command": ["node", "/absolute/path/to/smoke-monkey-harness/plugin/mcp/server.mjs"],
-      "enabled": true
-    }
-  }
-}
+// Claude Code / Codex: .mcp.json
+{ "mcpServers": { "smoke-monkey-harness": { "command": "<node>", "args": ["<bundle>/mcp/server.mjs"] } } }
+// opencode: opencode.json
+{ "mcp": { "smoke-monkey-harness": { "type": "local", "command": ["<node>", "<bundle>/mcp/server.mjs"], "enabled": true } } }
 ```
 
 ## What the agent can now do
@@ -41,6 +45,7 @@ no agent-specific code. The MCP server is registered via a project `.mcp.json`
 | --- | --- |
 | "Build me an agent that reads my repo and writes docs" | skill loads → `harness_guide` → `harness_scaffold({ targetDir })` writes a project → agent wires + verifies it |
 | "What can @smoke-monkey/harness do?" | `harness_status` + `harness_guide` answer from the live bundle |
+| "How do permissions/subcontexts/skills work?" | `harness_plan` → `harness_guide_<feature>` deep dives |
 | "Show me an example agent" | `harness_examples` + `harness_read_example` |
 
 ## MCP server tools
@@ -77,18 +82,24 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":
 
 ```
 plugin/
-  install.sh                     # skill + MCP installer
-  skills/smoke-monkey-harness/   # the SKILL.md plugin (references/api.md inside)
+  build-dist.sh                   # assembles the self-contained dist bundle
+  install.sh                      # per-host installer (Claude / Codex / opencode)
+  skills/build-agents-with-harness/   # the SKILL.md skill (references/ inside)
     SKILL.md
-    references/api.md
+    references/{api,features,mcp-tools}.md
   mcp/
-    server.mjs                   # dependency-free stdio MCP server (18 tools)
-    guide.md                     # master instructions (the mouth of the plugin)
-    reference.md                 # authoritative API reference (harness_api)
-    features/                    # deep per-feature guides (harness_guide_<feature>)
+    server.mjs                    # dependency-free stdio MCP server (18 tools)
+    guide.md                      # master instructions (the mouth of the plugin)
+    reference.md                  # authoritative API reference (harness_api)
+    features/                     # deep per-feature guides (harness_guide_<feature>)
     templates/
-      scaffold/                  # starter-project template (harness_scaffold)
-      examples/                  # sample agents (harness_examples)
+      scaffold/                   # starter-project template (harness_scaffold)
+      examples/                   # sample agents (harness_examples)
+  dist/smoke-monkey-harness/      # GENERATED self-contained plugin package
+    .claude-plugin/plugin.json    #   Claude Code manifest (+ marketplace.json)
+    .codex-plugin/plugin.json     #   Codex manifest
+    plugin.json                   #   portable agent-plugins manifest
+    SKILL.md, skills/, mcp/, .mcp.json
 ```
 
 The plugin is itself part of the `@smoke-monkey/harness` repo; the harness

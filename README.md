@@ -189,11 +189,11 @@ description: Write conventional, concise git commit messages for the uncommitted
 
 Discovery defaults (when `skillsDir` is unset) to `.opencode/skills`,
 `.claude/skills`, `.codex/skills` under the workspace plus `~/.claude/skills`,
-`~/.codex/skills`, `~/.opencode/skills` — drop skill folders in any of those and
-they show up. The tools `list_skills` (browse catalog) and `use_skill` (load
-instructions) are registered automatically when at least one skill is present.
-Lower-level pieces: `loadSkillsFromDir(s)`, `defaultSkillDirs()`, and
-`SkillRegistry` (all exported from the package root).
+`~/.codex/skills`, `~/.opencode/skills`, `~/.config/opencode/skills` — drop skill
+folders in any of those and they show up. The tools `list_skills` (browse
+catalog) and `use_skill` (load instructions) are registered automatically when
+at least one skill is present. Lower-level pieces: `loadSkillsFromDir(s)`,
+`defaultSkillDirs()`, and `SkillRegistry` (all exported from the package root).
 
 ## API shape
 
@@ -226,8 +226,9 @@ Code, Codex, AniGravity, and opencode all read) plus a dependency-free **MCP
 server** that guides any agent to *build a new looping agent* on this library.
 
 ```sh
-plugin/install.sh          # installs the skill into ~/.claude, ~/.codex, ~/.opencode skills
-plugin/install.sh --local  # + project-local skill and a .mcp.json exposing the MCP server
+npm run plugin:build         # assemble the self-contained bundle → plugin/dist/smoke-monkey-harness/
+npm run plugin:install       # install for Claude Code, Codex, opencode (home skills dirs)
+npm run plugin:install -- --local   # + project-local install, .mcp.json, opencode.json
 ```
 
 Once installed, ask your agent to "build me an agent that …" — it will load the

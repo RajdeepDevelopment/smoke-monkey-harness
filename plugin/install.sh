@@ -1,22 +1,33 @@
 #!/usr/bin/env bash
 #
-# Install the smoke-monkey-harness plugin for Claude Code / Codex / opencode:
-#   1. Copies the SKILL.md skill into each home skills folder (the format all
-#      three read), so any of them learns to build agents on the library.
-#   2. With --local, also copies into the current project's .claude/.codex/
-#      .opencode/skills and writes a project .mcp.json exposing the harness MCP
-#      server (read by Claude Code and Codex).
+# Install the smoke-monkey-harness plugin for Claude Code / Codex / opencode.
+#
+# The plugin is a self-contained package (see build-dist.sh) with native
+# manifests: .claude-plugin/plugin.json (+ marketplace.json), and
+# .codex-plugin/plugin.json. This script places it where each tool natively
+# discovers it:
+#
+#   Claude Code : ~/.claude/skills/<pkg>/            (skills-dir plugin; opencode
+#                   also auto-loads ~/.claude/skills)
+#   Codex       : ~/.codex/skills/<pkg>/             (skill folder)
+#   opencode    : ~/.config/opencode/skills/<skill>/ (real global skills path)
+#
+#   --local     additionally installs into the current project and writes the
+#               MCP wiring: project .mcp.json (Claude Code / Codex) and the
+#               opencode "mcp" block in project opencode.json.
 #
 # Usage:
-#   plugin/install.sh                 # home skill install only
-#   plugin/install.sh --local         # + project skills + .mcp.json
+#   plugin/install.sh                 # home install (skill + MCP server assets)
+#   plugin/install.sh --local         # + project install + .mcp.json + opencode.json
 #   plugin/install.sh --force         # overwrite existing installs
 #   plugin/install.sh --help
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SRC="$ROOT/skills/smoke-monkey-harness"
-SERVER="$ROOT/mcp/server.mjs"
+NAME="smoke-monkey-harness"
+SKILL="build-agents-with-harness"
+DIST="$ROOT/dist/$NAME"
+SERVER="$DIST/mcp/server.mjs"
 FORCE=0
 LOCAL=0
 
@@ -27,8 +38,8 @@ for arg in "$@"; do
     --help|-h)
       echo "Install the smoke-monkey-harness plugin (skill + MCP server) for Claude Code / Codex / opencode."
       echo ""
-      echo "  install.sh            install the SKILL.md into ~/.claude ~/.codex ~/.opencode skills"
-      echo "  install.sh --local    also install into the current project and write .mcp.json"
+      echo "  install.sh            install the plugin package into your home skills dirs"
+      echo "  install.sh --local    also install into the current project and write .mcp.json + opencode.json"
       echo "  install.sh --force    overwrite any existing install at the same paths"
       exit 0
       ;;
@@ -37,26 +48,43 @@ for arg in "$@"; do
 done
 
 node --version >/dev/null 2>&1 || { echo "error: node is required to run the MCP server" >&2; exit 1; }
-[ -d "$SRC" ] || { echo "error: skill source missing at $SRC" >&2; exit 1; }
-[ -f "$SERVER" ] || { echo "error: MCP server missing at $SERVER" >&2; exit 1; }
 
-install_skill () {
+# --- build the self-contained bundle if needed --------------------------------
+if [ ! -f "$SERVER" ]; then
+  echo "building plugin dist bundle…"
+  bash "$ROOT/build-dist.sh" --force
+fi
+
+install_dir () {
   local dst="$1"
-  mkdir -p "$(dirname "$dst")"
   if [ -e "$dst" ] && [ "$FORCE" -eq 0 ]; then
     echo "  skip (exists — rerun with --force) : $dst"
-    return
+    return 1
   fi
   rm -rf "$dst"
-  cp -R "$SRC" "$dst"
+  mkdir -p "$(dirname "$dst")"
+  cp -R "$DIST" "$dst"
+  echo "  installed plugin → $dst"
+}
+
+install_skill_dir () {
+  local dst="$1"
+  if [ -e "$dst" ] && [ "$FORCE" -eq 0 ]; then
+    echo "  skip (exists — rerun with --force) : $dst"
+    return 1
+  fi
+  rm -rf "$dst"
+  mkdir -p "$(dirname "$dst")"
+  cp -R "$DIST/skills/$SKILL" "$dst"
   echo "  installed skill → $dst"
 }
 
+# write .mcp.json (Claude Code / Codex) pointing at $SERVER (absolute)
 write_mcp_json () {
   local target="$1"
   SERVER="$SERVER" node -e '
     const fs = require("fs");
-    const target = process.env.TARGET || process.argv[1];
+    const target = process.argv[1];
     const server = process.env.SERVER;
     let cfg = {};
     try { cfg = JSON.parse(fs.readFileSync(target, "utf8")); } catch {}
@@ -67,31 +95,52 @@ write_mcp_json () {
   echo "  wrote MCP config → $target"
 }
 
+# merge the opencode "mcp" block into an opencode.json (create if missing)
+write_opencode_json () {
+  local target="$1"
+  SERVER="$SERVER" node -e '
+    const fs = require("fs"), path = require("path");
+    const target = process.argv[1];
+    const server = process.env.SERVER;
+    let cfg = {};
+    try { cfg = JSON.parse(fs.readFileSync(target, "utf8")); } catch {}
+    cfg.mcp = cfg.mcp || {};
+    cfg.mcp["smoke-monkey-harness"] = { type: "local", command: [process.execPath, server], enabled: true };
+    fs.writeFileSync(target, JSON.stringify(cfg, null, 2) + "\n");
+  ' "$target"
+  echo "  wrote opencode config → $target"
+}
+
 echo "smoke-monkey-harness plugin installer"
-echo "  skill source : $SRC"
-echo "  mcp server   : $SERVER"
+echo "  bundle     : $DIST"
+echo "  skill id   : $SKILL"
+echo "  mcp server : $SERVER"
 echo ""
 
-echo "Installing the skill for Claude Code / Codex / opencode (home):"
-install_skill "$HOME/.claude/skills/smoke-monkey-harness"
-install_skill "$HOME/.codex/skills/smoke-monkey-harness"
-install_skill "$HOME/.opencode/skills/smoke-monkey-harness"
+echo "Installing for Claude Code / Codex / opencode (home):"
+install_dir "$HOME/.claude/skills/$NAME"
+if [ -d "$HOME/.claude/skills/$NAME" ]; then
+  write_mcp_json "$HOME/.claude/skills/$NAME/.mcp.json"
+fi
+install_dir "$HOME/.codex/skills/$NAME"
+install_skill_dir "$HOME/.config/opencode/skills/$SKILL"
 
 if [ "$LOCAL" -eq 1 ]; then
   CWD="$(pwd)"
   echo ""
   echo "Local mode — installing into the current project ($CWD):"
-  install_skill "$CWD/.claude/skills/smoke-monkey-harness"
-  install_skill "$CWD/.codex/skills/smoke-monkey-harness"
-  install_skill "$CWD/.opencode/skills/smoke-monkey-harness"
+  install_dir "$CWD/.claude/skills/$NAME"
+  install_dir "$CWD/.codex/skills/$NAME"
+  install_skill_dir "$CWD/.opencode/skills/$SKILL"
   write_mcp_json "$CWD/.mcp.json"
+  write_opencode_json "$CWD/opencode.json"
 fi
 
 echo ""
 echo "Next steps:"
-echo "  - Claude Code  / Codex : skills are live; for the MCP server, run '$(basename "${BASH_SOURCE[0]}") --local' inside the project (writes .mcp.json) or add the server to your project config manually:"
-echo "      server: smoke-monkey-harness  command: $(node --version >/dev/null 2>&1 && echo \"node $SERVER\")"
-echo "  - opencode : add to opencode.json:"
-printf '      "mcp": { "smoke-monkey-harness": { "type": "local", "command": ["node", "%s"], "enabled": true } }\n' "$SERVER"
+echo "  - Claude Code : skills are live (and opencode auto-loads ~/.claude/skills too)."
+echo "                  For a package install: claude plugin install $DIST"
+echo "  - Codex       : skills are live; project MCP server comes from .mcp.json (see --local)."
+echo "  - opencode    : skills installed to ~/.config/opencode/skills (global) — restart opencode; MCP via the opencode.json block (see --local)."
 echo ""
-echo "Done. In any of the three agents, describe building a new agent and the smoke-monkey-harness skill + MCP server will drive the scaffold."
+echo "Done. In any of the three agents, ask to build a new looping AI agent and the skill + MCP server will drive the scaffold."

@@ -16,7 +16,7 @@
  * with default dirs (when `skillsDir` is not configured):
  *   <workspace>/.opencode/skills, <workspace>/.claude/skills,
  *   <workspace>/.codex/skills, plus ~/.claude/skills, ~/.codex/skills,
- *   ~/.opencode/skills (home-specific skills).
+ *   ~/.opencode/skills and ~/.config/opencode/skills (home-specific skills).
  */
 import {
   readdirSync,
@@ -59,15 +59,34 @@ export function parseSkillFrontmatter(
   const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
   if (!m) return { frontmatter: {}, body: text.trim() };
   const frontmatter: Record<string, string> = {};
-  for (const line of m[1].split(/\r?\n/)) {
+  const lines = m[1].split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const idx = line.indexOf(':');
     if (idx < 1) continue;
     const key = line.slice(0, idx).trim();
-    const value = line
+    if (!key) continue;
+    let value = line
       .slice(idx + 1)
       .trim()
       .replace(/^['"]|['"]$/g, '');
-    if (key) frontmatter[key] = value;
+
+    // Block scalars — `>` fold single newlines to spaces, `|` keeps them;
+    // `-` chomps trailing newlines. Continues over indented lines.
+    if (/^[|>][+-]?$/.test(value)) {
+      const keepNewlines = value[0] === '|';
+      const continuation: string[] = [];
+      while (i + 1 < lines.length && /^[ \t]/.test(lines[i + 1])) {
+        continuation.push(lines[++i]);
+      }
+      const chunk = continuation
+        .map((l) => l.replace(/^[ \t]+/, ''))
+        .join(keepNewlines ? '\n' : ' ')
+        .replace(keepNewlines ? /(^|\n)[ \t]+(?=\S)/g : / +/g, keepNewlines ? '$1' : ' ');
+      if (chunk.length > 0) value = chunk;
+    }
+
+    frontmatter[key] = value;
   }
   return { frontmatter, body: text.slice(m[0].length).trim() };
 }
@@ -185,7 +204,8 @@ export function loadSkillsFromDirs(dirs: string[], opts: LoadSkillsOptions = {})
  *   <workspace>/.opencode/skills        (opencode)
  *   <workspace>/.claude/skills          (Claude Code)
  *   <workspace>/.codex/skills           (Codex)
- *   ~/.claude/skills, ~/.codex/skills, ~/.opencode/skills
+ *   ~/.claude/skills, ~/.codex/skills, ~/.opencode/skills,
+ *   ~/.config/opencode/skills           (home-specific)
  */
 export function defaultSkillDirs(workspacePath?: string): string[] {
   const home = homedir();
@@ -201,6 +221,7 @@ export function defaultSkillDirs(workspacePath?: string): string[] {
     join(home, '.claude', 'skills'),
     join(home, '.codex', 'skills'),
     join(home, '.opencode', 'skills'),
+    join(home, '.config', 'opencode', 'skills'),
   );
   return dirs;
 }

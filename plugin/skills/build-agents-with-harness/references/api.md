@@ -1,5 +1,10 @@
 # @smoke-monkey/harness — condensed reference
 
+> Companion files in this folder: `features.md` (9 building-block digests) and
+> `mcp-tools.md` (the 18 tools of the bundled MCP server). Deeper, live docs
+> also come from the MCP server: `harness_api({ area })` and
+> `harness_guide_<feature>`.
+
 ## `createAgent(options)` → `AgentHarness`
 
 | option | type / values | notes |
@@ -13,7 +18,7 @@
 | `agentId` | `build` `plan` `explore` `general` | mode prompt block |
 | `tools` | group names[] \| `ToolDefinition[]` | groups: `filesystem` `terminal` `search` `git` `agent` |
 | `systemPrompt` / `subSystemPrompt` | string \| string[] | replace / append to built-in prompt |
-| `permission` | `allow-all` `deny-all` `ask-default` \| fn | read-only tools auto-allow |
+| `permission` | `allow-all` `deny-all` `ask-default` \| `PermissionPolicy` fn | read-only tools auto-allow in `ask-default` |
 | `autoApprove` | boolean | skip permission pauses |
 | `sessionId` | string | share memory across runs |
 | `store` | `Storage` | default in-memory |

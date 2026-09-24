@@ -38,7 +38,8 @@
     "demo:skills": "tsx examples/skills-demo.ts",
     "demo:plugin": "tsx examples/plugin-demo.ts",
     "plugin:install": "bash plugin/install.sh",
-    "test:fixtures": "tsx scripts/fixtures/test-manager.ts && tsx scripts/fixtures/test-integration.ts && tsx scripts/fixtures/test-skills.ts && tsx scripts/fixtures/test-plugin-mcp.ts",
+    "plugin:build": "bash plugin/build-dist.sh",
+    "test:fixtures": "bash plugin/build-dist.sh --force && tsx scripts/fixtures/test-manager.ts && tsx scripts/fixtures/test-integration.ts && tsx scripts/fixtures/test-skills.ts && tsx scripts/fixtures/test-plugin-mcp.ts",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [
