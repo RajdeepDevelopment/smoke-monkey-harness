@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] — 2026-09-24
+
+Published to npm as `smoke-monkey-harness@1.0.8`.
+
+### Changed
+
+- README hero: replaced shields.io image badges (which rendered as raw
+  label text on npm) with a single plain-text strip — npm, 0 dependencies,
+  MIT, CI, TypeScript.
+- Scaffold dependency bumped to `smoke-monkey-harness@^1.0.8`.
+
 ## [1.0.7] — 2026-09-24
 
 Published to npm as `smoke-monkey-harness@1.0.7`.
@@ -124,6 +135,7 @@ Initial public release.
 
 - Relicensed from **PolyForm Noncommercial 1.0.0** to **MIT**.
 
+[1.0.8]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.8
 [1.0.7]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.7
 [1.0.6]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.6
 [1.0.5]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.5

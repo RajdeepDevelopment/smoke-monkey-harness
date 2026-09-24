@@ -17,12 +17,7 @@ recovering from failures, and resuming work**.
 
 **No NestJS. No database. Zero dependencies. Just the agent runtime.**
 
-[![npm version](https://img.shields.io/npm/v/smoke-monkey-harness?label=npm)](https://www.npmjs.com/package/smoke-monkey-harness)
-[![npm downloads](https://img.shields.io/npm/dm/smoke-monkey-harness)](https://www.npmjs.com/package/smoke-monkey-harness)
-[![dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)](https://www.npmjs.com/package/smoke-monkey-harness)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![CI](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions/workflows/ci.yml)
-[![TypeScript](https://img.shields.io/badge/types-TypeScript-blue.svg)](tsconfig.json)
+**npm:** [smoke-monkey-harness](https://www.npmjs.com/package/smoke-monkey-harness) · **dependencies:** 0 · **license:** MIT · **CI:** [passing](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions) · **types:** TypeScript
 
 </div>
 
