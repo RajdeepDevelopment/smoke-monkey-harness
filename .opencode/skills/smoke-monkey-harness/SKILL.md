@@ -1,5 +1,5 @@
 ---
-name: build-agents-with-harness
+name: smoke-monkey-harness
 description: >-
   Build a new looping AI agent (autonomous coding agent, code editor, RAG/Q&A
   bot, research or dev-tool assistant) on the @smoke-monkey/harness library. Use

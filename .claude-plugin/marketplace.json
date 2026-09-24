@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace-manifest.json",
+  "name": "smoke-monkey-harness",
+  "owner": {
+    "name": "Rajdeep Development",
+    "url": "https://github.com/RajdeepDevelopment"
+  },
+  "description": "Build new looping AI agents on the @smoke-monkey/harness library",
+  "plugins": [
+    {
+      "name": "smoke-monkey-harness",
+      "source": "./plugin",
+      "description": "Build a new looping AI agent on @smoke-monkey/harness (skill + MCP guide server)."
+    }
+  ]
+}

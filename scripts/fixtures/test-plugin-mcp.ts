@@ -179,22 +179,20 @@ try {
 
   child.kill();
 
-  // dist bundle + native manifests (built by plugin/build-dist.sh)
-  const dist = path.join(root, 'plugin', 'dist', 'smoke-monkey-harness');
-  for (const rel of ['README.md', 'SKILL.md', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json', '.codex-plugin/plugin.json', 'plugin.json']) {
-    if (!fs.existsSync(path.join(dist, rel))) throw new Error(`dist bundle missing ${rel}`);
+  // plugin package + native manifests (plugin/ is the plugin root)
+  const pluginPkg = path.join(root, 'plugin');
+  for (const rel of ['.claude-plugin/plugin.json', '.codex-plugin/plugin.json', '.mcp.json', 'skills/smoke-monkey-harness/SKILL.md', 'mcp/server.mjs']) {
+    if (!fs.existsSync(path.join(pluginPkg, rel))) throw new Error(`plugin package missing ${rel}`);
   }
-  const claude = JSON.parse(fs.readFileSync(path.join(dist, '.claude-plugin', 'plugin.json'), 'utf8'));
-  if (claude.name !== 'smoke-monkey-harness' || claude.skills !== './skills/') throw new Error('claude manifest invalid');
-  const codex = JSON.parse(fs.readFileSync(path.join(dist, '.codex-plugin', 'plugin.json'), 'utf8'));
+  const claude = JSON.parse(fs.readFileSync(path.join(pluginPkg, '.claude-plugin', 'plugin.json'), 'utf8'));
+  if (claude.name !== 'smoke-monkey-harness' || claude.skills !== './skills' || claude.mcpServers !== './.mcp.json') throw new Error('claude manifest invalid');
+  const codex = JSON.parse(fs.readFileSync(path.join(pluginPkg, '.codex-plugin', 'plugin.json'), 'utf8'));
   if (codex.name !== 'smoke-monkey-harness' || !codex.interface?.defaultPrompt?.length) throw new Error('codex manifest invalid');
-  const portable = JSON.parse(fs.readFileSync(path.join(dist, 'plugin.json'), 'utf8'));
-  if (portable.name !== 'smoke-monkey-harness') throw new Error('portable manifest invalid');
-  const distSkill = path.join(dist, 'skills', 'build-agents-with-harness', 'SKILL.md');
-  if (!fs.existsSync(distSkill)) throw new Error('dist bundle missing skill');
-  const distServer = path.join(dist, 'mcp', 'server.mjs');
-  if (!fs.existsSync(distServer)) throw new Error('dist bundle missing mcp server');
-  console.log('  dist bundle ok (claude/codex/portable manifests + skill + mcp server)');
+  const mcp = JSON.parse(fs.readFileSync(path.join(pluginPkg, '.mcp.json'), 'utf8'));
+  if (!mcp.mcpServers?.['smoke-monkey-harness']?.args?.[0]?.includes('CLAUDE_PLUGIN_ROOT')) throw new Error('.mcp.json should use ${CLAUDE_PLUGIN_ROOT}');
+  const marketplace = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin', 'marketplace.json'), 'utf8'));
+  if (marketplace.plugins?.[0]?.source !== './plugin') throw new Error('repo marketplace should point at ./plugin');
+  console.log('  plugin package ok (claude/codex manifests + ${CLAUDE_PLUGIN_ROOT} .mcp.json + repo marketplace)');
 
   console.log('\nPLUGIN MCP OK');
   process.exit(0);

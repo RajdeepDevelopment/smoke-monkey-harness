@@ -221,14 +221,25 @@ classifiers (`classifyTaskGroups`, phases), and the loop guards.
 
 ## Use it from Claude Code, Codex, opencode (or any agent)
 
-This repo ships as a **plugin**: a `SKILL.md` (the universal skill format Claude
-Code, Codex, AniGravity, and opencode all read) plus a dependency-free **MCP
-server** that guides any agent to *build a new looping agent* on this library.
+This repo ships as a **plugin** (at `plugin/`): a `SKILL.md` (the universal
+skill format Claude Code, Codex, and opencode all read) plus a dependency-free
+**MCP server** that guides any agent to *build a new looping agent* on this
+library. The plugin dir carries native manifests (`.claude-plugin/plugin.json`,
+`.codex-plugin/plugin.json`) and the repo root carries the distribution files.
+
+**Claude Code:**
 
 ```sh
-npm run plugin:build         # assemble the self-contained bundle → plugin/dist/smoke-monkey-harness/
-npm run plugin:install       # install for Claude Code, Codex, opencode (home skills dirs)
-npm run plugin:install -- --local   # + project-local install, .mcp.json, opencode.json
+claude plugin marketplace add https://github.com/RajdeepDevelopment/smoke-monkey-harness
+claude plugin install smoke-monkey-harness@smoke-monkey-harness
+```
+
+**Codex / opencode / local:** 
+
+```sh
+npm run plugin:install            # copies the plugin into your home skills dirs
+npm run plugin:install -- --local # + project-local install, .mcp.json, opencode.json
+npm run plugin:install -- --help  # see options (--force, --repo)
 ```
 
 Once installed, ask your agent to "build me an agent that …" — it will load the
