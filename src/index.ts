@@ -109,6 +109,18 @@ export { getGlobTool, getGrepTool } from './tools/search.tools.js';
 export { getGitStatusTool, getGitDiffTool, getGitLogTool } from './tools/git.tools.js';
 export { getAskUserTool, getContextManageTool, getFinishTaskTool, getTodoWriteTool } from './tools/agent.tools.js';
 export { getInspectMcpStockTool, getRequestMcpApprovalTool, type McpStockRow } from './tools/mcp.tools.js';
+export { getListSkillsTool, getUseSkillTool } from './tools/skill.tools.js';
+
+// Skills (SKILL.md folders — Claude Code / Codex / opencode compatible)
+export {
+  SkillRegistry,
+  loadSkillsFromDir,
+  loadSkillsFromDirs,
+  defaultSkillDirs,
+  parseSkillFrontmatter,
+  slugify as slugifySkillId,
+  type Skill,
+} from './skills.js';
 
 // MCP client + manager
 export {

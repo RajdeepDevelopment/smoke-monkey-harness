@@ -55,7 +55,7 @@ const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath
 | terminal | run_command, run_test |
 | search | glob, grep |
 | git | git_status, git_diff, git_log |
-| agent | ask_user, context_manage, todo_write, finish_task |
+| agent | ask_user, context_manage, todo_write, finish_task, list_skills, use_skill |
 
 - **MCP (Model Context Protocol)** — connect stdio servers
   (`command`/`args`, e.g. `npx`). or streamable-HTTP servers (`url`, e.g.
@@ -66,6 +66,8 @@ const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath
   servers via a user approval pause (`mcp.approval_required` →
   `resolveMcpDecision`). A curated stock catalog (`flattenStock` /
   `stockToMcpConfig`) helps you provision well-known servers.
+- **Skills** (agent-side, `SKILL.md` folders — see [Skills](#skills)) —
+  `list_skills` + `use_skill` load reusable instruction bundles on demand.
 - **Sub-contexts** — load/unload domain guidance with the `context_manage`
   tool (activate / deactivate / swap / set). Register your OWN contexts with
   `options.subContexts` or `registerSubContext()`; they activate exactly like
@@ -74,6 +76,14 @@ const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath
   starts with a standing block (`renderRunOperatingRules`) covering loop
   discipline, sub-context usage, and MCP operation, so the model holds the same
   invariants the whole run.
+- **Skills** — Claude Code / Codex / AniGravity / opencode-style `SKILL.md`
+  folders, loaded **just-in-time**. The system prompt carries only a
+  one-line catalog; the model browses it with `list_skills` and pulls the
+  full instructions into the run context with `use_skill` when a task
+  matches — no context bloat from skills that don't apply. Point at any
+  folders with `skillsDir` (or `skills` objects directly); unset, it scans
+  `.opencode/skills`, `.claude/skills`, `.codex/skills` under the workspace
+  plus your home equivalents, so existing skill repos just work.
 - **Permissions** — `allow-all` / `deny-all` / `ask-default`, or a function
   `({ toolName, args, workspacePath, userId }) => 'allow' | 'deny' | 'ask'`.
   Read-only tools default to allow.
@@ -145,6 +155,46 @@ agent.on('mcp.approval_required', (e) => {
 })
 ```
 
+### Skills
+
+Reusable instruction bundles in the same `SKILL.md` folder format used by
+Claude Code, Codex, AniGravity, and opencode. The run's system prompt lists
+only id + description; the model loads the full body with `use_skill` when the
+task matches (just-in-time, no context bloat).
+
+```ts
+import { createAgent } from '@smoke-monkey/harness'
+
+const agent = createAgent({
+  provider: 'nvidia',
+  model: 'nvidia/nemotron-3-super-120b-a12b',
+  apiKey: process.env.NVIDIA_API_KEY,
+  workspacePath: process.cwd(),
+  skillsDir: ['examples/skills'],   // scans for <dir>/<skill>/SKILL.md + <dir>/<skill>.md
+  // skills: [{ id, name, description, content, path, dir }], // or explicit objects
+  autoApprove: true,
+})
+```
+
+A skill file looks like:
+
+```markdown
+---
+name: Commit Message
+description: Write conventional, concise git commit messages for the uncommitted changes.
+---
+# Conventional Commit Message
+…instructions the agent follows while the task matches…
+```
+
+Discovery defaults (when `skillsDir` is unset) to `.opencode/skills`,
+`.claude/skills`, `.codex/skills` under the workspace plus `~/.claude/skills`,
+`~/.codex/skills`, `~/.opencode/skills` — drop skill folders in any of those and
+they show up. The tools `list_skills` (browse catalog) and `use_skill` (load
+instructions) are registered automatically when at least one skill is present.
+Lower-level pieces: `loadSkillsFromDir(s)`, `defaultSkillDirs()`, and
+`SkillRegistry` (all exported from the package root).
+
 ## API shape
 
 `createAgent(options)` → `AgentHarness`
@@ -157,15 +207,17 @@ agent.on('mcp.approval_required', (e) => {
   resolve an `mcp.approval_required` pause (enabling turns the server on for this and later runs).
 - `agent.addMcpServer(config)` / `agent.removeMcpServer(id)` / `agent.listMcpServers()` —
   manage configured MCP servers at runtime.
+- `agent.skills` — the live `SkillRegistry` (`.all()`, `.get(id)`, `.count`).
 - `agent.abort()` — stop the current run.
 - `agent.on(type, cb)` / `agent.onAny(cb)` — subscribe to events.
 - `agent.events` / `agent.store` — the raw emitter and store, for advanced wiring.
 
 Lower-level pieces are exported for custom builds: `AgentLoop` + `AgentLoopDeps`,
-every tool factory (`getRunCommandTool()`, `getEditFileTool()`, `getInspectMcpStockTool()`, …),
-`McpManager` + `getHttp...` MCP clients, `LLMClient`, `ContextCompactionService`,
-`buildSystemPrompt` / `renderRunOperatingRules`, `SubContextManager` +
-`registerSubContext`, classifiers (`classifyTaskGroups`, phases), and the loop guards.
+every tool factory (`getRunCommandTool()`, `getEditFileTool()`, `getInspectMcpStockTool()`,
+`getListSkillsTool()`, `getUseSkillTool()`, …), `McpManager` + MCP clients,
+`LLMClient`, `ContextCompactionService`, `buildSystemPrompt` / `renderRunOperatingRules`,
+`SubContextManager` + `registerSubContext`, `SkillRegistry` + `loadSkillsFromDirs`,
+classifiers (`classifyTaskGroups`, phases), and the loop guards.
 
 ## Development
 
@@ -173,9 +225,10 @@ every tool factory (`getRunCommandTool()`, `getEditFileTool()`, `getInspectMcpSt
 npm install
 npm run build   # tsc ESM (dist/) + CJS (dist/cjs/)
 npm run typecheck
-npm run test:fixtures        # offline MCP client + tool-exposure checks (no LLM)
-NVIDIA_API_KEY=nvapi-... npm run example  # examples/basic-agent.ts
-NVIDIA_API_KEY=nvapi-... npm run demo     # examples/mcp-demo.ts (MCP + custom sub-contexts)
+npm run test:fixtures        # offline MCP client + skill + tool checks (no LLM)
+NVIDIA_API_KEY=nvapi-... npm run example     # examples/basic-agent.ts
+NVIDIA_API_KEY=nvapi-... npm run demo        # examples/mcp-demo.ts (MCP + custom sub-contexts)
+NVIDIA_API_KEY=nvapi-... npm run demo:skills # examples/skills-demo.ts (SKILL.md just-in-time)
 ```
 
 ## License

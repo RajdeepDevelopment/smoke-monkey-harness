@@ -34,7 +34,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "example": "tsx examples/basic-agent.ts",
     "demo": "tsx examples/mcp-demo.ts",
-    "test:fixtures": "tsx scripts/fixtures/test-manager.ts && tsx scripts/fixtures/test-integration.ts",
+    "demo:skills": "tsx examples/skills-demo.ts",
+    "test:fixtures": "tsx scripts/fixtures/test-manager.ts && tsx scripts/fixtures/test-integration.ts && tsx scripts/fixtures/test-skills.ts",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [

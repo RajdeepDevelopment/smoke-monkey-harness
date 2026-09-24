@@ -22,6 +22,12 @@ export interface ToolContext {
    * the next loop iteration re-renders the panel and feeds new guidance.
    */
   contextManager?: import('../context/sub-context.js').SubContextManager;
+  /**
+   * The run's live runtime-instruction buffer (same array fed to
+   * buildLLMMessages every turn). Tools like use_skill push guidance here so
+   * it is injected into the system prompt on the next LLM call.
+   */
+  runtimeInstructions?: string[];
 }
 
 export interface ToolContent {

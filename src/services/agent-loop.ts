@@ -850,6 +850,7 @@ export class AgentLoop {
         eventEmitter: this.deps.eventEmitter,
         remoteSsh: ctx.remoteProfileId ? { destinationId: ctx.remoteProfileId, userId: ids.userId } : undefined,
         contextManager: ctx.contextManager,
+        runtimeInstructions: ctx.runtimeInstructions,
       });
     }
 

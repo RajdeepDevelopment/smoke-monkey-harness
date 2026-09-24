@@ -1327,6 +1327,8 @@ export interface RunOperatingRulesOpts {
   mcpEnabled?: boolean;
   /** Human display name for the active provider (informational only). */
   provider?: string;
+  /** Skills available to this run (count + ids) from options.skills/skillsDir. */
+  skills?: { count: number; ids: string[] };
 }
 
 /**
@@ -1371,6 +1373,23 @@ export function renderRunOperatingRules(opts: RunOperatingRulesOpts = {}): strin
   } else {
     lines.push(
       'MCP: no MCP servers are configured for this run — operate with the built-in tools and sub-contexts only.',
+    );
+  }
+
+  const skillCount = opts.skills?.count ?? 0;
+  if (skillCount > 0) {
+    const ids = opts.skills?.ids ?? [];
+    const shown = ids.slice(0, 6).join(', ');
+    lines.push(
+      `SKILLS: ${skillCount} skill${skillCount === 1 ? ' is' : 's are'} available (${shown}${ids.length > 6 ? `, +${ids.length - 6} more` : ''}). ` +
+        'A skill is a bundle of instructions for a repeatable routine, stored as SKILL.md. ' +
+        'When a task matches a skill\'s description, load it BEFORE starting the work: ' +
+        'list_skills to browse the catalog (id + description only), then use_skill({skillId}) to pull the full ' +
+        'instructions into the run context — follow them while the task matches, and prefer them over generic defaults.',
+    );
+  } else {
+    lines.push(
+      'SKILLS: no skills are registered — operate with built-in tools, sub-contexts, and MCP only.',
     );
   }
 

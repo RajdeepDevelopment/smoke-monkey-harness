@@ -491,7 +491,7 @@ export function safeParseObject(raw: unknown): Record<string, unknown> {
 export type ToolGroupName = 'core' | 'exploration' | 'editing' | 'verification' | 'git' | 'docker';
 
 export const TOOL_GROUPS: Record<ToolGroupName, string[]> = {
-  core: ['read_file', 'list_directory', 'inspect', 'todo_write', 'ask_user', 'context_manage', 'finish_task', 'secret_manager', 'add_mcp_server', 'inspect_mcp_stock', 'request_mcp_approval'],
+  core: ['read_file', 'list_directory', 'inspect', 'todo_write', 'ask_user', 'context_manage', 'finish_task', 'secret_manager', 'add_mcp_server', 'inspect_mcp_stock', 'request_mcp_approval', 'list_skills', 'use_skill'],
   exploration: ['glob', 'grep', 'find_symbol', 'search_code', 'run_command'],
   editing: ['edit_file', 'line_edit', 'replace_lines', 'write_file', 'apply_patch', 'delete_file'],
   verification: ['run_command', 'run_test'],
@@ -514,6 +514,7 @@ export const READ_ONLY_TOOLS = new Set([
   'docker_list',
   'inspect_mcp_stock',
   'request_mcp_approval',
+  'list_skills',
 ]);
 
 /**

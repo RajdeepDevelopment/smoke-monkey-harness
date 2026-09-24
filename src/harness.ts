@@ -74,7 +74,10 @@ import { getGlobTool, getGrepTool } from './tools/search.tools.js';
 import { getGitStatusTool, getGitDiffTool, getGitLogTool } from './tools/git.tools.js';
 import { getAskUserTool, getContextManageTool, getFinishTaskTool, getTodoWriteTool } from './tools/agent.tools.js';
 import { getInspectMcpStockTool, getRequestMcpApprovalTool } from './tools/mcp.tools.js';
+import { getListSkillsTool, getUseSkillTool } from './tools/skill.tools.js';
 import { buildSystemPrompt, renderRunOperatingRules } from './lib/system-prompt.js';
+import { SkillRegistry, loadSkillsFromDirs, defaultSkillDirs } from './skills.js';
+import type { Skill } from './skills.js';
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -142,6 +145,20 @@ export interface AgentOptions {
    * matching `mcp_<id>` sub-context is active. Read-only wishes: no approvals.
    */
   mcp?: McpServerConfig[];
+  /**
+   * Register skills as `Skill` objects (use `loadSkillsFromDirs` to build them
+   * from SKILL.md files). Combined with `skillsDir`. Loaded JUST-IN-TIME via
+   * the list_skills / use_skill tools.
+   */
+  skills?: Skill[];
+  /**
+   * Directories scanned for skills (SKILL.md per folder / `.md` per file). A
+   * single path or an array of paths. When unset, the ecosystem discovery
+   * defaults are scanned: `.opencode/skills`, `.claude/skills`, `.codex/skills`
+   * under the workspace plus the home equivalents (opencode / Claude Code /
+   * Codex / AniGravity-style folders all use the same format).
+   */
+  skillsDir?: string | string[];
   /** Logger configuration. */
   logger?: LoggerOptions;
 }
@@ -234,6 +251,8 @@ export class AgentHarness {
   private keepAliveTimer: NodeJS.Timeout | null = null;
   /** Live MCP manager (undefined when no servers configured). Populated by options.mcp or addMcpServer(). */
   mcp?: McpManager;
+  /** Live skill registry (from options.skills / options.skillsDir). Populated at construction. */
+  readonly skills: SkillRegistry;
 
   constructor(options: AgentOptions) {
     if (!options.workspacePath) throw new Error('AgentHarness requires workspacePath');
@@ -253,6 +272,29 @@ export class AgentHarness {
     this.mcp = options.mcp?.length ? new McpManager(options.mcp, { logger: this.logger }) : undefined;
     if (this.mcp && this.mcp.configs.length > 0) {
       this.logger.log(`MCP configured: ${this.mcp.configs.map((c) => `${c.id}${c.enabled ? '' : ' (disabled)'}`).join(', ')}`);
+    }
+
+    // Skills: explicit objects via options.skills, plus directories via
+    // options.skillsDir. Defaults to the ecosystem discovery locations
+    // (opencode/claude/codex under the workspace + home). Never throws —
+    // unreadable dirs are skipped silently.
+    this.skills = new SkillRegistry();
+    for (const s of options.skills ?? []) {
+      const res = this.skills.add(s);
+      if (!res.ok) this.logger.warn(`skill "${s.id}" skipped: ${res.error}`);
+    }
+    const dirs =
+      options.skillsDir === undefined
+        ? defaultSkillDirs(options.workspacePath)
+        : Array.isArray(options.skillsDir)
+          ? options.skillsDir
+          : [options.skillsDir];
+    for (const s of loadSkillsFromDirs(dirs, { tolerateErrors: true, warn: (m) => this.logger.warn(m) })) {
+      const res = this.skills.add(s);
+      if (!res.ok) this.logger.warn(`skill "${s.id}" skipped: ${res.error}`);
+    }
+    if (this.skills.count > 0) {
+      this.logger.log(`Skills registered: ${this.skills.all().map((s) => s.id).join(', ')}`);
     }
 
     const getApiKey: KeyResolver =
@@ -279,6 +321,10 @@ export class AgentHarness {
     if (this.mcp) {
       toolRegistry.register(getInspectMcpStockTool(this.mcp));
       toolRegistry.register(getRequestMcpApprovalTool(this.mcp));
+    }
+    if (this.skills.count > 0) {
+      toolRegistry.register(getListSkillsTool(this.skills));
+      toolRegistry.register(getUseSkillTool(this.skills));
     }
 
     this.loopDeps = {
@@ -549,6 +595,10 @@ export class AgentHarness {
       subContextCount: this.opts.subContexts?.length ?? 0,
       mcpEnabled: !!this.mcp && this.mcp.configs.length > 0,
       provider: provider ?? this.opts.provider,
+      skills: {
+        count: this.skills.count,
+        ids: this.skills.all().map((s) => s.id),
+      },
     });
     const systemPrompt = [basePrompt, subPrompt, runRules].filter(Boolean).join('\n\n');
 
