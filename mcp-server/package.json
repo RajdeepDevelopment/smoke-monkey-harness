@@ -1,0 +1,51 @@
+{
+  "name": "smoke-monkey-harness-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Smoke Monkey Harness (stdio). Lets Claude Code, Codex, opencode, or any Model Context Protocol client build, scaffold, verify, and run looping TypeScript AI agents directly.",
+  "license": "MIT",
+  "author": {
+    "name": "Rajdeep Development",
+    "url": "https://github.com/RajdeepDevelopment"
+  },
+  "homepage": "https://github.com/RajdeepDevelopment/smoke-monkey-harness",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RajdeepDevelopment/smoke-monkey-harness.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RajdeepDevelopment/smoke-monkey-harness/issues"
+  },
+  "type": "module",
+  "bin": {
+    "smoke-monkey-harness-mcp": "bin/smoke-monkey-harness-mcp.mjs"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "smoke-monkey-harness": "^1.0.7"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "agent",
+    "ai-agent",
+    "ai",
+    "claude-code",
+    "codex",
+    "opencode",
+    "llm",
+    "tool-calling",
+    "smoke-monkey",
+    "agentic"
+  ]
+}

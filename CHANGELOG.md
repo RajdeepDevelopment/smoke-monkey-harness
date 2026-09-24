@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] — 2026-09-24
+
+Published to npm as `smoke-monkey-harness@1.0.7`.
+
+### Added
+
+- New companion package **`smoke-monkey-harness-mcp`**: a stdio MCP server you
+  can run with `npx -y smoke-monkey-harness-mcp`, exposing the harness toolset
+  (`harness_guide`, `harness_plan`, `harness_api`, `harness_scaffold`,
+  `harness_verify`, ...) to any MCP client.
+- `package.json` now exports `./plugin/mcp/server.mjs` so the MCP server is
+  reachable through the package boundary.
+- README: new "Connect this repository over MCP" section (`.mcp.json` + harness
+  `mcp:` examples).
+- Scaffold dependency bumped to `smoke-monkey-harness@^1.0.7`.
+
 ## [1.0.6] — 2026-09-24
 
 Published to npm as `smoke-monkey-harness@1.0.6`.
@@ -108,6 +124,7 @@ Initial public release.
 
 - Relicensed from **PolyForm Noncommercial 1.0.0** to **MIT**.
 
+[1.0.7]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.7
 [1.0.6]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.6
 [1.0.5]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.5
 [1.0.4]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.4

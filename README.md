@@ -278,6 +278,51 @@ const agent = createAgent({
 - Runtime server management (`addMcpServer` / `removeMcpServer` / `listMcpServers`)
 - Stock server catalog
 
+### Connect this repository over MCP (`mcp`)
+
+Smoke Monkey ships its own **stdio MCP server** that exposes the harness itself
+to any MCP client. It runs via `npx` — no install in your project needed:
+
+```json
+{
+  "mcpServers": {
+    "smoke-monkey-harness": {
+      "command": "npx",
+      "args": ["-y", "smoke-monkey-harness-mcp"]
+    }
+  }
+}
+```
+
+Point Claude Code, Codex, opencode, Cursor, or any MCP-capable editor at that
+server and the harness toolset appears directly — `harness_guide`,
+`harness_plan`, `harness_api`, `harness_scaffold`, `harness_verify`,
+`harness_examples`, `harness_status`, and the per-feature deep dives. Inside
+your own harness, register it like any other MCP server:
+
+```ts
+const agent = createAgent({
+  provider: 'nvidia',
+  model: 'nvidia/nemotron-3-super-120b-a12b',
+  apiKey: process.env.NVIDIA_API_KEY,
+  workspacePath: process.cwd(),
+  mcp: [
+    {
+      id: 'smoke-monkey',
+      name: 'smoke-monkey-harness-mcp',
+      description: 'Build agents on Smoke Monkey',
+      command: 'npx',
+      args: ['-y', 'smoke-monkey-harness-mcp'],
+      enabled: true,
+    },
+  ],
+})
+```
+
+> The `npx` command works on npm and the GitHub Package registry alike. The MCP
+> server (in `plugin/mcp/`) is dependency-free and speaks JSON-RPC 2.0 over
+> stdio, so it connects anywhere MCP stdio servers work.
+
 ---
 
 ## Skills

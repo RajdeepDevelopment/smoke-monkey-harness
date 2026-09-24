@@ -1,6 +1,6 @@
 {
   "name": "smoke-monkey-harness",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Build agentic tools, AI code editors, and agent harnesses in a few lines. Framework-agnostic TypeScript agent loop with MCP (Model Context Protocol) client, just-in-time SKILL.md skills, permissions, and LLM providers — behind the Smoke Monkey code editor.",
   "license": "MIT",
   "author": {
@@ -30,7 +30,8 @@
       "types": "./dist/harness.d.ts",
       "import": "./dist/harness.js",
       "require": "./dist/cjs/harness.js"
-    }
+    },
+    "./plugin/mcp/server.mjs": "./plugin/mcp/server.mjs"
   },
   "files": [
     "dist",
