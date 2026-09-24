@@ -32,11 +32,14 @@ jobs:
             delete p.publishConfig;
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
           "
+      # Skip if this version is already published: the release git tag v$VERSION
+      # is created by the npm publish workflow when a version ships, so a tag
+      # that already exists for the current package version means it's published.
       - name: Skip if this version is already published
         id: check
         run: |
           VERSION="$(node -p "require('./package.json').version")"
-          if npm view "@rajdeepdevelopment/smoke-monkey-harness@$VERSION" version --registry=https://npm.pkg.github.com &>/dev/null; then
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
