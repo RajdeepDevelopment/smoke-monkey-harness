@@ -47,9 +47,22 @@ no agent-specific code. The MCP server is registered via a project `.mcp.json`
 
 | tool | args | returns |
 | --- | --- | --- |
-| `harness_guide` | `topic?` | the master "build an agent" instructions |
+| `harness_guide` | `topic?` | the master "build an agent" end-to-end playbook |
+| `harness_plan` | `goal` | a concrete build plan for your product (provider/model, agentId, tools, wiring, verify, ship) |
+| `harness_api` | `area?` | authoritative API reference: options, surface, events, tools, providers, subcontexts, skills, mcp, loop, permissions |
+| `harness_guide_subcontexts` | — | deep dive: context_manage, built-in catalog, custom contexts |
+| `harness_guide_skills` | — | deep dive: SKILL.md format + just-in-time list_skills/use_skill |
+| `harness_guide_mcp` | — | deep dive: server config, activation, approvals, stock catalog |
+| `harness_guide_providers` | — | deep dive: providers, keys, models, streaming |
+| `harness_guide_tools` | — | deep dive: custom ToolDefinition, groups, annotations |
+| `harness_guide_loop` | — | deep dive: phases, guards, compaction, budgets |
+| `harness_guide_permissions` | — | deep dive: the three pauses + how to resolve them |
+| `harness_guide_storage` | — | deep dive: Storage interface, sessions, resume |
+| `harness_guide_events` | — | deep dive: event catalog + UI wiring |
+| `harness_events` | — | event catalog (wire a UI/log layer) |
 | `harness_status` | — | installed library version + server capabilities |
 | `harness_scaffold` | `targetDir`, `name?` | a complete starter project (package.json, tsconfig, src/index.ts, sample skill, README, .mcp.json) |
+| `harness_verify` | `targetDir`, `build?` | runs `npm run typecheck` (+build) and reports PASS/FAIL |
 | `harness_examples` | — | bundled example programs |
 | `harness_read_example` | `name` | one example verbatim |
 
@@ -69,8 +82,10 @@ plugin/
     SKILL.md
     references/api.md
   mcp/
-    server.mjs                   # dependency-free stdio MCP server
+    server.mjs                   # dependency-free stdio MCP server (18 tools)
     guide.md                     # master instructions (the mouth of the plugin)
+    reference.md                 # authoritative API reference (harness_api)
+    features/                    # deep per-feature guides (harness_guide_<feature>)
     templates/
       scaffold/                  # starter-project template (harness_scaffold)
       examples/                  # sample agents (harness_examples)

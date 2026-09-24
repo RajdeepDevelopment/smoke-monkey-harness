@@ -74,10 +74,29 @@ try {
   const list = await call('tools/list', {});
   const tools: Array<{ name: string }> = list.result?.tools ?? [];
   const names = tools.map((t) => t.name);
-  for (const expected of ['harness_guide', 'harness_status', 'harness_scaffold', 'harness_examples', 'harness_read_example']) {
+  for (const expected of [
+    'harness_guide',
+    'harness_status',
+    'harness_scaffold',
+    'harness_verify',
+    'harness_examples',
+    'harness_read_example',
+    'harness_plan',
+    'harness_api',
+    'harness_events',
+    'harness_guide_subcontexts',
+    'harness_guide_skills',
+    'harness_guide_mcp',
+    'harness_guide_providers',
+    'harness_guide_tools',
+    'harness_guide_loop',
+    'harness_guide_permissions',
+    'harness_guide_storage',
+    'harness_guide_events',
+  ]) {
     if (!names.includes(expected)) throw new Error(`missing tool: ${expected}`);
   }
-  console.log(`  tools/list ok — ${names.join(', ')}`);
+  console.log(`  tools/list ok — ${names.length} tools`);
 
   // harness_guide
   const guide = await call('tools/call', { name: 'harness_guide', arguments: {} });
@@ -85,11 +104,48 @@ try {
   if (!guideText.includes('createAgent') || !guideText.includes('workspacePath')) throw new Error('guide missing core content');
   console.log(`  harness_guide ok (${guideText.length} chars, mentions createAgent)`);
 
+  // harness_plan — product wizard
+  const plan = await call('tools/call', { name: 'harness_plan', arguments: { goal: 'a coding agent that fixes lint errors' } });
+  const planText = plan.result?.content?.[0]?.text ?? '';
+  if (!planText.includes('BUILD PLAN') || !planText.includes('harness_scaffold')) throw new Error('plan missing structure');
+  console.log(`  harness_plan ok (${planText.length} chars, has BUILD PLAN)`);
+
+  // harness_api — reference slicing
+  const apiProv = await call('tools/call', { name: 'harness_api', arguments: { area: 'providers' } });
+  const apiProvText = apiProv.result?.content?.[0]?.text ?? '';
+  if (!apiProvText.includes('NVIDIA_API_KEY')) throw new Error('api(providers) missing content');
+  const apiBad = await call('tools/call', { name: 'harness_api', arguments: { area: 'nope' } });
+  if (!String(apiBad.result?.content?.[0]?.text ?? '').includes('Available areas')) throw new Error('api(unknown) should list areas');
+  console.log('  harness_api ok (slice + unknown-area handling)');
+
+  // harness_guide_<feature> deep dives
+  for (const f of ['subcontexts', 'skills', 'mcp', 'providers', 'tools', 'loop', 'permissions', 'storage', 'events']) {
+    const res = await call('tools/call', { name: `harness_guide_${f}`, arguments: {} });
+    const text = res.result?.content?.[0]?.text ?? '';
+    if (res.result?.isError || text.length < 200 || !text.startsWith('# Feature guide')) {
+      throw new Error(`feature guide ${f} failed or empty`);
+    }
+  }
+  console.log('  harness_guide_<feature> ok (9 deep dives)');
+
+  // harness_events — catalog for UI wiring
+  const events = await call('tools/call', { name: 'harness_events', arguments: {} });
+  const eventsText = events.result?.content?.[0]?.text ?? '';
+  if (!eventsText.includes('text.delta') || !eventsText.includes('tool.completed')) throw new Error('events missing key entries');
+  console.log('  harness_events ok');
+
   // harness_status
   const status = await call('tools/call', { name: 'harness_status', arguments: {} });
   const statusText = status.result?.content?.[0]?.text ?? '';
   if (!statusText.includes('smoke-monkey-harness')) throw new Error('status missing name');
   console.log(`  harness_status ok (${statusText.split('\n')[0].trim()})`);
+
+  // harness_verify — error path (no package.json) is deterministic offline
+  const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'smh-verify-'));
+  const verify = await call('tools/call', { name: 'harness_verify', arguments: { targetDir: emptyDir } });
+  if (!verify.result?.isError) throw new Error('verify without package.json should error');
+  console.log('  harness_verify ok (guards missing package.json)');
+  fs.rmSync(emptyDir, { recursive: true, force: true });
 
   // harness_examples + read
   const ex = await call('tools/call', { name: 'harness_examples', arguments: {} });

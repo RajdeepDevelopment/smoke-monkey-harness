@@ -147,9 +147,15 @@ configs via `stockToMcpConfig(findStockEntry('…'))`.
 
 1. `harness_status` — confirm the plugin works.
 2. `harness_guide` — read this playbook (optionally pass `topic`).
-3. `harness_scaffold` — generate the project.
-4. `harness_examples` + `harness_read_example` — study the smallest correct programs.
-5. Install / typecheck / run a small task (Step 5) — then build the product.
+3. `harness_plan({ goal })` — get a concrete build plan for your exact product.
+4. `harness_guide_<feature>` — deep per-feature guides when you need real
+   understanding: `subcontexts`, `skills`, `mcp`, `providers`, `tools`, `loop`,
+   `permissions`, `storage`, `events`.
+5. `harness_api({ area })` — exact API shapes (options, surface, events, …).
+6. `harness_scaffold` — generate the project.
+7. `harness_examples` + `harness_read_example` — study the smallest correct programs.
+8. `harness_verify({ targetDir })` — run typecheck; then run a SMALL task
+   (Step 5) — then build the product.
 
 Called from Claude Code (`.mcp.json`), Codex (`.mcp.json`), opencode
 (`opencode.json` `mcp` block), or any MCP stdio client. The companion
