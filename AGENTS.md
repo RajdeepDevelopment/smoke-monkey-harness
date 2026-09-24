@@ -44,9 +44,13 @@ from `plugin/mcp/guide.md` + `plugin/mcp/reference.md`.
 | Claude Code | `.claude-plugin/plugin.json` | `claude plugin marketplace add <this-repo>`, then `claude plugin install smoke-monkey-harness@smoke-monkey-harness` |
 | Codex | `.codex-plugin/plugin.json` + `.agents/plugins/marketplace.json` | `codex plugin install smoke-monkey-harness@personal` (or `npm run plugin:install`) |
 | opencode | `.opencode/skills/` + MCP in `opencode.json` | `npm run plugin:install` |
-| portable | `plugin/plugin.json` (root of the `plugin/` package) | copy `plugin/` into any plugin-supporting host |
+| Antigravity | `.agents/plugins/smoke-monkey-harness/` (`plugin.json` + `mcp_config.json` + `skills/`) | open this repo (workspace plugin) or `npm run plugin:install` (global) |
+| GitHub Copilot | `.github/skills/` (project) or `~/.copilot/skills/` (personal) | open this repo or `npm run plugin:install` |
+| portable | `plugin/plugin.json` (agent-plugins.org 1.0.0 registry manifest; sibling dirs carry skills/MCP) | copy `plugin/` into any plugin-supporting host |
 
 `npm run plugin:install [-- --local]` installs the package per host for you.
+Any agent that reads `AGENTS.md` can use the same workflow directly, and any
+skill installed to `~/.agents/skills/` is picked up by Copilot / Antigravity etc.
 
 ## Conventions
 

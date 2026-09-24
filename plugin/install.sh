@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 #
-# Install the smoke-monkey-harness plugin for Claude Code / Codex / opencode.
+# Install the smoke-monkey-harness plugin for Claude Code / Codex / opencode /
+# Antigravity / GitHub Copilot (and every agent that reads ~/.agents/skills).
 #
 # The plugin is the `plugin/` package — a self-contained directory with native
-# manifests (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`), a
-# skill (`skills/smoke-monkey-harness/`), and an MCP server (`mcp/`) whose
-# `.mcp.json` references paths via ${CLAUDE_PLUGIN_ROOT}. This script places
-# that package where each tool natively discovers it:
+# manifests (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`,
+# `plugin.json`), a skill (`skills/smoke-monkey-harness/`), and an MCP server
+# (`mcp/`) whose `.mcp.json` references paths via ${CLAUDE_PLUGIN_ROOT}. This
+# script places that package where each tool natively discovers it:
 #
 #   Claude Code : ~/.claude/skills/<name>/            as a skills-dir plugin
 #                   (`smoke-monkey-harness@skills-dir`); opencode also
@@ -15,10 +16,16 @@
 #                   personal marketplace entry at ~/.agents/plugins/ so
 #                   `codex plugin install` finds it
 #   opencode    : ~/.config/opencode/skills/<name>/   global skills path
+#   Antigravity : ~/.gemini/config/skills/<name>/     global skill, plus a
+#                   real plugin at ~/.gemini/config/plugins/<name>/ with an
+#                   absolute-path mcp_config.json
+#   Copilot     : ~/.copilot/skills/<name>/           project/personal skill
+#   any agent   : ~/.agents/skills/<name>/            universal skills dir
 #
 #   --local     additionally installs into the current project and writes the
-#               MCP wiring: project .mcp.json (Claude Code / Codex) and the
-#               opencode "mcp" block in project opencode.json.
+#               MCP wiring: project .mcp.json (Claude Code / Codex),
+#               .agents/mcp_config.json (Antigravity), and the opencode "mcp"
+#               block in project opencode.json.
 #
 # Usage:
 #   plugin/install.sh                 # home install
@@ -29,10 +36,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UP="$(cd "$ROOT/.." && pwd)"
 NAME="smoke-monkey-harness"
 PKG="$ROOT"
 SKILL_SRC="$ROOT/skills/$NAME"
 SERVER_SRC="$ROOT/mcp/server.mjs"
+ANTIGRAVITY_SRC="$UP/.agents/plugins/$NAME"
 FORCE=0
 LOCAL=0
 REPO=0
@@ -43,10 +52,10 @@ for arg in "$@"; do
     --local) LOCAL=1 ;;
     --repo) REPO=1 ;;
     --help|-h)
-      echo "Install the smoke-monkey-harness plugin (skill + MCP server) for Claude Code / Codex / opencode."
+      echo "Install the smoke-monkey-harness plugin (skill + MCP server) for Claude Code / Codex / opencode / Antigravity / Copilot."
       echo ""
       echo "  install.sh            install the plugin package into your home skills dirs"
-      echo "  install.sh --local    also install into the current project and write .mcp.json + opencode.json"
+      echo "  install.sh --local    also install into the current project and write .mcp.json + .agents/mcp_config.json + opencode.json"
       echo "  install.sh --force    overwrite any existing install at the same paths"
       echo "  install.sh --repo     print the Claude marketplace / Codex install commands for this repo"
       exit 0
@@ -64,11 +73,23 @@ install_pkg () {  # copy the whole plugin package (manifests + skill + mcp)
   mkdir -p "$(dirname "$dst")"
   if [ -e "$dst" ] && [ "$FORCE" -eq 0 ]; then
     echo "  skip (exists — rerun with --force) : $dst"
-    return 1
+    return 0
   fi
   rm -rf "$dst"
   cp -R "$PKG" "$dst"
   echo "  installed plugin → $dst"
+}
+
+install_dir () {  # copy an arbitrary directory as-is
+  local src="$1" dst="$2"
+  mkdir -p "$(dirname "$dst")"
+  if [ -e "$dst" ] && [ "$FORCE" -eq 0 ]; then
+    echo "  skip (exists — rerun with --force) : $dst"
+    return 0
+  fi
+  rm -rf "$dst"
+  cp -R "$src" "$dst"
+  echo "  installed dir → $dst"
 }
 
 install_skill () {  # copy just the skill folder (SKILL.md at target root)
@@ -76,7 +97,7 @@ install_skill () {  # copy just the skill folder (SKILL.md at target root)
   mkdir -p "$(dirname "$dst")"
   if [ -e "$dst" ] && [ "$FORCE" -eq 0 ]; then
     echo "  skip (exists — rerun with --force) : $dst"
-    return 1
+    return 0
   fi
   rm -rf "$dst"
   cp -R "$SKILL_SRC" "$dst"
@@ -152,10 +173,15 @@ if [ "$REPO" -eq 1 ]; then
   exit 0
 fi
 
-echo "Installing for Claude Code / Codex / opencode (home):"
+echo "Installing for Claude Code / Codex / opencode / Antigravity / Copilot (home):"
 install_pkg "$HOME/.claude/skills/$NAME"
 install_skill "$HOME/.codex/skills/$NAME"
 install_skill "$HOME/.config/opencode/skills/$NAME"
+install_skill "$HOME/.agents/skills/$NAME"
+install_skill "$HOME/.copilot/skills/$NAME"
+install_skill "$HOME/.gemini/config/skills/$NAME"
+install_dir "$ANTIGRAVITY_SRC" "$HOME/.gemini/config/plugins/$NAME"
+write_mcp_json "$HOME/.gemini/config/plugins/$NAME/mcp_config.json" "$SERVER_SRC"
 write_codex_marketplace "$HOME/.agents/plugins/marketplace.json" "$PKG"
 
 if [ "$LOCAL" -eq 1 ]; then
@@ -165,7 +191,9 @@ if [ "$LOCAL" -eq 1 ]; then
   install_pkg "$CWD/.claude/skills/$NAME"
   install_skill "$CWD/.codex/skills/$NAME"
   install_skill "$CWD/.opencode/skills/$NAME"
+  install_dir "$ANTIGRAVITY_SRC" "$CWD/.agents/plugins/$NAME"
   write_mcp_json "$CWD/.mcp.json" "$SERVER_SRC"
+  write_mcp_json "$CWD/.agents/mcp_config.json" "$SERVER_SRC"
   write_opencode_json "$CWD/opencode.json" "$SERVER_SRC"
 fi
 
@@ -178,5 +206,8 @@ echo "                  (registered at ~/.agents/plugins/marketplace.json) for t
 echo "  - opencode    : skill installed to ~/.config/opencode/skills — restart opencode."
 echo "                  Add to opencode.json (or run --local in this project):"
 echo "                  \"mcp\": { \"smoke-monkey-harness\": { \"type\": \"local\", \"command\": [\"$(command -v node)\", \"$SERVER_SRC\"], \"enabled\": true } }"
+echo "  - Antigravity : skill → ~/.gemini/config/skills; full plugin → ~/.gemini/config/plugins"
+echo "                  (mcp_config.json written with an absolute server path)."
+echo "  - Copilot     : skill → ~/.copilot/skills (project skill lives in .github/skills when open in this repo)."
 echo ""
-echo "Done. In any of the three agents, ask to build a new looping AI agent and the skill + MCP server will drive the scaffold."
+echo "Done. In any agent, ask to build a new looping AI agent and the skill + MCP server will drive the scaffold."

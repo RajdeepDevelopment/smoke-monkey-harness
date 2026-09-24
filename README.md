@@ -219,14 +219,17 @@ every tool factory (`getRunCommandTool()`, `getEditFileTool()`, `getInspectMcpSt
 `SubContextManager` + `registerSubContext`, `SkillRegistry` + `loadSkillsFromDirs`,
 classifiers (`classifyTaskGroups`, phases), and the loop guards.
 
-## Use it from Claude Code, Codex, opencode (or any agent)
+## Use it from Claude Code, Codex, opencode, Antigravity, Copilot (or any agent)
 
 This repo ships as a **plugin** (at `plugin/`): a `SKILL.md` (the universal
-skill format Claude Code, Codex, and opencode all read) plus a dependency-free
+skill format every tool above reads) plus a dependency-free
 **MCP server** that guides any agent to *build a new looping agent* on this
-library. The plugin dir carries native manifests: a portable `plugin.json`
-(any portable-agent host), `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`,
-and the repo root carries the distribution files plus an `AGENTS.md` all agents read.
+library. The plugin dir carries native manifests
+(`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and a strict
+agent-plugins.org `plugin.json`), and the repo root carries the distribution
+files — a Claude marketplace, a Codex marketplace, an **Antigravity workspace
+plugin** (`.agents/plugins/`), a **Copilot project skill** (`.github/skills/`),
+opencode's `.opencode/skills/`, and an `AGENTS.md` all agents read.
 
 **Claude Code:**
 

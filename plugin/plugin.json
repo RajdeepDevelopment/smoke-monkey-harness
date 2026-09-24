@@ -1,27 +1,13 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "smoke-monkey-harness",
   "version": "0.1.0",
-  "description": "Build a new looping AI agent on @smoke-monkey/harness (skill + MCP guide server).",
+  "description": "Build a new looping AI agent on @smoke-monkey/harness",
   "author": {
     "name": "Rajdeep Development",
     "url": "https://github.com/RajdeepDevelopment"
   },
   "repository": "https://github.com/RajdeepDevelopment/smoke-monkey-harness",
   "license": "SEE LICENSE IN LICENSE",
-  "keywords": ["agent", "harness", "loop", "mcp", "ai"],
-  "skills": "./skills",
-  "mcpServers": "./.mcp.json",
-  "interface": {
-    "displayName": "Smoke Monkey Harness",
-    "shortDescription": "Build looping AI agents on the harness library",
-    "longDescription": "Guides agents to scaffold, wire, verify and ship a new looping AI agent using @smoke-monkey/harness and its MCP server.",
-    "developerName": "Rajdeep Development",
-    "category": "Developer Tools",
-    "capabilities": ["Interactive", "Write"],
-    "defaultPrompt": [
-      "Build me a new looping AI agent scaffold.",
-      "Show me how to wire events UI to the harness.",
-      "Explain how skills and MCP work in the harness."
-    ]
-  }
+  "keywords": ["agent", "harness", "loop", "mcp", "ai"]
 }

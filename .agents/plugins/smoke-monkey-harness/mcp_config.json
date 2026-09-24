@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "smoke-monkey-harness": {
+      "command": "node",
+      "args": ["../../../plugin/mcp/server.mjs"]
+    }
+  }
+}

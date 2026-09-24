@@ -1,4 +1,4 @@
-# smoke-monkey-harness plugin — for Claude Code, Codex, opencode
+# smoke-monkey-harness plugin — for Claude Code, Codex, opencode, Antigravity, Copilot
 
 Turn **any** agent into a "build a looping agent" machine. This repo ships a
 plugin at `plugin/` that bundles:
@@ -15,7 +15,7 @@ the way it consumes any plugin:
 
 ```
 plugin/                       # the plugin package (plugin root)
-  plugin.json                 # portable manifest (Codex / any portable-agent host)
+  plugin.json                 # agent-plugins.org 1.0.0 registry manifest
   .claude-plugin/plugin.json  # Claude Code manifest
   .codex-plugin/plugin.json   # Codex manifest
   .mcp.json                   # MCP wiring (uses ${CLAUDE_PLUGIN_ROOT})
@@ -26,18 +26,23 @@ plugin/                       # the plugin package (plugin root)
 Repo root adds the distribution files:
 
 ```
-AGENTS.md                             # onboarding for ANY agent that reads AGENTS.md
-.claude-plugin/marketplace.json       # Claude marketplace → installs ./plugin
-.agents/plugins/marketplace.json      # Codex marketplace entry
-.opencode/skills/smoke-monkey-harness/  # opencode auto-load when this repo is the workspace
+AGENTS.md                                  # onboarding for ANY agent that reads AGENTS.md
+.claude-plugin/marketplace.json            # Claude marketplace → installs ./plugin
+.agents/plugins/marketplace.json           # Codex marketplace entry
+.agents/plugins/smoke-monkey-harness/      # Antigravity workspace plugin
+.agents/skills/                            # (name kept for any-host universal skills)
+.github/skills/smoke-monkey-harness/       # GitHub Copilot project skill
+.opencode/skills/smoke-monkey-harness/     # opencode auto-load when this repo is the workspace
 ```
 
 | host | manifest used | install |
 | --- | --- | --- |
 | Claude Code | `.claude-plugin/plugin.json` | `claude plugin marketplace add <repo>` → `claude plugin install smoke-monkey-harness@smoke-monkey-harness`, or `plugin/install.sh` (skills-dir plugin) |
-| Codex | `plugin.json` + `.codex-plugin/plugin.json` | `codex plugin install smoke-monkey-harness@personal`, or `plugin/install.sh` |
+| Codex | `.codex-plugin/plugin.json` | `codex plugin install smoke-monkey-harness@personal`, or `plugin/install.sh` |
 | opencode | `.opencode/skills/` + `opencode.json` mcp | `plugin/install.sh [--local]` |
-| any portable host | `plugin.json` | copy the `plugin/` package into the host's plugin location |
+| Antigravity | `.agents/plugins/smoke-monkey-harness/` (`plugin.json`, `mcp_config.json`, `skills/`) | open this repo, or `plugin/install.sh` (global: `~/.gemini/config/plugins/` + `~/.gemini/config/skills/`) |
+| GitHub Copilot | `.github/skills/` (project) / `~/.copilot/skills/` (personal) | open this repo, or `plugin/install.sh` |
+| portable registry | `plugin.json` | agent-plugins.org 1.0.0 metadata; functional config lives in the sibling per-host manifests |
 | any agent at all | `SKILL.md` + `AGENTS.md` | point the agent at this repo |
 
 ## Install

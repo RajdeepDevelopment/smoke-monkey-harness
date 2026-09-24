@@ -189,12 +189,50 @@ try {
   const codex = JSON.parse(fs.readFileSync(path.join(pluginPkg, '.codex-plugin', 'plugin.json'), 'utf8'));
   if (codex.name !== 'smoke-monkey-harness' || !codex.interface?.defaultPrompt?.length) throw new Error('codex manifest invalid');
   const portable = JSON.parse(fs.readFileSync(path.join(pluginPkg, 'plugin.json'), 'utf8'));
-  if (portable.name !== 'smoke-monkey-harness' || portable.skills !== './skills') throw new Error('portable manifest invalid');
+  if (portable.$schema !== 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json') throw new Error('portable manifest must declare the agent-plugins $schema');
+  if (portable.name !== 'smoke-monkey-harness' || 'skills' in portable || 'mcpServers' in portable || 'interface' in portable) {
+    throw new Error('portable manifest must be strict agent-plugins (skills/mcpServers/interface live in sibling per-host manifests)');
+  }
   const mcp = JSON.parse(fs.readFileSync(path.join(pluginPkg, '.mcp.json'), 'utf8'));
   if (!mcp.mcpServers?.['smoke-monkey-harness']?.args?.[0]?.includes('CLAUDE_PLUGIN_ROOT')) throw new Error('.mcp.json should use ${CLAUDE_PLUGIN_ROOT}');
   const marketplace = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin', 'marketplace.json'), 'utf8'));
   if (marketplace.plugins?.[0]?.source !== './plugin') throw new Error('repo marketplace should point at ./plugin');
-  console.log('  plugin package ok (claude/codex manifests + ${CLAUDE_PLUGIN_ROOT} .mcp.json + repo marketplace)');
+
+  // universal skill copies must be byte-identical to the package source
+  const collect = (dir: string): Record<string, string> => {
+    const out: Record<string, string> = {};
+    const walk = (d: string, rel = ''): void => {
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const relp = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) walk(path.join(d, e.name), relp);
+        else out[relp] = fs.readFileSync(path.join(d, e.name), 'utf8');
+      }
+    };
+    walk(dir);
+    return out;
+  };
+  const srcFiles = collect(path.join(pluginPkg, 'skills', 'smoke-monkey-harness'));
+  for (const dst of [
+    path.join(root, '.agents', 'skills', 'smoke-monkey-harness'),
+    path.join(root, '.opencode', 'skills', 'smoke-monkey-harness'),
+    path.join(root, '.github', 'skills', 'smoke-monkey-harness'),
+    path.join(root, '.agents', 'plugins', 'smoke-monkey-harness', 'skills', 'smoke-monkey-harness'),
+  ]) {
+    if (JSON.stringify(collect(dst)) !== JSON.stringify(srcFiles)) throw new Error(`skill copy differs: ${dst}`);
+  }
+
+  // Antigravity workspace plugin (plugin.json + mcp_config.json + skills)
+  const ag = path.join(root, '.agents', 'plugins', 'smoke-monkey-harness');
+  for (const rel of ['plugin.json', 'mcp_config.json', 'skills/smoke-monkey-harness/SKILL.md', 'skills/smoke-monkey-harness/references/api.md']) {
+    if (!fs.existsSync(path.join(ag, rel))) throw new Error(`antigravity plugin missing ${rel}`);
+  }
+  const agManifest = JSON.parse(fs.readFileSync(path.join(ag, 'plugin.json'), 'utf8'));
+  if (agManifest.$schema !== 'https://antigravity.google/schemas/v1/plugin.json' || agManifest.name !== 'smoke-monkey-harness') throw new Error('antigravity plugin.json invalid');
+  const agMcp = JSON.parse(fs.readFileSync(path.join(ag, 'mcp_config.json'), 'utf8'));
+  if (!agMcp.mcpServers?.['smoke-monkey-harness']?.args?.[0]?.includes('plugin/mcp/server.mjs')) throw new Error('antigravity mcp_config.json must reference the server');
+  if (!fs.existsSync(path.join(root, '.github', 'skills', 'smoke-monkey-harness', 'SKILL.md'))) throw new Error('copilot project skill missing');
+  console.log('  plugin package ok (strict portable manifest + ${CLAUDE_PLUGIN_ROOT} .mcp.json + repo marketplace)');
+  console.log('  per-host distribution ok (antigravity plugin + copilot .github/skills + identical skill copies)');
 
   console.log('\nPLUGIN MCP OK');
   process.exit(0);
