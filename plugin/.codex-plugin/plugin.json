@@ -1,6 +1,6 @@
 {
   "name": "smoke-monkey-harness",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "description": "Build a new looping AI agent on smoke-monkey-harness (skill + MCP guide server).",
   "author": {
     "name": "Rajdeep Development",

@@ -12,10 +12,8 @@ export NVIDIA_API_KEY=nvapi-...          # or OPENAI_API_KEY / OPENROUTER_API_KE
 npm run dev -- "write a README for this repo"
 ```
 
-> The dependency currently points at the git repo
-> (`github:RajdeepDevelopment/smoke-monkey-harness#main`) because the library is
-> not yet published to npm. When it is, switch it to `^0.1.0`. Meanwhile, if you
-> are inside a checkout of the library, `file:../../..` works too.
+> The dependency is `smoke-monkey-harness@^1.0.1` from npm. If you are working
+> inside a checkout of the library itself, `file:../../..` works too.
 
 Set `PROVIDER` / `MODEL` to swap LLM backends (e.g. `openrouter` +
 `anthropic/claude-sonnet-4`).

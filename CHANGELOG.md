@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-09-24
+
+Stable release — published to npm as `smoke-monkey-harness@1.0.1`.
+
+### Changed
+
+- Published on the npm registry under the unscoped name `smoke-monkey-harness`
+  (`@smoke-monkey/harness` scope was unavailable).
+- SEO tuning: install section + badges in README, expanded description and
+  keywords (`mcp`, `model-context-protocol`, `ai-agents`, `agent-framework`, …),
+  GitHub topics.
+- Build-an-agent scaffold now depends on the published package
+  (`smoke-monkey-harness@^1.0.1`).
+
 ## [0.1.0] — 2026-09-24
 
 Initial public release.
@@ -35,4 +49,5 @@ Initial public release.
 
 - Relicensed from **PolyForm Noncommercial 1.0.0** to **MIT**.
 
+[1.0.1]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.1
 [0.1.0]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v0.1.0
