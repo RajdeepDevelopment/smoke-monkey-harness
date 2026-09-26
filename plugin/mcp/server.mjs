@@ -423,7 +423,7 @@ function mcpSnippet() {
 const FEATURE_TOOL_DEFS = Object.entries(FEATURES).map(([key, file]) => ({
   name: `harness_guide_${key}`,
   description:
-    `Deep feature guide — ${key}: ` +
+    `PURPOSE: deep-dive reference on one smoke-monkey-harness feature — ${key} — while you build an agent on this library. ` +
     {
       subcontexts: 'on-demand guidance blocks, context_manage actions, built-in catalog, custom contexts, defaultSubContexts.',
       skills: 'SKILL.md format, discovery (skills/skillsDir/default dirs), list_skills/use_skill just-in-time loading.',
@@ -434,7 +434,9 @@ const FEATURE_TOOL_DEFS = Object.entries(FEATURES).map(([key, file]) => ({
       permissions: 'the three pauses (permission/ask_user/mcp approval) and how to resolve each, autoApprove.',
       storage: 'Storage interface, MemoryStore, sessions/runs/messages, resume with sessionId + store.',
       events: 'event catalog with payloads and reference UI wiring (streaming chat, tool cards, pause dialogs).',
-    }[key],
+    }[key] +
+    ' WHEN TO CALL: when your current task touches this feature and you need the exact API details. ' +
+    'Start with harness_guide, then drill into the feature you are implementing.',
   inputSchema: { type: 'object', properties: {} },
 }));
 
@@ -443,9 +445,11 @@ const toolDefs = [
   {
     name: 'harness_guide',
     description:
-      'Return the master instructions for building a looping AI agent on smoke-monkey-harness: ' +
-      'the mental model, quickstart code, options, tools, sub-contexts, skills, MCP, and events. ' +
-      'READ THIS FIRST. topic is optional free-text to ask a specific question about the library.',
+      'PURPOSE: master instructions for building a looping AI agent on smoke-monkey-harness — the mental model, ' +
+      'quickstart code, options, tools, sub-contexts, skills, MCP, and events. ' +
+      'WHEN TO CALL: READ THIS FIRST whenever the task is to build a new agent with this library, or to answer a question about it. ' +
+      'Pass topic to ask a targeted question and get the relevant section. ' +
+      'RELATED: harness_plan (turn a goal into steps), harness_api (exact reference), harness_scaffold (generate the project).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -456,9 +460,10 @@ const toolDefs = [
   {
     name: 'harness_plan',
     description:
-      'Turn a PRODUCT GOAL into a concrete build plan: scaffold step, provider/model defaults, agentId, tools, ' +
-      'domain MCP/search sub-context recommendations, per-pause wiring, verification gate, and ship steps. ' +
-      'Call after harness_guide and before harness_scaffold.',
+      'PURPOSE: turn a PRODUCT GOAL into a concrete step-by-step build plan for an agent on this library ' +
+      '(scaffold, provider/model defaults, agentId, tools, domain sub-context recommendations, pause wiring, verification gate, ship steps). ' +
+      'WHEN TO CALL: at the very start of a "build me an agent/library app" task, before writing any code. ' +
+      'RELATED: harness_guide (read first), harness_scaffold (execute the plan → generates the project), harness_verify (close the loop).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -470,10 +475,12 @@ const toolDefs = [
   {
     name: 'harness_api',
     description:
-      'Return the authoritative API reference for writing agents on the library: createAgent options, the agent ' +
-      'surface (run/respond/resolvePermission/resolveMcpDecision), event catalog, tool factories + groups, ' +
-      'providers, sub-contexts, skills, MCP config, loop/guards, permissions. Slice with area=' +
-      '(options|surface|events|tools|providers|subcontexts|skills|mcp|loop|permissions|all). Default: full reference.',
+      'PURPOSE: authoritative API reference for the library — createAgent options, agent surface ' +
+      '(run/respond/resolvePermission/resolveMcpDecision), event catalog, tool factories + groups, providers, sub-contexts, skills, ' +
+      'MCP config, loop/guards, permissions. Slice with area=' +
+      '(options|surface|events|tools|providers|subcontexts|skills|mcp|loop|permissions|all). Default: full reference. ' +
+      'WHEN TO CALL: you are writing library code (createAgent, agent.*, tool factories) and need the exact signatures. ' +
+      'RELATED: harness_guide_<feature> for a focused deep dive.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -484,20 +491,24 @@ const toolDefs = [
   {
     name: 'harness_events',
     description:
-      'Return the complete agent event catalog with payload notes (run lifecycle, steps, phases, text/tools, ' +
-      'the three pauses, context, compaction). Use this to wire a real UI/logging layer to the agent.',
+      'PURPOSE: complete agent event catalog with payload notes (run lifecycle, steps, phases, text/tools, the three pauses, ' +
+      'context, compaction). WHEN TO CALL: wiring a real UI/logging layer to an agent — subscribe with agent.on(type, fn) or agent.onAny(fn).',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'harness_status',
     description:
-      'Report the installed library version and the server capabilities (no args). Use to confirm the plugin works.',
+      'PURPOSE: report the installed library version and server capabilities. WHEN TO CALL: first, to confirm the plugin is installed and which version of the library you are working against.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'harness_scaffold',
     description:
-      'Generate a complete starter project for a new looping AI agent (package.json, tsconfig, src/index.ts entry point, sample skill, README, .mcp.json) into targetDir. Call this when the task is to BUILD a new agent.',
+      'PURPOSE: generate a complete starter project for a new looping AI agent on this library ' +
+      '(package.json, tsconfig, src/index.ts entry point, sample skill, README, .mcp.json) into targetDir. ' +
+      'WHEN TO CALL: the task is to BUILD a new agent — call after harness_plan so the project is created from the plan; ' +
+      'then cd into it, npm install, set your provider key, and run. ' +
+      'RELATED: harness_verify (typecheck/build the generated project to confirm it works).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -510,8 +521,9 @@ const toolDefs = [
   {
     name: 'harness_verify',
     description:
-      'Verify an existing agent project: runs `npm run typecheck` in targetDir (pass build:true to also run ' +
-      '`npm run build`). Returns PASS/FAIL with the tail of the output. Call after editing/scaffolding to close the loop.',
+      'PURPOSE: verify an existing agent project compiles — runs `npm run typecheck` in targetDir (pass build:true to also run ' +
+      '`npm run build`); returns PASS/FAIL with the tail of the output. ' +
+      'WHEN TO CALL: after scaffolding or editing a project to close the build/typecheck loop before you finish.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -523,12 +535,18 @@ const toolDefs = [
   },
   {
     name: 'harness_examples',
-    description: 'List the bundled example agent programs (basic-agent, skills-agent, mcp-agent).',
+    description:
+      'PURPOSE: list the bundled example agent programs (basic-agent, skills-agent, mcp-agent) shipped with this library. ' +
+      'WHEN TO CALL: you want to study the smallest correct program matching your product before writing your own. ' +
+      'RELATED: harness_read_example to fetch one verbatim.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'harness_read_example',
-    description: 'Return one bundled example verbatim so it can be studied or adapted.',
+    description:
+      'PURPOSE: return one bundled example program verbatim so you can study or adapt it. ' +
+      'WHEN TO CALL: after harness_examples, when you need the full source of a reference agent. ' +
+      'RELATED: harness_scaffold to generate a fresh project instead.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -540,14 +558,14 @@ const toolDefs = [
   {
     name: 'harness_skills_by_category',
     description:
-      'Browse the bundled agent-skills catalog (the 25 SKILL.md engineering skills shipped in ' +
-      'plugin/agent-skills/skills) filtered by the stock category you are working on. ' +
-      'Pass category = agent-skills-backend | agent-skills-frontend | agent-skills-devops | agent-skills-qa ' +
-      '(or a raw domain: backend|frontend|devops|qa|data) to get the skill ids relevant to that work; ' +
-      'omit category to list all 25 with their lifecycle phase and domains. ' +
-      'Then load any listed skill with harness_skill_content({ skill: "<id>" }) and configure the app with ' +
-      'loadAgentSkills({ category }) / buildAgentSkillRegistry({ category }) ' +
-      '(see plugin/agent-skills/skills/<id>/SKILL.md for the folder layout).',
+      'PURPOSE: browse the 25 generic production-engineering skills bundled at plugin/agent-skills/skills, filtered by the ' +
+      'stock category you are working on (agent-skills-backend | agent-skills-frontend | agent-skills-devops | agent-skills-qa, ' +
+      'or a raw domain: backend|frontend|devops|qa|data). Returns the skill ids relevant to that work, each with its lifecycle ' +
+      'phase and domains. Omit category to list all 25. ' +
+      'WHEN TO CALL: whenever your task is real software engineering work (writing/debugging/reviewing/shipping code) and you want ' +
+      'the right methodology — pick a skill, then apply it. ' +
+      'RELATED: harness_skill_content (load the full workflow), loadAgentSkills/buildAgentSkillRegistry in code to wire the skill set ' +
+      'into an agent.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -558,13 +576,12 @@ const toolDefs = [
   {
     name: 'harness_skill_content',
     description:
-      'Load the full SKILL.md of one bundled agent skill from plugin/agent-skills/skills/<skill>/SKILL.md — ' +
-      'the complete workflow the skill prescribes (do/don\u2019t rules, steps, examples). ' +
-      'First call harness_skills_by_category to pick a skill id relevant to the current task, ' +
-      'then load it here so the app follows the skill. The same set is available in code via ' +
-      'loadAgentSkills({ category }) / buildAgentSkillRegistry({ category }) and over MCP via the stock ' +
-      'agent-skills-backend/frontend/devops/qa servers; this tool lets you inspect any of the bundled skills ' +
-      'without running an MCP subprocess.',
+      'PURPOSE: load the full workflow of one generic development skill — the complete SKILL.md from ' +
+      'plugin/agent-skills/skills/<skill>/SKILL.md (do/don\u2019t rules, steps, examples) so you follow the methodology exactly. ' +
+      'WHEN TO CALL: after harness_skills_by_category picked a relevant skill, or when you already know the skill id ' +
+      '(e.g. test-driven-development) and need its detailed procedure to execute it. ' +
+      'RELATED: harness_skills_by_category to discover the ids; in code the same skills load via loadAgentSkills({ category }) / ' +
+      'buildAgentSkillRegistry({ category }) or the stock agent-skills-* MCP servers.',
     inputSchema: {
       type: 'object',
       properties: {
