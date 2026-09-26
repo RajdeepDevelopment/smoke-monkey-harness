@@ -13,6 +13,8 @@
  *     - harness_scaffold({ targetDir, name? }) → generate a starter agent project
  *     - harness_examples()                 → list bundled example programs
  *     - harness_read_example({ name })     → read one example verbatim
+ *     - harness_skills_by_category({ category? }) → bundled agent-skills catalog in plugin/agent-skills/skills, filtered by category
+ *     - harness_skill_content({ skill, category? }) → load one bundled skill's SKILL.md workflow
  *     - harness_verify({ targetDir, build? }) → typecheck/build an existing project
  *
  * Dependency-free: the harness itself is optional (the guide + scaffold come
@@ -239,6 +241,121 @@ function readExample(name) {
   }
 }
 
+// ── Bundled agent-skills, category-wise ─────────────────────────────────────
+// Served directly from the same plugin/agent-skills tree the library's
+// src/agent-skills.ts exposes (catalog.json is the shared source of truth).
+
+const AGENT_SKILL_CATEGORIES = [
+  { id: 'agent-skills-backend', domain: 'backend', label: 'Agent Skills · Backend' },
+  { id: 'agent-skills-frontend', domain: 'frontend', label: 'Agent Skills · Frontend' },
+  { id: 'agent-skills-devops', domain: 'devops', label: 'Agent Skills · DevOps' },
+  { id: 'agent-skills-qa', domain: 'qa', label: 'Agent Skills · QA' },
+];
+
+let cachedCatalog = null;
+function agentSkillCatalog() {
+  if (cachedCatalog) return cachedCatalog;
+  try {
+    cachedCatalog = JSON.parse(fs.readFileSync(bundledPath('..', 'agent-skills', 'catalog.json'), 'utf8'));
+  } catch {
+    cachedCatalog = { phases: {}, domains: {}, aliases: {} };
+  }
+  return cachedCatalog;
+}
+
+function agentSkillsIndex() {
+  const dir = bundledPath('..', 'agent-skills', 'skills');
+  const catalog = agentSkillCatalog();
+  try {
+    return fs
+      .readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && fs.existsSync(path.join(dir, e.name, 'SKILL.md')))
+      .map((e) => ({
+        id: e.name,
+        phase: catalog.phases?.[e.name] ?? '',
+        domains: catalog.domains?.[e.name] ?? [],
+      }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+  } catch {
+    return [];
+  }
+}
+
+const PHASE_LABEL = {
+  define: 'Define', plan: 'Plan', build: 'Build',
+  verify: 'Verify', review: 'Review', ship: 'Ship', meta: 'Meta',
+};
+
+function agentSkillsList(category) {
+  const raw = (category ? String(category).trim() : '').toLowerCase();
+  const knownDomains = new Set(
+    agentSkillsIndex().flatMap((s) => s.domains),
+  );
+  const cat =
+    AGENT_SKILL_CATEGORIES.find((c) => c.id === raw) ??
+    (raw && knownDomains.has(raw) ? { domain: raw } : null);
+  let list = agentSkillsIndex();
+  const total = list.length;
+  if (cat?.domain) list = list.filter((s) => s.domains.includes(cat.domain));
+  if (raw && !cat) {
+    return {
+      content: [{
+        type: 'text',
+        text:
+          `Unknown category "${category}". Valid: ${AGENT_SKILL_CATEGORIES.map((c) => c.id).join(', ')} ` +
+          `or a raw domain: ${Array.from(knownDomains).sort().join('|')}.`,
+      }],
+      isError: true,
+    };
+  }
+  const header =
+    cat && cat.label
+      ? `${cat.label} (${list.length} of ${total} bundled agent skills)`
+      : `Bundled agent skills (${list.length} of ${total})`;
+  const rows = list.map((s) => {
+    const phase = PHASE_LABEL[s.phase] ?? s.phase ?? '';
+    return `- ${s.id}  [${phase} · ${s.domains.join(',')}]`;
+  });
+  return {
+    content: [{
+      type: 'text',
+      text:
+        `${header}\n${rows.join('\n') || '(none)'}\n\n` +
+        `Categories: ${AGENT_SKILL_CATEGORIES.map((c) => `${c.id} (${c.domain})`).join(', ')}\n` +
+        'Load any skill with harness_skill_content({ skill: "<id>" }).',
+    }],
+    isError: false,
+  };
+}
+
+function agentSkill(name, workingDomains) {
+  const id = String(name ?? '').trim();
+  const index = agentSkillsIndex();
+  const found = index.find((s) => s.id === id);
+  if (!found) {
+    const available = workingDomains && workingDomains.length
+      ? index.filter((s) => s.domains.some((d) => workingDomains.includes(d))).map((s) => s.id)
+      : index.map((s) => s.id);
+    return {
+      content: [{ type: 'text', text: `Unknown skill "${id}". Available: ${available.join(', ') || '(none)'}` }],
+      isError: true,
+    };
+  }
+  const file = bundledPath('..', 'agent-skills', 'skills', found.id, 'SKILL.md');
+  try {
+    const body = fs.readFileSync(file, 'utf8');
+    return {
+      content: [{
+        type: 'text',
+        text: `--- ${found.id} [${found.domains.join(',')}] ---\n${body}`,
+      }],
+      isError: false,
+    };
+  } catch {
+    return { content: [{ type: 'text', text: `error reading skill ${found.id}: ${file}` }], isError: true };
+  }
+}
+
 function scaffold(targetDir, name) {
   const tpl = bundledPath('templates', 'scaffold');
   const raw = String(targetDir ?? '').trim();
@@ -420,6 +537,42 @@ const toolDefs = [
       required: ['name'],
     },
   },
+  {
+    name: 'harness_skills_by_category',
+    description:
+      'Browse the bundled agent-skills catalog (the 25 SKILL.md engineering skills shipped in ' +
+      'plugin/agent-skills/skills) filtered by the stock category you are working on. ' +
+      'Pass category = agent-skills-backend | agent-skills-frontend | agent-skills-devops | agent-skills-qa ' +
+      '(or a raw domain: backend|frontend|devops|qa|data) to get the skill ids relevant to that work; ' +
+      'omit category to list all 25 with their lifecycle phase and domains. ' +
+      'Then load any listed skill with harness_skill_content({ skill: "<id>" }) and configure the app with ' +
+      'loadAgentSkills({ category }) / buildAgentSkillRegistry({ category }) ' +
+      '(see plugin/agent-skills/skills/<id>/SKILL.md for the folder layout).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        category: { type: 'string', description: 'Optional: agent-skills-backend | agent-skills-frontend | agent-skills-devops | agent-skills-qa (or backend|frontend|devops|qa|data).' },
+      },
+    },
+  },
+  {
+    name: 'harness_skill_content',
+    description:
+      'Load the full SKILL.md of one bundled agent skill from plugin/agent-skills/skills/<skill>/SKILL.md — ' +
+      'the complete workflow the skill prescribes (do/don\u2019t rules, steps, examples). ' +
+      'First call harness_skills_by_category to pick a skill id relevant to the current task, ' +
+      'then load it here so the app follows the skill. The same set is available in code via ' +
+      'loadAgentSkills({ category }) / buildAgentSkillRegistry({ category }) and over MCP via the stock ' +
+      'agent-skills-backend/frontend/devops/qa servers; this tool lets you inspect any of the bundled skills ' +
+      'without running an MCP subprocess.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        skill: { type: 'string', description: 'Skill folder id under plugin/agent-skills/skills, e.g. test-driven-development (see harness_skills_by_category to browse).' },
+        category: { type: 'string', description: 'Optional: constrain the available-suggestion list to one category domain.' },
+      },
+    },
+  },
 ];
 
 const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
@@ -519,6 +672,17 @@ rl.on('line', async (rawLine) => {
         case 'harness_read_example':
           result = readExample(args.name);
           break;
+        case 'harness_skills_by_category':
+          result = agentSkillsList(args.category);
+          break;
+        case 'harness_skill_content': {
+          const cat = String(args.category ?? '').trim();
+          result = agentSkill(
+            args.skill,
+            cat ? AGENT_SKILL_CATEGORIES.find((c) => c.id === cat)?.domain : undefined,
+          );
+          break;
+        }
         default: {
           const feature = name.startsWith('harness_guide_') ? name.slice('harness_guide_'.length) : null;
           if (feature && FEATURES[feature]) {

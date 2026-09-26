@@ -29,6 +29,12 @@ Published to npm as `smoke-monkey-harness@1.2.0`.
   unchanged).
 - Unit tests `tests/agent-skills.test.ts` (category mapping, 25-skill load,
   per-domain filtering, registry build).
+- **Harness MCP server tools** — `plugin/mcp/server.mjs` now exposes the
+  bundled agent-skills directly (18 → 20 tools): `harness_skills_by_category`
+  (browse the 25 skills in `plugin/agent-skills/skills`, filtered by the stock
+  categories or a raw domain) and `harness_skill_content` (load one skill's
+  full `SKILL.md`), so agents can discover and apply the bundled skills through
+  the harness server itself.
 
 ### Changed
 

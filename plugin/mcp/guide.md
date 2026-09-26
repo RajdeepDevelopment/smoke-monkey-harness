@@ -53,6 +53,26 @@ No MCP for scaffolding? Copy the Step 5 code into `src/index.ts` yourself.
 
 These are the smallest correct programs; match your product to the closest one.
 
+### Step 3b — Load the bundled agent skills (for your domain)
+The package ships 25 production-engineering SKILL.md skills in
+**`plugin/agent-skills/skills`** (folder per skill: `plugin/agent-skills/skills/<id>/SKILL.md`).
+Browse and load them directly through this server, category-wise:
+- **`harness_skills_by_category({ category? })`** → list the catalog, filtered to your
+  category. Pass `agent-skills-backend`, `agent-skills-frontend`,
+  `agent-skills-devops`, `agent-skills-qa`, or a raw domain
+  (`backend|frontend|devops|qa|data`); omit it to list all 25 with their phase + domains.
+- **`harness_skill_content({ skill })`** → load one skill's full `SKILL.md` workflow
+  (id = the folder name under `plugin/agent-skills/skills`).
+
+Then wire the same set into your agent in `src/index.ts`:
+
+```ts
+import { buildAgentSkillRegistry, loadAgentSkills } from 'smoke-monkey-harness'
+const backendSkills = loadAgentSkills({ category: 'agent-skills-backend' })
+const registry = buildAgentSkillRegistry({ category: 'agent-skills-frontend' })
+// …or serve the same skills over MCP with the stock agent-skills-* entries.
+```
+
 ### Step 4 — Wire the agent (the three pauses)
 In the scaffold's `src/index.ts`, route every interactive pause to your UI —
 or keep `autoApprove: true` for a local/demo agent:
