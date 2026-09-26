@@ -95,8 +95,14 @@ const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath
 ## Use it over MCP (connect this repository)
 
 Smoke Monkey ships its own **stdio MCP server** that exposes the harness itself
-to any MCP client. Talk to it with any MCP client over stdio — no install in
-your project needed:
+to any MCP client — so you can **build a full agentic, looping workflow in
+seconds** without writing any library code yourself. Point **Claude Code,
+Codex, opencode, Cursor, or any MCP-capable editor** at the server and your
+agent can plan (`harness_plan`), scaffold (`harness_scaffold`), wire the loop
+(`harness_guide` / `harness_api`), verify (`harness_verify`), and apply the 25
+bundled engineering skills category-wise (`harness_skills_by_category` /
+`harness_skill_content`) — directly through MCP. No install in your project
+needed:
 
 ```json
 {
@@ -109,11 +115,10 @@ your project needed:
 }
 ```
 
-Point Claude Code, Codex, opencode, Cursor, or any MCP-capable editor at that
-server and the harness toolset appears directly — `harness_guide`,
-`harness_plan`, `harness_api`, `harness_scaffold`, `harness_verify`,
-`harness_examples`, `harness_status`, and the per-feature deep dives. Inside
-your own harness, register it like any other MCP server:
+The harness toolset appears directly — the looping agent workflow (run loop,
+tool execution, permissions, context management, MCP integration, sessions,
+recovery) is built into the library and driven by these tools. Inside your own
+harness, register it like any other MCP server:
 
 ```ts
 const agent = createAgent({

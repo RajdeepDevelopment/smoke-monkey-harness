@@ -8,11 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] — 2026-09-26
 
 Published to npm as `smoke-monkey-harness@1.2.0` and
-`smoke-monkey-harness-mcp@0.2.0`.
+`smoke-monkey-harness-mcp@1.0.1`.
 
-### Companion `smoke-monkey-harness-mcp@0.2.0`
+### Companion `smoke-monkey-harness-mcp@1.0.1`
 
-- Bumped to `0.2.0`; dependency tightened to `smoke-monkey-harness@^1.2.0` so
+- Versioned `1.0.1` in line with the library's `1.x` scheme; dependency
+  tightened to `smoke-monkey-harness@^1.2.0` so
   `npx -y smoke-monkey-harness-mcp` resolves the harness 1.2.0 server (20 tools,
   including the category-wise agent-skills `harness_skills_by_category` and
   `harness_skill_content`).
