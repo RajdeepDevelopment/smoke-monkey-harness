@@ -1,6 +1,6 @@
 {
   "name": "smoke-monkey-harness",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Build agentic tools, AI code editors, and agent harnesses in a few lines. Framework-agnostic TypeScript agent loop with MCP (Model Context Protocol) client, just-in-time SKILL.md skills, permissions, and LLM providers — behind the Smoke Monkey code editor.",
   "license": "MIT",
   "author": {
@@ -31,7 +31,8 @@
       "import": "./dist/harness.js",
       "require": "./dist/cjs/harness.js"
     },
-    "./plugin/mcp/server.mjs": "./plugin/mcp/server.mjs"
+    "./plugin/mcp/server.mjs": "./plugin/mcp/server.mjs",
+    "./plugin/agent-skills/mcp/server.mjs": "./plugin/agent-skills/mcp/server.mjs"
   },
   "files": [
     "dist",
@@ -52,7 +53,7 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsx --test 'tests/*.test.ts'",
-    "test:fixtures": "tsx scripts/fixtures/test-manager.ts && tsx scripts/fixtures/test-integration.ts && tsx scripts/fixtures/test-skills.ts && tsx scripts/fixtures/test-plugin-mcp.ts",
+    "test:fixtures": "tsx scripts/fixtures/test-manager.ts && tsx scripts/fixtures/test-integration.ts && tsx scripts/fixtures/test-skills.ts && tsx scripts/fixtures/test-plugin-mcp.ts && tsx scripts/fixtures/test-installer.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

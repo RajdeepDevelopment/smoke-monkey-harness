@@ -18,12 +18,7 @@
  *   <workspace>/.codex/skills, plus ~/.claude/skills, ~/.codex/skills,
  *   ~/.opencode/skills and ~/.config/opencode/skills (home-specific skills).
  */
-import {
-  readdirSync,
-  readFileSync,
-  statSync,
-  type Dirent,
-} from 'node:fs';
+import { readdirSync, readFileSync, statSync, type Dirent } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 
@@ -53,9 +48,10 @@ export function slugify(name: string): string {
 }
 
 /** Parses the optional `---` YAML frontmatter off a markdown file. */
-export function parseSkillFrontmatter(
-  text: string,
-): { frontmatter: Record<string, string>; body: string } {
+export function parseSkillFrontmatter(text: string): {
+  frontmatter: Record<string, string>;
+  body: string;
+} {
   const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
   if (!m) return { frontmatter: {}, body: text.trim() };
   const frontmatter: Record<string, string> = {};
@@ -198,31 +194,51 @@ export function loadSkillsFromDirs(dirs: string[], opts: LoadSkillsOptions = {})
   return Array.from(byId.values());
 }
 
+const HOME_SKILL_SUBDIRS = [
+  '.agents/skills',
+  '.claude/skills',
+  '.codex/skills',
+  '.config/opencode/skills',
+  '.opencode/skills',
+  '.gemini/skills',
+  '.gemini/antigravity/skills',
+  '.gemini/antigravity-cli/skills',
+  '.cursor/skills',
+  '.windsurf/skills',
+  '.codeium/windsurf/skills',
+  '.continue/skills',
+  '.config/goose/skills',
+  '.grok/skills',
+  '.zencoder/skills',
+  '.kilo/skills',
+];
+
+const PROJECT_SKILL_SUBDIRS = [
+  '.opencode/skills',
+  '.claude/skills',
+  '.codex/skills',
+  '.agents/skills',
+];
+
 /**
  * Default discovery locations, mirroring the ecosystem conventions when the
- * caller did not pass an explicit `skillsDir`:
- *   <workspace>/.opencode/skills        (opencode)
- *   <workspace>/.claude/skills          (Claude Code)
- *   <workspace>/.codex/skills           (Codex)
- *   ~/.claude/skills, ~/.codex/skills, ~/.opencode/skills,
- *   ~/.config/opencode/skills           (home-specific)
+ * caller did not pass an explicit `skillsDir`. Covers the cross-agent SKILL.md
+ * paths (see plugin/agents.json): opencode, Claude Code, Codex, the portable
+ * `.agents/skills`, and every other home dir that popular agents read skills
+ * from — so skills installed by `plugin/install.sh` are found no matter which
+ * agent owns them.
  */
 export function defaultSkillDirs(workspacePath?: string): string[] {
   const home = homedir();
   const dirs: string[] = [];
   if (workspacePath) {
-    dirs.push(
-      join(workspacePath, '.opencode', 'skills'),
-      join(workspacePath, '.claude', 'skills'),
-      join(workspacePath, '.codex', 'skills'),
-    );
+    for (const sub of PROJECT_SKILL_SUBDIRS) {
+      dirs.push(join(workspacePath, sub));
+    }
   }
-  dirs.push(
-    join(home, '.claude', 'skills'),
-    join(home, '.codex', 'skills'),
-    join(home, '.opencode', 'skills'),
-    join(home, '.config', 'opencode', 'skills'),
-  );
+  for (const sub of HOME_SKILL_SUBDIRS) {
+    dirs.push(join(home, sub));
+  }
   return dirs;
 }
 
@@ -232,7 +248,8 @@ export class SkillRegistry {
 
   add(skill: Skill): { ok: boolean; error?: string } {
     if (!skill.id) return { ok: false, error: 'skill needs an id' };
-    if (!skill.content) return { ok: false, error: `skill "${skill.id}" has no instructions (empty body)` };
+    if (!skill.content)
+      return { ok: false, error: `skill "${skill.id}" has no instructions (empty body)` };
     if (this.byId.has(skill.id)) return { ok: false, error: `duplicate skill id "${skill.id}"` };
     this.byId.set(skill.id, skill);
     return { ok: true };

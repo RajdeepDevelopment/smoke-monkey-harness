@@ -52,19 +52,17 @@ pnpm add @rajdeepdevelopment/smoke-monkey-harness
 ## Quickstart
 
 ```ts
-import { createAgent } from 'smoke-monkey-harness'
+import { createAgent } from 'smoke-monkey-harness';
 
 const agent = createAgent({
   provider: 'nvidia',
   model: 'nvidia/nemotron-3-super-120b-a12b',
   apiKey: process.env.NVIDIA_API_KEY, // or pass a resolver: (provider) => key
   workspacePath: process.cwd(),
-})
+});
 
-const result = await agent.run(
-  'Refactor the auth middleware to use JWTs, then run its tests.',
-)
-console.log(result.status)
+const result = await agent.run('Refactor the auth middleware to use JWTs, then run its tests.');
+console.log(result.status);
 ```
 
 That's it. Smoke Monkey handles the agent loop, tool execution, planning,
@@ -76,20 +74,20 @@ Route permission prompts and questions to your UI (or set `autoApprove: true`):
 
 ```ts
 agent.on('permission.required', (e) => {
-  const { toolCallId, toolName } = e.data
-  agent.resolvePermission(toolCallId, /* allow | deny */ 'allow')
-})
+  const { toolCallId, toolName } = e.data;
+  agent.resolvePermission(toolCallId, /* allow | deny */ 'allow');
+});
 
 agent.on('ask_user.required', (e) => {
-  agent.respond(e.data.toolCallId, await promptUser(e.data.question))
-})
+  agent.respond(e.data.toolCallId, await promptUser(e.data.question));
+});
 ```
 
 Any OpenAI-compatible endpoint works — `openrouter`, `gemini`, `xai`, … or run
 locally with Ollama:
 
 ```ts
-const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath: process.cwd() })
+const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath: process.cwd() });
 ```
 
 ---
@@ -133,7 +131,7 @@ const agent = createAgent({
       enabled: true,
     },
   ],
-})
+});
 ```
 
 > The `npx` command works on npm and the GitHub Package registry alike. The MCP
@@ -151,21 +149,21 @@ the box.
 
 <div align="center">
 
-| Capability | Smoke Monkey |
-| :--- | :---: |
-| Agent loop | ✅ |
-| Tool calling | ✅ |
-| 24 built-in tools | ✅ |
-| MCP | ✅ |
-| Skills / `SKILL.md` | ✅ |
-| Human-in-the-loop permissions | ✅ |
-| Automatic context compaction | ✅ |
-| Resumable sessions | ✅ |
-| Multiple LLM providers | ✅ |
-| Custom tools | ✅ |
-| Custom storage | ✅ |
-| Framework independent | ✅ |
-| Database required | ❌ |
+| Capability                    | Smoke Monkey |
+| :---------------------------- | :----------: |
+| Agent loop                    |      ✅      |
+| Tool calling                  |      ✅      |
+| 24 built-in tools             |      ✅      |
+| MCP                           |      ✅      |
+| Skills / `SKILL.md`           |      ✅      |
+| Human-in-the-loop permissions |      ✅      |
+| Automatic context compaction  |      ✅      |
+| Resumable sessions            |      ✅      |
+| Multiple LLM providers        |      ✅      |
+| Custom tools                  |      ✅      |
+| Custom storage                |      ✅      |
+| Framework independent         |      ✅      |
+| Database required             |      ❌      |
 
 </div>
 
@@ -183,13 +181,13 @@ resume.
 Filesystem, terminal, search, Git, and agent-management tools in five groups.
 Disable groups with `tools` or register your own.
 
-| Group      | Tools |
-| ---        | --- |
+| Group      | Tools                                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------------------------------- |
 | filesystem | read_file, write_file, edit_file, line_edit, replace_lines, apply_patch, delete_file, list_directory, inspect |
-| terminal   | run_command, run_test |
-| search     | glob, grep |
-| git        | git_status, git_diff, git_log |
-| agent      | ask_user, context_manage, todo_write, finish_task, list_skills, use_skill |
+| terminal   | run_command, run_test                                                                                         |
+| search     | glob, grep                                                                                                    |
+| git        | git_status, git_diff, git_log                                                                                 |
+| agent      | ask_user, context_manage, todo_write, finish_task, list_skills, use_skill                                     |
 
 **🔌 MCP Native**
 Connect local stdio or remote Streamable HTTP MCP servers
@@ -212,8 +210,8 @@ home dirs.
 ```ts
 permissions: ({ toolName, args }) => {
   // your policy
-  return 'allow' // 'deny' | 'ask'
-}
+  return 'allow'; // 'deny' | 'ask'
+};
 ```
 
 **📦 Context Management**
@@ -279,7 +277,7 @@ over stdio and Streamable HTTP. Servers connect lazily and can require explicit
 user approval before activation.
 
 ```ts
-import { createAgent, stockToMcpConfig, findStockEntry } from 'smoke-monkey-harness'
+import { createAgent, stockToMcpConfig, findStockEntry } from 'smoke-monkey-harness';
 
 const agent = createAgent({
   provider: 'nvidia',
@@ -307,8 +305,12 @@ const agent = createAgent({
     },
     // ...or pull a config from the stock catalog:
     stockToMcpConfig(findStockEntry('playwright-mcp')!),
+    // bundled Agent Skills (25 engineering SKILL.md bundles shipped in the package):
+    stockToMcpConfig(findStockEntry('agent-skills-backend')!),
+    // ...or add your own server from the desktop-style stock catalog:
+    stockToMcpConfig(findStockEntry('agent-skills-qa')!),
   ],
-})
+});
 ```
 
 **Supported connection types**
@@ -340,7 +342,7 @@ const agent = createAgent({
   workspacePath: process.cwd(),
   skillsDir: ['examples/skills'], // scans for <dir>/<skill>/SKILL.md + <dir>/<skill>.md
   autoApprove: true,
-})
+});
 ```
 
 ```markdown
@@ -348,7 +350,9 @@ const agent = createAgent({
 name: Commit Message
 description: Write conventional, concise git commit messages for the uncommitted changes.
 ---
+
 # Conventional Commit Message
+
 …instructions the agent follows while the task matches…
 ```
 
@@ -391,7 +395,7 @@ permissions) see **[docs/api.md](docs/api.md)**, and start with
 
 This repo ships as a **plugin** (at `plugin/`): a `SKILL.md` (the universal
 skill format every tool above reads) plus a dependency-free
-**MCP server** that guides any agent to *build a new looping agent* on this
+**MCP server** that guides any agent to _build a new looping agent_ on this
 library. The plugin dir carries native manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and a strict
 agent-plugins.org `plugin.json`), and the repo root carries the distribution
@@ -406,13 +410,21 @@ claude plugin marketplace add https://github.com/RajdeepDevelopment/smoke-monkey
 claude plugin install smoke-monkey-harness@smoke-monkey-harness
 ```
 
-**Codex / opencode / local:**
+**Any agent (~70 supported):**
 
 ```sh
-pnpm run plugin:install            # copies the plugin into your home skills dirs
-pnpm run plugin:install -- --local # + project-local install, .mcp.json, opencode.json
-pnpm run plugin:install -- --help  # see options (--force, --repo)
+pnpm run plugin:install                 # skill → every agent's global skills dir
+pnpm run plugin:install -- --list       # see the supported-agent table
+pnpm run plugin:install -- --agent cursor  # install for one agent by id
+pnpm run plugin:install -- --local      # + project install + .mcp.json + opencode.json
+pnpm run plugin:install -- --help       # see options (--force, --repo)
 ```
+
+The universal installer reads `plugin/agents.json` (same cross-agent SKILL.md
+path table as the AGENTS ecosystem) and drops the skill where each tool natively
+reads skills — aider-desk, cline, cursor, windsurf, gemini-cli, goose, copilot,
+opencode, Claude Code, Codex, and more. The portable `.agents/skills/` path
+covers a dozen agents with one `--local` install.
 
 Once installed, ask your agent to "build me an agent that …" — it will load the
 smoke-monkey-harness skill, read `harness_guide`, and `harness_scaffold` a

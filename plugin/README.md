@@ -1,4 +1,4 @@
-# smoke-monkey-harness plugin — for Claude Code, Codex, opencode, Antigravity, Copilot
+# smoke-monkey-harness plugin — for ~70 agents, not just a handful
 
 Turn **any** agent into a "build a looping agent" machine. This repo ships a
 plugin at `plugin/` that bundles:
@@ -27,6 +27,7 @@ Repo root adds the distribution files:
 
 ```
 AGENTS.md                                  # onboarding for ANY agent that reads AGENTS.md
+plugin/agents.json                         # supported-agent registry (id, project path, global path)
 .claude-plugin/marketplace.json            # Claude marketplace → installs ./plugin
 .agents/plugins/marketplace.json           # Codex marketplace entry
 .agents/plugins/smoke-monkey-harness/      # Antigravity workspace plugin
@@ -35,15 +36,41 @@ AGENTS.md                                  # onboarding for ANY agent that reads
 .opencode/skills/smoke-monkey-harness/     # opencode auto-load when this repo is the workspace
 ```
 
-| host | manifest used | install |
-| --- | --- | --- |
-| Claude Code | `.claude-plugin/plugin.json` | `claude plugin marketplace add <repo>` → `claude plugin install smoke-monkey-harness@smoke-monkey-harness`, or `plugin/install.sh` (skills-dir plugin) |
-| Codex | `.codex-plugin/plugin.json` | `codex plugin install smoke-monkey-harness@personal`, or `plugin/install.sh` |
-| opencode | `.opencode/skills/` + `opencode.json` mcp | `plugin/install.sh [--local]` |
-| Antigravity | `.agents/plugins/smoke-monkey-harness/` (`plugin.json`, `mcp_config.json`, `skills/`) | open this repo, or `plugin/install.sh` (global: `~/.gemini/config/plugins/` + `~/.gemini/config/skills/`) |
-| GitHub Copilot | `.github/skills/` (project) / `~/.copilot/skills/` (personal) | open this repo, or `plugin/install.sh` |
-| portable registry | `plugin.json` | agent-plugins.org 1.0.0 metadata; functional config lives in the sibling per-host manifests |
-| any agent at all | `SKILL.md` + `AGENTS.md` | point the agent at this repo |
+## Install for any agent
+
+The installer ships the skill (and, for the native hosts, the full plugin +
+MCP wiring) into every agent's skills directory. It reads `plugin/agents.json`
+— the cross-agent SKILL.md path table — so `plugin/install.sh` covers ~70
+agents (aider-desk, cline, cursor, windsurf, gemini-cli, goose, copilot,
+opencode, Claude Code, Codex, and more):
+
+```sh
+plugin/install.sh                 # home install: skill → every agent's global skill dir
+plugin/install.sh --list          # print the supported-agent table
+plugin/install.sh --agent cursor  # install only for one agent (any id in agents.json)
+plugin/install.sh --local         # + project install + .mcp.json + opencode.json
+plugin/install.sh --force         # overwrite existing installs
+```
+
+`--local` also writes the MCP wiring for the native hosts: project `.mcp.json`
+(Claude Code / Codex), `.agents/mcp_config.json` (Antigravity), and the
+opencode `mcp` block in project `opencode.json`.
+
+The portable `.agents/skills/<name>/` install is the universal one — a dozen
+agents (Amp, Replit, Universal, Cline, Cursor, Gemini CLI, and more) read that
+directory, so one `--local` install covers all of them.
+
+### Native hosts
+
+| host              | manifest used                                                                         | install                                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Claude Code       | `.claude-plugin/plugin.json`                                                          | `claude plugin marketplace add <repo>` → `claude plugin install smoke-monkey-harness@smoke-monkey-harness`, or `plugin/install.sh` (skills-dir plugin) |
+| Codex             | `.codex-plugin/plugin.json`                                                           | `codex plugin install smoke-monkey-harness@personal`, or `plugin/install.sh`                                                                           |
+| opencode          | `.opencode/skills/` + `opencode.json` mcp                                             | `plugin/install.sh [--local]`                                                                                                                          |
+| Antigravity       | `.agents/plugins/smoke-monkey-harness/` (`plugin.json`, `mcp_config.json`, `skills/`) | open this repo, or `plugin/install.sh` (global: `~/.gemini/config/plugins/` + `~/.gemini/config/skills/`)                                              |
+| GitHub Copilot    | `.github/skills/` (project) / `~/.copilot/skills/` (personal)                         | open this repo, or `plugin/install.sh`                                                                                                                 |
+| portable registry | `plugin.json`                                                                         | agent-plugins.org 1.0.0 metadata; functional config lives in the sibling per-host manifests                                                            |
+| any agent at all  | `SKILL.md` + `AGENTS.md`                                                              | point the agent at this repo                                                                                                                           |
 
 ## Install
 
@@ -57,9 +84,11 @@ claude plugin install smoke-monkey-harness@smoke-monkey-harness
 or install locally with the repo installer:
 
 ```sh
-plugin/install.sh          # copies the plugin package into your home skills dirs
-plugin/install.sh --local  # + project-local install, .mcp.json, opencode.json
-plugin/install.sh --force  # overwrite existing installs
+plugin/install.sh                # copies the plugin package into every agent's home skill dir
+plugin/install.sh --local        # + project-local install, .mcp.json, opencode.json
+plugin/install.sh --agent claude-code  # only Claude Code
+plugin/install.sh --force        # overwrite existing installs
+plugin/install.sh --list         # see all ~70 supported agents
 ```
 
 The Claude install becomes a **skills-directory plugin**
@@ -85,42 +114,46 @@ project `--local` installs write `.opencode/skills/`). MCP goes in
 ```jsonc
 {
   "mcp": {
-    "smoke-monkey-harness": { "type": "local", "command": ["node", "/path/to/plugin/mcp/server.mjs"], "enabled": true }
-  }
+    "smoke-monkey-harness": {
+      "type": "local",
+      "command": ["node", "/path/to/plugin/mcp/server.mjs"],
+      "enabled": true,
+    },
+  },
 }
 ```
 
 ## What the agent can now do
 
-| request | what happens |
-| --- | --- |
+| request                                                | what happens                                                                                                   |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | "Build me an agent that reads my repo and writes docs" | skill loads → `harness_guide` → `harness_scaffold({ targetDir })` writes a project → agent wires + verifies it |
-| "What can smoke-monkey-harness do?" | `harness_status` + `harness_guide` answer from the live bundle |
-| "How do permissions/subcontexts/skills work?" | `harness_plan` → `harness_guide_<feature>` deep dives |
-| "Show me an example agent" | `harness_examples` + `harness_read_example` |
+| "What can smoke-monkey-harness do?"                    | `harness_status` + `harness_guide` answer from the live bundle                                                 |
+| "How do permissions/subcontexts/skills work?"          | `harness_plan` → `harness_guide_<feature>` deep dives                                                          |
+| "Show me an example agent"                             | `harness_examples` + `harness_read_example`                                                                    |
 
 ## MCP server tools
 
-| tool | args | returns |
-| --- | --- | --- |
-| `harness_guide` | `topic?` | the master "build an agent" end-to-end playbook |
-| `harness_plan` | `goal` | a concrete build plan for your product (provider/model, agentId, tools, wiring, verify, ship) |
-| `harness_api` | `area?` | authoritative API reference: options, surface, events, tools, providers, subcontexts, skills, mcp, loop, permissions |
-| `harness_guide_subcontexts` | — | deep dive: context_manage, built-in catalog, custom contexts |
-| `harness_guide_skills` | — | deep dive: SKILL.md format + just-in-time list_skills/use_skill |
-| `harness_guide_mcp` | — | deep dive: server config, activation, approvals, stock catalog |
-| `harness_guide_providers` | — | deep dive: providers, keys, models, streaming |
-| `harness_guide_tools` | — | deep dive: custom ToolDefinition, groups, annotations |
-| `harness_guide_loop` | — | deep dive: phases, guards, compaction, budgets |
-| `harness_guide_permissions` | — | deep dive: the three pauses + how to resolve them |
-| `harness_guide_storage` | — | deep dive: Storage interface, sessions, resume |
-| `harness_guide_events` | — | deep dive: event catalog + UI wiring |
-| `harness_events` | — | event catalog (wire a UI/log layer) |
-| `harness_status` | — | installed library version + server capabilities |
-| `harness_scaffold` | `targetDir`, `name?` | a complete starter project (package.json, tsconfig, src/index.ts, sample skill, README, .mcp.json) |
-| `harness_verify` | `targetDir`, `build?` | runs `npm run typecheck` (+build) and reports PASS/FAIL |
-| `harness_examples` | — | bundled example programs |
-| `harness_read_example` | `name` | one example verbatim |
+| tool                        | args                  | returns                                                                                                              |
+| --------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `harness_guide`             | `topic?`              | the master "build an agent" end-to-end playbook                                                                      |
+| `harness_plan`              | `goal`                | a concrete build plan for your product (provider/model, agentId, tools, wiring, verify, ship)                        |
+| `harness_api`               | `area?`               | authoritative API reference: options, surface, events, tools, providers, subcontexts, skills, mcp, loop, permissions |
+| `harness_guide_subcontexts` | —                     | deep dive: context_manage, built-in catalog, custom contexts                                                         |
+| `harness_guide_skills`      | —                     | deep dive: SKILL.md format + just-in-time list_skills/use_skill                                                      |
+| `harness_guide_mcp`         | —                     | deep dive: server config, activation, approvals, stock catalog                                                       |
+| `harness_guide_providers`   | —                     | deep dive: providers, keys, models, streaming                                                                        |
+| `harness_guide_tools`       | —                     | deep dive: custom ToolDefinition, groups, annotations                                                                |
+| `harness_guide_loop`        | —                     | deep dive: phases, guards, compaction, budgets                                                                       |
+| `harness_guide_permissions` | —                     | deep dive: the three pauses + how to resolve them                                                                    |
+| `harness_guide_storage`     | —                     | deep dive: Storage interface, sessions, resume                                                                       |
+| `harness_guide_events`      | —                     | deep dive: event catalog + UI wiring                                                                                 |
+| `harness_events`            | —                     | event catalog (wire a UI/log layer)                                                                                  |
+| `harness_status`            | —                     | installed library version + server capabilities                                                                      |
+| `harness_scaffold`          | `targetDir`, `name?`  | a complete starter project (package.json, tsconfig, src/index.ts, sample skill, README, .mcp.json)                   |
+| `harness_verify`            | `targetDir`, `build?` | runs `npm run typecheck` (+build) and reports PASS/FAIL                                                              |
+| `harness_examples`          | —                     | bundled example programs                                                                                             |
+| `harness_read_example`      | `name`                | one example verbatim                                                                                                 |
 
 Run the server directly to smoke-test it:
 
@@ -148,7 +181,8 @@ plugin/                          # plugin package (plugin root)
     templates/
       scaffold/                  # starter-project template (harness_scaffold)
       examples/                  # sample agents (harness_examples)
-  install.sh                     # per-host installer (Claude / Codex / opencode)
+  install.sh                     # universal installer (~70 agents via agents.json)
+  agents.json                    # supported-agent registry (id, project path, global path)
 
 AGENTS.md                              # any agent reads this to build with the harness
 .claude-plugin/marketplace.json        # repo-root Claude marketplace (installs ./plugin)

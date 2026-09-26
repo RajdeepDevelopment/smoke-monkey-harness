@@ -1,35 +1,35 @@
 #!/usr/bin/env bash
 #
-# Install the smoke-monkey-harness plugin for Claude Code / Codex / opencode /
-# Antigravity / GitHub Copilot (and every agent that reads ~/.agents/skills).
+# Install the smoke-monkey-harness plugin for EVERY agent that reads SKILL.md
+# folders. The agent registry (plugin/agents.json) maps each agent/CLI to the
+# project path and global/hidden path where that agent discovers skills — the
+# same cross-agent table used by the AGENTS ecosystem (aider-desk, cursor,
+# windsurf, cline, gemini-cli, goose, kopilot, opencode, and ~70 more).
 #
 # The plugin is the `plugin/` package — a self-contained directory with native
 # manifests (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`,
 # `plugin.json`), a skill (`skills/smoke-monkey-harness/`), and an MCP server
-# (`mcp/`) whose `.mcp.json` references paths via ${CLAUDE_PLUGIN_ROOT}. This
-# script places that package where each tool natively discovers it:
+# (`mcp/`). This script copies the skill (and, for the native hosts below, the
+# whole package) into the skills directories that each tool natively reads:
 #
-#   Claude Code : ~/.claude/skills/<name>/            as a skills-dir plugin
-#                   (`smoke-monkey-harness@skills-dir`); opencode also
-#                   auto-loads ~/.claude/skills
-#   Codex       : ~/.codex/skills/<name>/             as a skill, plus a
-#                   personal marketplace entry at ~/.agents/plugins/ so
-#                   `codex plugin install` finds it
-#   opencode    : ~/.config/opencode/skills/<name>/   global skills path
-#   Antigravity : ~/.gemini/config/skills/<name>/     global skill, plus a
-#                   real plugin at ~/.gemini/config/plugins/<name>/ with an
-#                   absolute-path mcp_config.json
-#   Copilot     : ~/.copilot/skills/<name>/           project/personal skill
-#   any agent   : ~/.agents/skills/<name>/            universal skills dir
+#   universal  : .agents/skills/<name>/        project + ~/.agents/skills
+#   Claude Code: ~/.claude/skills/<name>/      skills-dir plugin (+opencode)
+#   Codex      : ~/.codex/skills/<name>/ + personal marketplace at ~/.agents/plugins
+#   opencode   : ~/.config/opencode/skills/<name>/
+#   Antigravity: ~/.gemini/config/skills/<name>/ + real plugin at ~/.gemini/config/plugins
+#   Copilot    : ~/.copilot/skills/<name>/
 #
-#   --local     additionally installs into the current project and writes the
-#               MCP wiring: project .mcp.json (Claude Code / Codex),
-#               .agents/mcp_config.json (Antigravity), and the opencode "mcp"
-#               block in project opencode.json.
+#   --agent <id>   install only for one agent (any id in plugin/agents.json)
+#   --local        additionally install into the current project and write the
+#                  MCP wiring: project .mcp.json (Claude Code / Codex),
+#                  .agents/mcp_config.json (Antigravity), and the opencode "mcp"
+#                  block in project opencode.json.
 #
 # Usage:
-#   plugin/install.sh                 # home install
+#   plugin/install.sh                 # home install for all agents (~/.agents/skills + every home path)
 #   plugin/install.sh --local         # + project install + .mcp.json + opencode.json
+#   plugin/install.sh --agent cursor  # install only for one agent
+#   plugin/install.sh --list          # print the supported-agent table
 #   plugin/install.sh --force         # overwrite existing installs
 #   plugin/install.sh --help
 #   plugin/install.sh --repo          # print the Claude marketplace add commands
@@ -45,28 +45,48 @@ ANTIGRAVITY_SRC="$UP/.agents/plugins/$NAME"
 FORCE=0
 LOCAL=0
 REPO=0
+AGENT_SELECT=""
+LIST=0
 
 for arg in "$@"; do
   case "$arg" in
     --force) FORCE=1 ;;
     --local) LOCAL=1 ;;
     --repo) REPO=1 ;;
+    --list) LIST=1 ;;
+    --agent|-a) AGENT_SELECT="${2:-}"; shift ;;
+    --agent=*) AGENT_SELECT="${arg#*=}" ;;
     --help|-h)
-      echo "Install the smoke-monkey-harness plugin (skill + MCP server) for Claude Code / Codex / opencode / Antigravity / Copilot."
+      echo "Install the smoke-monkey-harness plugin (skill + MCP server) for ~70 agents."
       echo ""
-      echo "  install.sh            install the plugin package into your home skills dirs"
+      echo "  install.sh            install for all agents (home skills dirs)"
       echo "  install.sh --local    also install into the current project and write .mcp.json + .agents/mcp_config.json + opencode.json"
+      echo "  install.sh --agent <id>  install only for one agent (see plugin/agents.json)"
+      echo "  install.sh --list     print the supported-agent table"
       echo "  install.sh --force    overwrite any existing install at the same paths"
       echo "  install.sh --repo     print the Claude marketplace / Codex install commands for this repo"
       exit 0
       ;;
-    *) echo "unknown argument: $arg (see --help)" >&2; exit 2 ;;
+    --*) echo "unknown argument: $arg (see --help)" >&2; exit 2 ;;
+    *) AGENT_SELECT="$arg" ;;
   esac
 done
 
 node --version >/dev/null 2>&1 || { echo "error: node is required to run the MCP server" >&2; exit 1; }
 [ -d "$SKILL_SRC" ] || { echo "error: skill source missing at $SKILL_SRC" >&2; exit 1; }
 [ -f "$SERVER_SRC" ] || { echo "error: MCP server missing at $SERVER_SRC" >&2; exit 1; }
+[ -f "$ROOT/agents.json" ] || { echo "error: agent registry missing at $ROOT/agents.json" >&2; exit 1; }
+
+# Emit the agent registry as `id<TAB>display<TAB>project<TAB>global<TAB>native`
+agents_rows () {
+  node -e '
+    const path = process.argv[1];
+    const reg = JSON.parse(require("fs").readFileSync(path, "utf8"));
+    for (const a of reg.agents) {
+      console.log([a.id, a.display, a.project ?? "", a.global ?? "", a.native ? "1" : ""].join("\t"));
+    }
+  ' "$ROOT/agents.json"
+}
 
 install_pkg () {  # copy the whole plugin package (manifests + skill + mcp)
   local dst="$1"
@@ -173,41 +193,110 @@ if [ "$REPO" -eq 1 ]; then
   exit 0
 fi
 
-echo "Installing for Claude Code / Codex / opencode / Antigravity / Copilot (home):"
-install_pkg "$HOME/.claude/skills/$NAME"
-install_skill "$HOME/.codex/skills/$NAME"
-install_skill "$HOME/.config/opencode/skills/$NAME"
-install_skill "$HOME/.agents/skills/$NAME"
-install_skill "$HOME/.copilot/skills/$NAME"
-install_skill "$HOME/.gemini/config/skills/$NAME"
-install_dir "$ANTIGRAVITY_SRC" "$HOME/.gemini/config/plugins/$NAME"
-write_mcp_json "$HOME/.gemini/config/plugins/$NAME/mcp_config.json" "$SERVER_SRC"
-write_codex_marketplace "$HOME/.agents/plugins/marketplace.json" "$PKG"
-
-if [ "$LOCAL" -eq 1 ]; then
-  CWD="$(pwd)"
+if [ "$LIST" -eq 1 ]; then
+  echo "Supported agents (plugin/agents.json):"
+  printf "  %-16s %-22s %-18s %s\n" "id" "display" "project" "global (~)"
+  echo "  --------------------------------------------------------------------"
+  agents_rows | while IFS=$'\t' read -r id display project global native; do
+    [ -n "$id" ] || continue
+    printf "  %-16s %-22s %-18s %s\n" "$id" "$display" "$project" "${global:-—}"
+  done
   echo ""
-  echo "Local mode — installing into the current project ($CWD):"
-  install_pkg "$CWD/.claude/skills/$NAME"
-  install_skill "$CWD/.codex/skills/$NAME"
-  install_skill "$CWD/.opencode/skills/$NAME"
-  install_dir "$ANTIGRAVITY_SRC" "$CWD/.agents/plugins/$NAME"
-  write_mcp_json "$CWD/.mcp.json" "$SERVER_SRC"
-  write_mcp_json "$CWD/.agents/mcp_config.json" "$SERVER_SRC"
-  write_opencode_json "$CWD/opencode.json" "$SERVER_SRC"
+  echo "Install a single agent: install.sh --agent <id>"
+  exit 0
+fi
+
+CWD="$(pwd)"
+
+# Resolve agents: a selection filters the registry; native ids get rich handlers.
+SELECTED_AGENT="$AGENT_SELECT"
+if [ -n "$SELECTED_AGENT" ]; then
+  FOUND="$(agents_rows | awk -F '\t' -v want="$SELECTED_AGENT" '$1==want {print; found=1} END{exit !found}')" && true || true
+  if [ -z "${FOUND:-}" ]; then
+    echo "error: unknown agent '$SELECTED_AGENT' — see 'install.sh --list' or plugin/agents.json" >&2
+    exit 2
+  fi
+fi
+
+echo "Installing across the agent ecosystem…"
+ALL_INSTALLED=0
+while IFS=$'\t' read -r id display project global native; do
+  [ -n "$id" ] || continue
+  if [ -n "$SELECTED_AGENT" ] && [ "$id" != "$SELECTED_AGENT" ]; then
+    continue
+  fi
+  ALL_INSTALLED=1
+
+  # Global (home) install: write the skill where the agent reads it.
+  if [ -n "$global" ]; then
+    install_skill "$HOME/$global/$NAME"
+  fi
+
+  # Local (project) install for this agent.
+  if [ "$LOCAL" -eq 1 ] && [ -n "$project" ]; then
+    if [[ "$project" == /* ]]; then
+      install_skill "$project/$NAME"
+    else
+      install_skill "$CWD/$project/$NAME"
+    fi
+  fi
+
+  # Rich per-host wiring for the native agents.
+  case "$id" in
+    claude-code)
+      install_pkg "$HOME/.claude/skills/$NAME"
+      if [ "$LOCAL" -eq 1 ]; then
+        install_pkg "$CWD/.claude/skills/$NAME"
+        write_mcp_json "$CWD/.mcp.json" "$SERVER_SRC"
+      fi
+      ;;
+    codex)
+      install_skill "$HOME/.codex/skills/$NAME"
+      write_codex_marketplace "$HOME/.agents/plugins/marketplace.json" "$PKG"
+      if [ "$LOCAL" -eq 1 ]; then
+        install_skill "$CWD/.codex/skills/$NAME"
+        write_mcp_json "$CWD/.mcp.json" "$SERVER_SRC"
+      fi
+      ;;
+    opencode)
+      install_skill "$HOME/.config/opencode/skills/$NAME"
+      if [ "$LOCAL" -eq 1 ]; then
+        install_skill "$CWD/.opencode/skills/$NAME"
+        write_opencode_json "$CWD/opencode.json" "$SERVER_SRC"
+      fi
+      ;;
+    antigravity)
+      install_skill "$HOME/.gemini/config/skills/$NAME"
+      install_dir "$ANTIGRAVITY_SRC" "$HOME/.gemini/config/plugins/$NAME"
+      write_mcp_json "$HOME/.gemini/config/plugins/$NAME/mcp_config.json" "$SERVER_SRC"
+      if [ "$LOCAL" -eq 1 ]; then
+        install_dir "$ANTIGRAVITY_SRC" "$CWD/.agents/plugins/$NAME"
+        write_mcp_json "$CWD/.agents/mcp_config.json" "$SERVER_SRC"
+      fi
+      ;;
+    github-copilot)
+      install_skill "$HOME/.copilot/skills/$NAME"
+      ;;
+  esac
+done < <(agents_rows)
+
+if [ "$ALL_INSTALLED" -eq 0 ]; then
+  echo "  (no agents matched)"
 fi
 
 echo ""
 echo "Next steps:"
-echo "  - Claude Code : skills are live (skills-dir plugin, opencode auto-loads it too)."
+echo "  - Global skills are live for every agent that reads SKILL.md from ~/<agent-path>"
+echo "    (~/.agents/skills covers ~20 agents; per-agent paths cover the rest)."
+echo "  - Claude Code : skills-dir plugin at ~/.claude/skills (opencode auto-loads it too)."
 echo "                  Marketplace install: run '$0 --repo' for the commands."
-echo "  - Codex       : skill is live in ~/.codex/skills; run 'codex plugin install smoke-monkey-harness@personal'"
-echo "                  (registered at ~/.agents/plugins/marketplace.json) for the full plugin + MCP."
-echo "  - opencode    : skill installed to ~/.config/opencode/skills — restart opencode."
-echo "                  Add to opencode.json (or run --local in this project):"
+echo "  - Codex       : run 'codex plugin install smoke-monkey-harness@personal'"
+echo "                  (registered at ~/.agents/plugins/marketplace.json)."
+echo "  - opencode    : skill at ~/.config/opencode/skills — restart opencode. Add to"
+echo "                  opencode.json (or run --local):"
 echo "                  \"mcp\": { \"smoke-monkey-harness\": { \"type\": \"local\", \"command\": [\"$(command -v node)\", \"$SERVER_SRC\"], \"enabled\": true } }"
-echo "  - Antigravity : skill → ~/.gemini/config/skills; full plugin → ~/.gemini/config/plugins"
+echo "  - Antigravity : skill → ~/.gemini/config/skills; plugin → ~/.gemini/config/plugins"
 echo "                  (mcp_config.json written with an absolute server path)."
-echo "  - Copilot     : skill → ~/.copilot/skills (project skill lives in .github/skills when open in this repo)."
+echo "  - Copilot     : skill → ~/.copilot/skills."
 echo ""
 echo "Done. In any agent, ask to build a new looping AI agent and the skill + MCP server will drive the scaffold."

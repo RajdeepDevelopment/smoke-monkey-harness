@@ -7,6 +7,8 @@
  * powers the activation panel; `stockToMcpConfig` turns an entry into a
  * ready-to-register server config for the manager.
  */
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
 import type { McpServerConfig } from './services/mcp-manager.js';
 
 export interface StockEntry {
@@ -25,6 +27,8 @@ export interface StockEntry {
   keyGetLabel?: string;
   /** Human-readable one-liner on how to run it (start/install command). */
   dependency?: string;
+  /** Bundled server that ships inside the package (e.g. `plugin/agent-skills/mcp/server.mjs`). */
+  bundled?: { specifier: string; args?: string[] };
 }
 
 interface StockEntrySpec {
@@ -40,6 +44,7 @@ interface StockEntrySpec {
   remote?: boolean;
   keyGetUrl?: string;
   keyGetLabel?: string;
+  bundled?: { specifier: string; args?: string[] };
 }
 
 function entry(e: StockEntrySpec, _url2: string | null): StockEntry {
@@ -49,15 +54,20 @@ function entry(e: StockEntrySpec, _url2: string | null): StockEntry {
     label: e.label,
     description: e.description,
     category: e.category,
-    command: url ? undefined : (e.command ?? 'npx'),
-    args: url ? undefined : (e.args ?? [`-y`, e.command ?? `@modelcontextprotocol/server-${e.name}`]),
+    command: e.bundled ? 'node' : url ? undefined : (e.command ?? 'npx'),
+    args: e.bundled ? undefined : url ? undefined : (e.args ?? [`-y`, e.command ?? `@modelcontextprotocol/server-${e.name}`]),
     url,
     envKeys: e.envKeys ?? [],
     manualOAuth: e.manualOAuth ?? false,
     remote: e.remote ?? false,
     keyGetUrl: e.keyGetUrl,
     keyGetLabel: e.keyGetLabel ?? (e.envKeys && e.envKeys.length > 0 ? `Get ${e.envKeys[0]}` : undefined),
-    dependency: url ? `Remote · ${url}` : (e.command ?? 'npx') + ' ' + (e.args ?? []).join(' '),
+    dependency: e.bundled
+      ? `Bundled — runs in-process with the package (no install needed)`
+      : url
+        ? `Remote · ${url}`
+        : (e.command ?? 'npx') + ' ' + (e.args ?? []).join(' '),
+    bundled: e.bundled,
   };
 }
 
@@ -106,6 +116,12 @@ const STOCK: Array<[StockEntrySpec, string | null]> = [
   // Search & Research
   [{ name: 'tavily', label: 'Tavily', description: 'Fresh web data via Tavily — activate for current web research.', category: 'Search & Research', command: 'npx', args: ['-y', 'tavily-mcp@latest'], envKeys: ['TAVILY_API_KEY'], keyGetUrl: 'https://app.tavily.com', keyGetLabel: 'Get TAVILY_API_KEY' }, null],
   [{ name: 'arxiv', label: 'Arxiv', description: 'Paper search and abstracts — activate for academic research.', category: 'Search & Research', command: 'npx', args: ['-y', 'arxiv-mcp-server'], envKeys: [] }, null],
+  // Agent Skills (bundled — the 25 production-engineering SKILL.md bundles,
+  // served over MCP by the dependency-free server shipped in plugin/agent-skills)
+  [{ name: 'agent-skills-backend', label: 'Agent Skills · Backend', description: 'Bundled backend engineering skills (API design, TDD, security, performance) served over MCP — activate for backend work.', category: 'Agent Skills', bundled: { specifier: 'smoke-monkey-harness/plugin/agent-skills/mcp/server.mjs', args: ['--domain=backend'] } }, null],
+  [{ name: 'agent-skills-frontend', label: 'Agent Skills · Frontend', description: 'Bundled frontend engineering skills (UI engineering, accessibility, browser testing) served over MCP — activate for frontend work.', category: 'Agent Skills', bundled: { specifier: 'smoke-monkey-harness/plugin/agent-skills/mcp/server.mjs', args: ['--domain=frontend'] } }, null],
+  [{ name: 'agent-skills-devops', label: 'Agent Skills · DevOps', description: 'Bundled DevOps skills (CI/CD, observability, git workflow, shipping) served over MCP — activate for ops/release work.', category: 'Agent Skills', bundled: { specifier: 'smoke-monkey-harness/plugin/agent-skills/mcp/server.mjs', args: ['--domain=devops'] } }, null],
+  [{ name: 'agent-skills-qa', label: 'Agent Skills · QA', description: 'Bundled QA skills (test-driven development, debugging, verification) served over MCP — activate for testing/QA work.', category: 'Agent Skills', bundled: { specifier: 'smoke-monkey-harness/plugin/agent-skills/mcp/server.mjs', args: ['--domain=qa'] } }, null],
 ];
 
 function build(): StockEntry[] {
@@ -140,6 +156,18 @@ export function stockToMcpConfig(
   entryLike: StockEntry,
   opts: { env?: Record<string, string>; headers?: Record<string, string>; enabled?: boolean } = {},
 ): McpServerConfig {
+  if (entryLike.bundled) {
+    return {
+      id: entryLike.name.toLowerCase(),
+      name: entryLike.name,
+      description: `${entryLike.label} — ${entryLike.description}`,
+      command: process.execPath,
+      args: [resolveBundledServer(entryLike.bundled.specifier), ...(entryLike.bundled.args ?? [])],
+      env: opts.env,
+      headers: opts.headers,
+      enabled: opts.enabled,
+    };
+  }
   return {
     id: entryLike.name.toLowerCase(),
     name: entryLike.name,
@@ -151,4 +179,24 @@ export function stockToMcpConfig(
     headers: opts.headers,
     enabled: opts.enabled,
   };
+}
+
+/**
+ * Resolve a bundled server subpath (e.g. `smoke-monkey-harness/plugin/agent-skills/mcp/server.mjs`)
+ * to an absolute file path. Uses `createRequire` anchored at the caller's cwd so the
+ * resolution walks node_modules from the user's project — and self-references the package
+ * `exports` map when running inside a link/dev checkout. Works in both the ESM and CJS builds
+ * (no `import.meta` dependency).
+ */
+function resolveBundledServer(specifier: string): string {
+  const requireFromCwd = createRequire(join(process.cwd(), '__smoke_monkey_resolve__.js'));
+  try {
+    return requireFromCwd.resolve(specifier);
+  } catch (err) {
+    throw new Error(
+      `stockToMcpConfig: bundled server "${specifier}" could not be resolved from ${process.cwd()} — ` +
+        `ensure smoke-monkey-harness is installed in this project's node_modules.`,
+      { cause: err },
+    );
+  }
 }

@@ -5,6 +5,37 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-09-26
+
+Published to npm as `smoke-monkey-harness@1.1.0`.
+
+### Added
+
+- Bundled **Agent Skills** MCP servers in `plugin/agent-skills/` (25 engineering
+  skills from the `agent-skills` skill bundle, served over MCP by a
+  dependency-free stdio server), shipped in the package tarball.
+- Four stock catalog entries under a new **Agent Skills** stock category —
+  `agent-skills-backend`, `agent-skills-frontend`, `agent-skills-devops`,
+  `agent-skills-qa` — each a `node <bundled server> --domain=…` config. Pick one
+  from stock or add your own MCP; both flow through `stockToMcpConfig`.
+- `stockToMcpConfig` now resolves bundled stock entries to an absolute, spawnable
+  server path (works in both the ESM and CommonJS builds; validates the server is
+  installed if resolution fails).
+- Package exports subpath `./plugin/agent-skills/mcp/server.mjs`.
+- **Universal agent installer**: `plugin/install.sh` (and `pnpm run
+  plugin:install`) now installs the plugin skill for ~70 agents. It reads
+  `plugin/agents.json` — the cross-agent SKILL.md path table — and writes the
+  skill to every agent's global skills directory (plus project dirs with
+  `--local`). New flags: `--list` to print the supported-agent table and
+  `--agent <id>` to install for one agent by id.
+- `defaultSkillDirs` now also discovers skills from the universal agent paths
+  (`~/.agents/skills`, cursor, windsurf, gemini, goose, etc.), so skills
+  installed by `plugin/install.sh` are found no matter which agent owns them.
+
+### Changed
+
+- Scaffold dependency bumped to `smoke-monkey-harness@^1.1.0`.
+
 ## [1.0.9] — 2026-09-24
 
 Published to npm as `smoke-monkey-harness@1.0.9`.
@@ -146,6 +177,7 @@ Initial public release.
 
 - Relicensed from **PolyForm Noncommercial 1.0.0** to **MIT**.
 
+[1.1.0]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.1.0
 [1.0.9]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.9
 [1.0.8]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.8
 [1.0.7]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.7

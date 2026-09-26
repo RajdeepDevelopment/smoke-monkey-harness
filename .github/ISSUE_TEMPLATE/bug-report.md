@@ -20,7 +20,7 @@ A clear and concise description of what you expected to happen.
 
 **Environment**
 - Node version: [e.g. 24]
-- Package version: [e.g. 1.0.5]
+- Package version: [e.g. 1.1.0]
 - Package manager: [pnpm / npm]
 - LLM provider + model: [e.g. NVIDIA / nvidia/nemotron-3-super-120b-a12b]
 
