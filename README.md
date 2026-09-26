@@ -95,8 +95,14 @@ const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath
 ## Use it over MCP (connect this repository)
 
 Smoke Monkey ships its own **stdio MCP server** that exposes the harness itself
-to any MCP client. Talk to it with any MCP client over stdio — no install in
-your project needed:
+to any MCP client — so you can **build a full agentic, looping workflow in
+seconds** without writing any library code yourself. Point **Claude Code,
+Codex, opencode, Cursor, or any MCP-capable editor** at the server and your
+agent can plan (`harness_plan`), scaffold (`harness_scaffold`), wire the loop
+(`harness_guide` / `harness_api`), verify (`harness_verify`), and apply the 25
+bundled engineering skills category-wise (`harness_skills_by_category` /
+`harness_skill_content`) — directly through MCP. No install in your project
+needed:
 
 ```json
 {
@@ -109,11 +115,10 @@ your project needed:
 }
 ```
 
-Point Claude Code, Codex, opencode, Cursor, or any MCP-capable editor at that
-server and the harness toolset appears directly — `harness_guide`,
-`harness_plan`, `harness_api`, `harness_scaffold`, `harness_verify`,
-`harness_examples`, `harness_status`, and the per-feature deep dives. Inside
-your own harness, register it like any other MCP server:
+The harness toolset appears directly — the looping agent workflow (run loop,
+tool execution, permissions, context management, MCP integration, sessions,
+recovery) is built into the library and driven by these tools. Inside your own
+harness, register it like any other MCP server:
 
 ```ts
 const agent = createAgent({
@@ -363,6 +368,34 @@ under the workspace plus `~/.claude/skills`, `~/.codex/skills`,
 when at least one skill is present. Lower-level pieces: `loadSkillsFromDirs()`,
 `defaultSkillDirs()`, and `SkillRegistry` (all exported from the package root).
 
+### Bundled Agent Skills (category-wise)
+
+The package ships the 25 `agent-skills` engineering skills (SKILL.md folders in
+`plugin/agent-skills/skills`) — loaded directly as harness skills, without
+spawning the MCP server. Categories mirror the stock MCP entries, so a run can
+register just the backend (or frontend/devops/qa) skill set:
+
+```ts
+import { loadAgentSkills, buildAgentSkillRegistry, AGENT_SKILL_CATEGORIES } from 'smoke-monkey-harness';
+
+// catalog of the 4 categories: agent-skills-backend / -frontend / -devops / -qa
+console.log(AGENT_SKILL_CATEGORIES.map((c) => `${c.id} → ${c.domain}`));
+
+// all 25 skills, each tagged with its catalog `domains` and lifecycle `phase`
+const all = loadAgentSkills();
+
+// just the backend domain set (api-and-interface-design, tdd, security, …)
+const backendSkills = loadAgentSkills({ category: 'agent-skills-backend' });
+
+// or a ready-to-use SkillRegistry for one category
+const qa = buildAgentSkillRegistry({ category: 'agent-skills-qa' });
+```
+
+Each loaded skill carries `domains: string[]` and `phase: 'define' | 'plan' |
+'build' | 'verify' | 'review' | 'ship' | 'meta'` metadata. The phase/domain
+mapping is shared with the bundled MCP server via `plugin/agent-skills/catalog.json`,
+so list-wise behavior never drifts between the skill loader and the server.
+
 ---
 
 ## API
@@ -425,6 +458,13 @@ path table as the AGENTS ecosystem) and drops the skill where each tool natively
 reads skills — aider-desk, cline, cursor, windsurf, gemini-cli, goose, copilot,
 opencode, Claude Code, Codex, and more. The portable `.agents/skills/` path
 covers a dozen agents with one `--local` install.
+
+Every install also drops the **25 bundled agent-skills** under
+`<skills-dir>/agent-skills/<skill>/` (the category-wise skills from
+`plugin/agent-skills/skills`), so any agent can apply backend/frontend/devops/qa
+engineering methodology natively — the same set the library loads via
+`loadAgentSkills({ category })` and the MCP server serves via the stock
+`agent-skills-*` entries.
 
 Once installed, ask your agent to "build me an agent that …" — it will load the
 smoke-monkey-harness skill, read `harness_guide`, and `harness_scaffold` a

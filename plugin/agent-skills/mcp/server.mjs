@@ -28,85 +28,18 @@ const REFERENCES_DIR = join(__dirname, '..', 'references');
 const SERVER_NAME = 'agent-skills';
 const SERVER_VERSION = '0.1.0';
 
+// Shared catalog (phases / domains / aliases) — single source of truth also
+// used by the library's src/agent-skills.ts for category-wise skill loading.
+const CATALOG = JSON.parse(readFileSync(join(__dirname, '..', 'catalog.json'), 'utf8'));
+
 /** Lifecycle phase for each skill (used for category-wise discovery). */
-const PHASE = {
-  'using-agent-skills': 'meta',
-  'interview-me': 'define',
-  'idea-refine': 'define',
-  'spec-driven-development': 'define',
-  'constraint-driven-development': 'define',
-  'planning-and-task-breakdown': 'plan',
-  'incremental-implementation': 'build',
-  'test-driven-development': 'build',
-  'context-engineering': 'build',
-  'source-driven-development': 'build',
-  'doubt-driven-development': 'build',
-  'frontend-ui-engineering': 'build',
-  'api-and-interface-design': 'build',
-  'browser-testing-with-devtools': 'verify',
-  'debugging-and-error-recovery': 'verify',
-  'code-review-and-quality': 'review',
-  'code-simplification': 'review',
-  'security-and-hardening': 'review',
-  'performance-optimization': 'review',
-  'git-workflow-and-versioning': 'ship',
-  'ci-cd-and-automation': 'ship',
-  'deprecation-and-migration': 'ship',
-  'documentation-and-adrs': 'ship',
-  'observability-and-instrumentation': 'ship',
-  'shipping-and-launch': 'ship',
-};
+const PHASE = CATALOG.phases;
 
 /** Domains each skill serves (backend / frontend / devops / data / qa). */
-const DOMAINS = {
-  'using-agent-skills': ['meta'],
-  'interview-me': ['meta'],
-  'idea-refine': ['meta'],
-  'spec-driven-development': ['backend', 'frontend', 'data'],
-  'constraint-driven-development': ['qa', 'backend', 'frontend'],
-  'planning-and-task-breakdown': ['backend', 'frontend', 'data'],
-  'incremental-implementation': ['backend', 'frontend', 'data'],
-  'test-driven-development': ['backend', 'frontend', 'qa'],
-  'context-engineering': ['backend', 'frontend'],
-  'source-driven-development': ['backend', 'frontend'],
-  'doubt-driven-development': ['backend', 'frontend', 'qa'],
-  'frontend-ui-engineering': ['frontend'],
-  'api-and-interface-design': ['backend'],
-  'browser-testing-with-devtools': ['frontend', 'qa'],
-  'debugging-and-error-recovery': ['backend', 'frontend'],
-  'code-review-and-quality': ['backend', 'frontend', 'qa'],
-  'code-simplification': ['backend', 'frontend'],
-  'security-and-hardening': ['backend', 'devops'],
-  'performance-optimization': ['backend', 'frontend', 'devops'],
-  'git-workflow-and-versioning': ['backend', 'frontend', 'devops'],
-  'ci-cd-and-automation': ['devops'],
-  'deprecation-and-migration': ['backend', 'devops'],
-  'documentation-and-adrs': ['backend', 'frontend', 'devops'],
-  'observability-and-instrumentation': ['backend', 'devops'],
-  'shipping-and-launch': ['devops'],
-};
+const DOMAINS = CATALOG.domains;
 
 /** Common aliases so recommend/list lookups match natural language. */
-const ALIASES = {
-  'test-driven-development': ['tdd', 'tests', 'testing'],
-  'spec-driven-development': ['spec', 'prd', 'requirements'],
-  'constraint-driven-development': ['constraints', 'quality bar'],
-  'frontend-ui-engineering': ['ui', 'frontend', 'interface'],
-  'api-and-interface-design': ['api', 'backend', 'contract first'],
-  'security-and-hardening': ['security', 'auth', 'owasp'],
-  'performance-optimization': ['performance', 'perf', 'cwebv', 'core web vitals'],
-  'git-workflow-and-versioning': ['git', 'commit', 'branch'],
-  'ci-cd-and-automation': ['ci', 'cd', 'pipeline', 'deploy'],
-  'shipping-and-launch': ['ship', 'launch', 'rollout'],
-  'deprecation-and-migration': ['deprecat', 'migration', 'sunset'],
-  'observability-and-instrumentation': ['observability', 'logging', 'tracing', 'metrics'],
-  'code-review-and-quality': ['review', 'cr'],
-  'debugging-and-error-recovery': ['debugging', 'debug', 'error recovery'],
-  'browser-testing-with-devtools': ['browser', 'dom', 'devtools', 'e2e'],
-  'documentation-and-adrs': ['adr', 'docs', 'documentation'],
-  'source-driven-development': ['sources', 'official docs', 'citations'],
-  'doubt-driven-development': ['doubt', 'fresh context', 'adversarial'],
-};
+const ALIASES = CATALOG.aliases;
 
 const PHASE_LABEL = {
   meta: 'Meta',

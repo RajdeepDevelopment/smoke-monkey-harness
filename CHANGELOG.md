@@ -5,6 +5,58 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-09-26
+
+Published to npm as `smoke-monkey-harness@1.2.0` and
+`smoke-monkey-harness-mcp@1.0.1`.
+
+### Companion `smoke-monkey-harness-mcp@1.0.1`
+
+- Versioned `1.0.1` in line with the library's `1.x` scheme; dependency
+  tightened to `smoke-monkey-harness@^1.2.0` so
+  `npx -y smoke-monkey-harness-mcp` resolves the harness 1.2.0 server (20 tools,
+  including the category-wise agent-skills `harness_skills_by_category` and
+  `harness_skill_content`).
+- README tool table updated with the new skills tools.
+
+### Added
+
+- **Category-wise bundled Agent Skills** — the 25 skills in
+  `plugin/agent-skills/skills` can now be loaded directly as harness skills
+  (no MCP process needed), filtered by the same categories as the stock MCP
+  entries: `loadAgentSkills({ category })`, `buildAgentSkillRegistry({ category })`,
+  `AGENT_SKILL_CATEGORIES`, `agentSkillCategories()`, `categoryToDomain()`,
+  `resolveBundledAgentSkillsDir()`, `loadAgentSkillCatalog()`. The bundled
+  skills dir is resolved through the package `exports` subpath, so it works in
+  both the ESM and CommonJS builds.
+- **Shared skill catalog** — `plugin/agent-skills/catalog.json` is now the
+  single source of truth for the lifecycle phase, domains (backend/frontend/
+  devops/data/qa/meta), and aliases per skill. The bundled MCP server
+  (`plugin/agent-skills/mcp/server.mjs`) reads it too, so the skill loader and
+  the server can never drift on which skills belong to which category.
+- `Skill` objects gain optional `domains: string[]` and `phase: string`
+  metadata when loaded via `loadAgentSkills()` (frontmatter-only skills remain
+  unchanged).
+- Unit tests `tests/agent-skills.test.ts` (category mapping, 25-skill load,
+  per-domain filtering, registry build).
+- **Harness MCP server tools** — `plugin/mcp/server.mjs` now exposes the
+  bundled agent-skills directly (18 → 20 tools): `harness_skills_by_category`
+  (browse the 25 skills in `plugin/agent-skills/skills`, filtered by the stock
+  categories or a raw domain) and `harness_skill_content` (load one skill's
+  full `SKILL.md`), so agents can discover and apply the bundled skills through
+  the harness server itself.
+- **Installer ships the category-wise skills** — `plugin/install.sh` now drops
+  the 25 bundled agent-skills under `<skills-dir>/agent-skills/<skill>/` for
+  every agent (global + project), so all ~70 supported tools gain the
+  backend/frontend/devops/qa skills alongside the smoke-monkey-harness skill.
+  Loaders scan recursively, so no agent-side config is needed.
+
+### Changed
+
+- Loaded skills are tagged with their catalog domains/phases; `list_skills` /
+  `use_skill` still work unchanged — bundled agent-skills are just an
+  additional `loadAgentSkills()`/registry source.
+
 ## [1.1.0] — 2026-09-26
 
 Published to npm as `smoke-monkey-harness@1.1.0`.

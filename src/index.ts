@@ -122,6 +122,20 @@ export {
   type Skill,
 } from './skills.js';
 
+// Bundled agent-skills (category-wise SKILL.md loading from plugin/agent-skills)
+export {
+  AGENT_SKILL_CATEGORIES,
+  agentSkillCategories,
+  categoryToDomain,
+  resolveBundledAgentSkillsDir,
+  loadAgentSkillCatalog,
+  loadAgentSkills,
+  buildAgentSkillRegistry,
+  type AgentSkillCategory,
+  type AgentSkillsCatalog,
+  type LoadAgentSkillsOptions,
+} from './agent-skills.js';
+
 // MCP client + manager
 export {
   McpManager,

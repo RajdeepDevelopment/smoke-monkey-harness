@@ -93,6 +93,8 @@ try {
     'harness_guide_permissions',
     'harness_guide_storage',
     'harness_guide_events',
+    'harness_skills_by_category',
+    'harness_skill_content',
   ]) {
     if (!names.includes(expected)) throw new Error(`missing tool: ${expected}`);
   }
@@ -155,6 +157,29 @@ try {
   const readText = read.result?.content?.[0]?.text ?? '';
   if (!readText.includes('createAgent')) throw new Error('read_example failed');
   console.log('  harness_examples + harness_read_example ok');
+
+  // harness_skills_by_category — category-wise bundled agent skills
+  const allSkills = await call('tools/call', { name: 'harness_skills_by_category', arguments: {} });
+  const allSkillsText = allSkills.result?.content?.[0]?.text ?? '';
+  if (!/25 of 25/.test(allSkillsText) || !allSkillsText.includes('test-driven-development')) {
+    throw new Error('skills list missing all 25');
+  }
+  const backend = await call('tools/call', { name: 'harness_skills_by_category', arguments: { category: 'agent-skills-backend' } });
+  const backendText = backend.result?.content?.[0]?.text ?? '';
+  if (!backendText.includes('Agent Skills · Backend') || !backendText.includes('api-and-interface-design')) {
+    throw new Error('skills category filter failed');
+  }
+  const badCat = await call('tools/call', { name: 'harness_skills_by_category', arguments: { category: 'nope' } });
+  if (!badCat.result?.isError) throw new Error('skills unknown category should error');
+  console.log('  harness_skills_by_category ok (all 25 + category filter + unknown guard)');
+
+  // harness_skill_content — full SKILL.md load
+  const skill = await call('tools/call', { name: 'harness_skill_content', arguments: { skill: 'test-driven-development' } });
+  const skillText = skill.result?.content?.[0]?.text ?? '';
+  if (!skillText.includes('red-green') && !skillText.includes('Test')) throw new Error('skill content missing workflow');
+  const skillUnknown = await call('tools/call', { name: 'harness_skill_content', arguments: { skill: 'does-not-exist' } });
+  if (!skillUnknown.result?.isError) throw new Error('skill unknown should error');
+  console.log('  harness_skill_content ok (full SKILL.md + unknown guard)');
 
   // harness_scaffold into a temp dir
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'smh-plugin-'));
