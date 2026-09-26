@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] — 2026-09-24
+
+Published to npm as `smoke-monkey-harness@1.0.9`.
+
+### Changed
+
+- README: moved the "Use it over MCP (connect this repository)" section above
+  "Why Smoke Monkey?" so the `npx -y smoke-monkey-harness-mcp` snippet is easy
+  to find; the MCP configuration section now links to it.
+- Scaffold dependency bumped to `smoke-monkey-harness@^1.0.9`.
+
 ## [1.0.8] — 2026-09-24
 
 Published to npm as `smoke-monkey-harness@1.0.8`.
@@ -135,6 +146,7 @@ Initial public release.
 
 - Relicensed from **PolyForm Noncommercial 1.0.0** to **MIT**.
 
+[1.0.9]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.9
 [1.0.8]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.8
 [1.0.7]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.7
 [1.0.6]: https://github.com/RajdeepDevelopment/smoke-monkey-harness/releases/tag/v1.0.6

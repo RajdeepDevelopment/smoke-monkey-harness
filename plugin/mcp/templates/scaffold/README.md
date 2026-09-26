@@ -12,7 +12,7 @@ export NVIDIA_API_KEY=nvapi-...          # or OPENAI_API_KEY / OPENROUTER_API_KE
 npm run dev -- "write a README for this repo"
 ```
 
-> The dependency is `smoke-monkey-harness@^1.0.8` from npm. If you are working
+> The dependency is `smoke-monkey-harness@^1.0.9` from npm. If you are working
 > inside a checkout of the library itself, `file:../../..` works too.
 
 Set `PROVIDER` / `MODEL` to swap LLM backends (e.g. `openrouter` +

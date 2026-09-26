@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "smoke-monkey-harness": "^1.0.8"
+    "smoke-monkey-harness": "^1.0.9"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
