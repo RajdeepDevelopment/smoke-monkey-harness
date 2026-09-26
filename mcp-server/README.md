@@ -38,7 +38,15 @@ Talk to it with any MCP client over stdio:
 | `harness_scaffold` | Generate a starter agent project on disk |
 | `harness_verify` | Typecheck/build an existing agent project |
 | `harness_examples` / `harness_read_example` | Bundled example agents |
+| `harness_skills_by_category` | Browse the 25 bundled agent-skills (`plugin/agent-skills/skills`) by category (backend/frontend/devops/qa) or domain |
+| `harness_skill_content` | Load one bundled skill's full `SKILL.md` workflow |
 | `harness_guide_<feature>` | Deep dives: subcontexts, skills, mcp, providers, tools, loop, permissions, storage, events |
+
+Every tool description carries `PURPOSE / WHEN TO CALL / RELATED` so agents
+route correctly between the harness-library tools and the generic
+development-skill tools. The category-wise skills are the same set the library
+loads via `loadAgentSkills({ category })` / `buildAgentSkillRegistry({ category })`
+and that `plugin/install.sh` drops under `<skills-dir>/agent-skills/<skill>/`.
 
 No runtime dependencies of its own — the server itself ships inside the
 `smoke-monkey-harness` package (which is published as a dependency).
