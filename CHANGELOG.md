@@ -35,6 +35,11 @@ Published to npm as `smoke-monkey-harness@1.2.0`.
   categories or a raw domain) and `harness_skill_content` (load one skill's
   full `SKILL.md`), so agents can discover and apply the bundled skills through
   the harness server itself.
+- **Installer ships the category-wise skills** — `plugin/install.sh` now drops
+  the 25 bundled agent-skills under `<skills-dir>/agent-skills/<skill>/` for
+  every agent (global + project), so all ~70 supported tools gain the
+  backend/frontend/devops/qa skills alongside the smoke-monkey-harness skill.
+  Loaders scan recursively, so no agent-side config is needed.
 
 ### Changed
 

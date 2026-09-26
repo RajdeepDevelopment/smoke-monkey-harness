@@ -12,12 +12,18 @@
 # (`mcp/`). This script copies the skill (and, for the native hosts below, the
 # whole package) into the skills directories that each tool natively reads:
 #
-#   universal  : .agents/skills/<name>/        project + ~/.agents/skills
-#   Claude Code: ~/.claude/skills/<name>/      skills-dir plugin (+opencode)
-#   Codex      : ~/.codex/skills/<name>/ + personal marketplace at ~/.agents/plugins
-#   opencode   : ~/.config/opencode/skills/<name>/
-#   Antigravity: ~/.gemini/config/skills/<name>/ + real plugin at ~/.gemini/config/plugins
-#   Copilot    : ~/.copilot/skills/<name>/
+# universal  : .agents/skills/<name>/        project + ~/.agents/skills
+# Claude Code: ~/.claude/skills/<name>/      skills-dir plugin (+opencode)
+# Codex      : ~/.codex/skills/<name>/ + personal marketplace at ~/.agents/plugins
+# opencode   : ~/.config/opencode/skills/<name>/
+# Antigravity: ~/.gemini/config/skills/<name>/ + real plugin at ~/.gemini/config/plugins
+# Copilot    : ~/.copilot/skills/<name>/
+#
+# Each install ALSO drops the 25 bundled agent-skills (backend/frontend/devops/
+# qa — plugin/agent-skills/skills) under <skills-dir>/agent-skills/<skill>/,
+# so every agent can use the category-wise skills natively (the library loads
+# them via loadAgentSkills/buildAgentSkillRegistry; the MCP server via the
+# stock agent-skills-* entries).
 #
 #   --agent <id>   install only for one agent (any id in plugin/agents.json)
 #   --local        additionally install into the current project and write the
@@ -40,6 +46,7 @@ UP="$(cd "$ROOT/.." && pwd)"
 NAME="smoke-monkey-harness"
 PKG="$ROOT"
 SKILL_SRC="$ROOT/skills/$NAME"
+AGENT_SKILLS_SRC="$ROOT/agent-skills/skills"
 SERVER_SRC="$ROOT/mcp/server.mjs"
 ANTIGRAVITY_SRC="$UP/.agents/plugins/$NAME"
 FORCE=0
@@ -57,13 +64,13 @@ for arg in "$@"; do
     --agent|-a) AGENT_SELECT="${2:-}"; shift ;;
     --agent=*) AGENT_SELECT="${arg#*=}" ;;
     --help|-h)
-      echo "Install the smoke-monkey-harness plugin (skill + MCP server) for ~70 agents."
+      echo "Install the smoke-monkey-harness plugin (skill + MCP server + 25 bundled agent-skills) for ~70 agents."
       echo ""
       echo "  install.sh            install for all agents (home skills dirs)"
       echo "  install.sh --local    also install into the current project and write .mcp.json + .agents/mcp_config.json + opencode.json"
       echo "  install.sh --agent <id>  install only for one agent (see plugin/agents.json)"
       echo "  install.sh --list     print the supported-agent table"
-      echo "  install.sh --force    overwrite any existing install at the same paths"
+      echo "  install.sh --force    overwrite any existing installs (including the agent-skills bundle)"
       echo "  install.sh --repo     print the Claude marketplace / Codex install commands for this repo"
       exit 0
       ;;
@@ -124,6 +131,24 @@ install_skill () {  # copy just the skill folder (SKILL.md at target root)
   echo "  installed skill → $dst"
 }
 
+# Install the bundled agent-skills (25 category-wise SKILL.md folders) into a
+# parent skills dir, each under `<dir>/agent-skills/<skill>/`. Loaders scan
+# recursively, so agents discover every one; the library's loadAgentSkills /
+# buildAgentSkillRegistry read them from the same layout.
+install_agent_skills () {
+  local dir="$1"
+  [ -d "$AGENT_SKILLS_SRC" ] || { echo "  (no agent-skills bundle found — skipped)"; return 0; }
+  local dst="$dir/agent-skills"
+  mkdir -p "$(dirname "$dst")"
+  if [ -e "$dst" ] && [ "$FORCE" -eq 0 ]; then
+    echo "  skip agent-skills (exists — rerun with --force) : $dst"
+    return 0
+  fi
+  rm -rf "$dst"
+  cp -R "$AGENT_SKILLS_SRC" "$dst"
+  echo "  installed agent-skills ($(find "$AGENT_SKILLS_SRC" -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d ' ') skills) → $dst"
+}
+
 # write .mcp.json (Claude Code / Codex) pointing at an absolute server path
 write_mcp_json () {
   local target="$1" server="$2"
@@ -181,6 +206,7 @@ write_codex_marketplace () {
 echo "smoke-monkey-harness plugin installer"
 echo "  plugin package : $PKG"
 echo "  skill          : $SKILL_SRC"
+echo "  agent-skills   : $AGENT_SKILLS_SRC (25 category-wise skills)"
 echo "  mcp server     : $SERVER_SRC"
 echo ""
 
@@ -230,14 +256,17 @@ while IFS=$'\t' read -r id display project global native; do
   # Global (home) install: write the skill where the agent reads it.
   if [ -n "$global" ]; then
     install_skill "$HOME/$global/$NAME"
+    install_agent_skills "$HOME/$global"
   fi
 
   # Local (project) install for this agent.
   if [ "$LOCAL" -eq 1 ] && [ -n "$project" ]; then
     if [[ "$project" == /* ]]; then
       install_skill "$project/$NAME"
+      install_agent_skills "$project"
     else
       install_skill "$CWD/$project/$NAME"
+      install_agent_skills "$CWD/$project"
     fi
   fi
 
@@ -288,6 +317,8 @@ echo ""
 echo "Next steps:"
 echo "  - Global skills are live for every agent that reads SKILL.md from ~/<agent-path>"
 echo "    (~/.agents/skills covers ~20 agents; per-agent paths cover the rest)."
+echo "    Each dir also carries the 25 bundled agent-skills under"
+echo "    <skills-dir>/agent-skills/<skill>/ — use them category-wise in any agent."
 echo "  - Claude Code : skills-dir plugin at ~/.claude/skills (opencode auto-loads it too)."
 echo "                  Marketplace install: run '$0 --repo' for the commands."
 echo "  - Codex       : run 'codex plugin install smoke-monkey-harness@personal'"

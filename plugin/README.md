@@ -56,6 +56,14 @@ plugin/install.sh --force         # overwrite existing installs
 (Claude Code / Codex), `.agents/mcp_config.json` (Antigravity), and the
 opencode `mcp` block in project `opencode.json`.
 
+Every install also drops the **25 bundled agent-skills** under
+`<skills-dir>/agent-skills/<skill>/` — the category-wise skills from
+`plugin/agent-skills/skills` (backend/frontend/devops/qa). All SKILL.md loaders
+scan recursively, so every agent silently gains the full set alongside the
+smoke-monkey-harness skill; the library exposes them via `loadAgentSkills()`
+and the MCP server via the stock `agent-skills-*` entries / the harness server's
+`harness_skills_by_category` + `harness_skill_content` tools.
+
 The portable `.agents/skills/<name>/` install is the universal one — a dozen
 agents (Amp, Replit, Universal, Cline, Cursor, Gemini CLI, and more) read that
 directory, so one `--local` install covers all of them.

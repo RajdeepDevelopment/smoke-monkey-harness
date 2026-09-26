@@ -454,6 +454,13 @@ reads skills — aider-desk, cline, cursor, windsurf, gemini-cli, goose, copilot
 opencode, Claude Code, Codex, and more. The portable `.agents/skills/` path
 covers a dozen agents with one `--local` install.
 
+Every install also drops the **25 bundled agent-skills** under
+`<skills-dir>/agent-skills/<skill>/` (the category-wise skills from
+`plugin/agent-skills/skills`), so any agent can apply backend/frontend/devops/qa
+engineering methodology natively — the same set the library loads via
+`loadAgentSkills({ category })` and the MCP server serves via the stock
+`agent-skills-*` entries.
+
 Once installed, ask your agent to "build me an agent that …" — it will load the
 smoke-monkey-harness skill, read `harness_guide`, and `harness_scaffold` a
 starter project on disk. Any agent that reads `AGENTS.md` at the repo root gets

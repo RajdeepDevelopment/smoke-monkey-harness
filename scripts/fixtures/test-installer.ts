@@ -53,7 +53,15 @@ try {
   ]) {
     if (!fs.existsSync(path.join(HOME_T, sub))) throw new Error(`home install missing ${sub}`);
   }
-  console.log('  home install ok — ~/.agents/skills + per-agent homes');
+  // Home install also lands the 25 bundled agent-skills (category-wise) per agent.
+  for (const sub of [
+    '.agents/skills/agent-skills/api-and-interface-design/SKILL.md',
+    '.agents/skills/agent-skills/test-driven-development/SKILL.md',
+    '.cursor/skills/agent-skills/ci-cd-and-automation/SKILL.md',
+  ]) {
+    if (!fs.existsSync(path.join(HOME_T, sub))) throw new Error(`home install missing agent-skills ${sub}`);
+  }
+  console.log('  home install ok — ~/.agents/skills + per-agent homes + 25 agent-skills');
 
   // Local install → project skill dirs + MCP wiring.
   run(CWD_T, env, ['--local']);
@@ -61,6 +69,8 @@ try {
     '.agents/skills/smoke-monkey-harness/SKILL.md',
     '.claude/skills/smoke-monkey-harness/SKILL.md',
     '.codex/skills/smoke-monkey-harness/SKILL.md',
+    '.agents/skills/agent-skills/frontend-ui-engineering/SKILL.md',
+    '.claude/skills/agent-skills/security-and-hardening/SKILL.md',
   ]) {
     if (!fs.existsSync(file(sub))) throw new Error(`local install missing ${sub}`);
   }
@@ -68,7 +78,7 @@ try {
     if (!fs.existsSync(file(cfg))) throw new Error(`local install missing MCP wiring ${cfg}`);
   }
   console.log(
-    '  local install ok — project skills + .mcp.json + .agents/mcp_config.json + opencode.json'
+    '  local install ok — project skills + 25 agent-skills + .mcp.json + .agents/mcp_config.json + opencode.json'
   );
 
   // Single-agent install is scoped.
@@ -79,6 +89,11 @@ try {
     !fs.existsSync(path.join(CWD_T, 'single-agent', '.agents/skills/smoke-monkey-harness/SKILL.md'))
   ) {
     throw new Error('--agent did not install the selected agent');
+  }
+  if (
+    !fs.existsSync(path.join(CWD_T, 'single-agent', '.agents/skills/agent-skills/test-driven-development/SKILL.md'))
+  ) {
+    throw new Error('--agent did not install the agent-skills bundle for the selected agent');
   }
   if (
     fs.existsSync(path.join(CWD_T, 'single-agent', '.claude/skills/smoke-monkey-harness/SKILL.md'))
