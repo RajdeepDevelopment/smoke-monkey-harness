@@ -363,6 +363,34 @@ under the workspace plus `~/.claude/skills`, `~/.codex/skills`,
 when at least one skill is present. Lower-level pieces: `loadSkillsFromDirs()`,
 `defaultSkillDirs()`, and `SkillRegistry` (all exported from the package root).
 
+### Bundled Agent Skills (category-wise)
+
+The package ships the 25 `agent-skills` engineering skills (SKILL.md folders in
+`plugin/agent-skills/skills`) — loaded directly as harness skills, without
+spawning the MCP server. Categories mirror the stock MCP entries, so a run can
+register just the backend (or frontend/devops/qa) skill set:
+
+```ts
+import { loadAgentSkills, buildAgentSkillRegistry, AGENT_SKILL_CATEGORIES } from 'smoke-monkey-harness';
+
+// catalog of the 4 categories: agent-skills-backend / -frontend / -devops / -qa
+console.log(AGENT_SKILL_CATEGORIES.map((c) => `${c.id} → ${c.domain}`));
+
+// all 25 skills, each tagged with its catalog `domains` and lifecycle `phase`
+const all = loadAgentSkills();
+
+// just the backend domain set (api-and-interface-design, tdd, security, …)
+const backendSkills = loadAgentSkills({ category: 'agent-skills-backend' });
+
+// or a ready-to-use SkillRegistry for one category
+const qa = buildAgentSkillRegistry({ category: 'agent-skills-qa' });
+```
+
+Each loaded skill carries `domains: string[]` and `phase: 'define' | 'plan' |
+'build' | 'verify' | 'review' | 'ship' | 'meta'` metadata. The phase/domain
+mapping is shared with the bundled MCP server via `plugin/agent-skills/catalog.json`,
+so list-wise behavior never drifts between the skill loader and the server.
+
 ---
 
 ## API

@@ -35,6 +35,10 @@ export interface Skill {
   path: string;
   /** Absolute path of the skill folder (supporting files live here). */
   dir: string;
+  /** Optional catalog domains (bundled agent-skills): backend/frontend/devops/data/qa/meta. */
+  domains?: string[];
+  /** Optional lifecycle phase (bundled agent-skills): define/plan/build/verify/review/ship/meta. */
+  phase?: string;
 }
 
 export function slugify(name: string): string {
