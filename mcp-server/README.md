@@ -1,5 +1,11 @@
 # smoke-monkey-harness-mcp
 
+`smoke-monkey-harness-mcp` — build, scaffold, verify, and run looping TypeScript
+AI agents on [Smoke Monkey Harness](https://github.com/RajdeepDevelopment/smoke-monkey-harness)
+from any MCP client.
+
+![Build an agentic looping workflow in seconds](https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/mcp-server/smoke-monkey-harness-mcp.gif)
+
 MCP server for [Smoke Monkey Harness](https://github.com/RajdeepDevelopment/smoke-monkey-harness) — an embeddable,
 framework-agnostic TypeScript agent runtime.
 
