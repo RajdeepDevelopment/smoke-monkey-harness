@@ -1,8 +1,16 @@
-# smoke-monkey-harness-mcp
+# @smoke-monkey/mcp
 
-`smoke-monkey-harness-mcp` — build, scaffold, verify, and run looping TypeScript
+`@smoke-monkey/mcp` — build, scaffold, verify, and run looping TypeScript
 AI agents on [Smoke Monkey Harness](https://github.com/RajdeepDevelopment/smoke-monkey-harness)
 from any MCP client.
+
+> **Two names, one server.** New installs should use the scoped
+> [`@smoke-monkey/mcp`](https://www.npmjs.com/package/@smoke-monkey/mcp) via
+> `npx -y @smoke-monkey/mcp`. The older unscoped `smoke-monkey-harness-mcp` is
+> still published and still works, so existing setups need no change. Note the
+> command name: the scoped package installs a `smoke-monkey-mcp` binary, since
+> npm strips the scope from bin names and a bare `mcp` would be too generic.
+> The examples below use the unscoped name, which both packages accept.
 
 ![Build an agentic looping workflow in seconds](https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/development/mcp-server/smoke-monkey-harness-mcp.gif)
 
@@ -31,6 +39,13 @@ library — this server just drives it from any MCP client.
 ## Run with npx
 
 ```sh
+npx -y @smoke-monkey/mcp
+```
+
+The scoped package installs a `smoke-monkey-mcp` binary. The older unscoped
+`smoke-monkey-harness-mcp` still works unchanged:
+
+```sh
 npx -y smoke-monkey-harness-mcp
 ```
 
@@ -41,7 +56,7 @@ Talk to it with any MCP client over stdio:
   "mcpServers": {
     "smoke-monkey-harness": {
       "command": "npx",
-      "args": ["-y", "smoke-monkey-harness-mcp"]
+      "args": ["-y", "@smoke-monkey/mcp"]
     }
   }
 }

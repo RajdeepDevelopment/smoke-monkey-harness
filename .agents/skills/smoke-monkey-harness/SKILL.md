@@ -31,7 +31,9 @@ Decide which path is available:
    agentId, tools, wiring, verification gate.
 4. For real understanding, pull the relevant `harness_guide_<feature>` deep
    dive: `subcontexts` · `skills` · `mcp` · `providers` · `tools` · `loop` ·
-   `permissions` · `storage` · `events` — and/or slice `harness_api({ area })`.
+   `permissions` · `storage` · `events` · `ui` — and/or slice
+   `harness_api({ area })`. Reach for `ui` as soon as the product needs any
+   chat surface: a help chat, a support widget, or a full agent app.
 5. Study an example: `harness_examples()` then
    `harness_read_example({ name: "basic-agent.ts" })`.
 6. `harness_scaffold({ targetDir, name? })` — materialises the project.
@@ -40,11 +42,11 @@ Decide which path is available:
 
 ## Workflow (standalone path)
 
-1. Read `references/features.md` for the 9 feature digests and `references/api.md` for signatures.
+1. Read `references/features.md` for the 10 feature digests and `references/api.md` for signatures.
 2. Scaffold manually (or `npx create-…` if one exists) from this skeleton:
 
 ```ts
-import { createAgent } from 'smoke-monkey-harness'
+import { createAgent } from '@smoke-monkey/harness'
 const agent = createAgent({
   provider: process.env.PROVIDER ?? 'nvidia',
   model: process.env.MODEL ?? 'nvidia/nemotron-3-super-120b-a12b',
@@ -90,8 +92,8 @@ task and require `result.status === "completed"`. Loop → tool-call → verify 
 
 ## Support files
 
-- `references/mcp-tools.md` — the 18 MCP server tools, args, and call order.
-- `references/features.md` — the 9 feature digests (standalone learning).
+- `references/mcp-tools.md` — the 21 MCP server tools, args, and call order.
+- `references/features.md` — the 10 feature digests (standalone learning).
 - `references/api.md` — condensed API reference (options/surface/events/tools).
 - Repo source of truth: `src/` + `examples/` in
   https://github.com/RajdeepDevelopment/smoke-monkey-harness

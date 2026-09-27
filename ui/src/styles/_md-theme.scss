@@ -1,0 +1,92 @@
+// ══════════════════════════════════════════════════════════════
+// LIGHT-THEME CORRECTIONS
+//
+// Dark-first styling hides three classes of bug on a light surface:
+// near-white text, `white/10` borders, and drop shadows. Each rule
+// below fixes one of them for the light themes only.
+// ══════════════════════════════════════════════════════════════
+
+// Markdown and code were authored against the near-black surface, so a
+// few values were hardcoded light-on-dark and vanished on a light
+// surface. These overrides restore contrast for the light themes.
+@mixin md-light {
+  .md-body {
+    h1 {
+      color: hsl(var(--ink-primary));
+    }
+    h2 {
+      color: hsl(var(--primary-deep));
+      border-image: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary-hover))) 1;
+    }
+    h1::after {
+      background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary-hover)));
+      box-shadow: 0 0 12px hsl(var(--primary) / 0.35);
+    }
+    h4 {
+      color: hsl(var(--accent));
+    }
+    h5 {
+      color: hsl(var(--success));
+    }
+    strong {
+      color: hsl(var(--ink-primary));
+    }
+    em {
+      color: hsl(var(--primary-deep));
+    }
+    a:hover {
+      color: hsl(var(--accent-hover));
+      text-decoration-color: hsl(var(--accent-hover) / 0.5);
+    }
+    code:not(pre code) {
+      // `text-accent` is tuned for dark surfaces; on light, the deep brand
+      // shade keeps the code readable without going full black.
+      color: hsl(var(--primary-deep));
+      border-color: hsl(var(--border-strong));
+      box-shadow: none;
+    }
+    pre:not([class]) {
+      box-shadow: 0 10px 30px -22px hsl(var(--foreground) / 0.35);
+    }
+    blockquote {
+      background: linear-gradient(135deg, hsl(var(--accent) / 0.07), hsl(var(--primary) / 0.03) 45%, transparent);
+    }
+    th {
+      background: hsl(var(--primary) / 0.06);
+    }
+    thead tr:nth-child(even) {
+      background: hsl(var(--foreground) / 0.023);
+    }
+    tbody tr:nth-child(even) {
+      background: hsl(var(--primary) / 0.04);
+    }
+    hr {
+      background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.4), transparent);
+    }
+    table code {
+      color: hsl(var(--ink-primary));
+    }
+  }
+}
+
+@each $name in $light-themes {
+  [data-sm-chat].smc-#{$name} {
+    @include md-light;
+
+    // Syntax highlighting: light palette, same scope as the widget.
+  & .hljs-doctag, & .hljs-keyword, & .hljs-meta .hljs-keyword, & .hljs-template-tag, & .hljs-template-variable, & .hljs-type, & .hljs-variable.language_ { color: #c52a37; }
+  & .hljs-title, & .hljs-title.class_, & .hljs-title.class_.inherited__, & .hljs-title.function_ { color: #6f42c1; }
+  & .hljs-attr, & .hljs-attribute, & .hljs-literal, & .hljs-meta, & .hljs-number, & .hljs-operator, & .hljs-variable, & .hljs-selector-attr, & .hljs-selector-class, & .hljs-selector-id { color: #005cc5; }
+  & .hljs-regexp, & .hljs-string, & .hljs-meta .hljs-string { color: #032f62; }
+  & .hljs-built_in, & .hljs-symbol { color: #e36209; }
+  & .hljs-comment, & .hljs-code, & .hljs-formula { color: #6a737d; }
+  & .hljs-name, & .hljs-quote, & .hljs-selector-tag, & .hljs-selector-pseudo { color: #22863a; }
+  & .hljs-subst { color: #24292e; }
+  & .hljs-section { color: #005cc5; }
+  & .hljs-bullet { color: #735c0f; }
+  & .hljs-emphasis { color: #24292e; }
+  & .hljs-strong { color: #24292e; }
+  & .hljs-addition { color: #22863a; }
+  & .hljs-deletion { color: #b31d28; }
+  }
+}

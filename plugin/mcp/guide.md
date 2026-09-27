@@ -24,10 +24,12 @@ loop guards and compaction). You wire a provider key and a UI, then ship.
 
 ### Step 1 — Install the library
 ```sh
-npm install smoke-monkey-harness            # published release
+npm install @smoke-monkey/harness           # published release
 # or, while pre-release:
 npm install github:RajdeepDevelopment/smoke-monkey-harness#main
 ```
+Prefer the scoped name. The legacy unscoped `smoke-monkey-harness` is still
+published and still resolves, so existing projects need no change.
 Needs Node ≥ 18. TypeScript projects: add `"types": ["node"]` and install
 `@types/node` (the scaffold's `tsconfig.json` already does both).
 
@@ -67,7 +69,7 @@ Browse and load them directly through this server, category-wise:
 Then wire the same set into your agent in `src/index.ts`:
 
 ```ts
-import { buildAgentSkillRegistry, loadAgentSkills } from 'smoke-monkey-harness'
+import { buildAgentSkillRegistry, loadAgentSkills } from '@smoke-monkey/harness'
 const backendSkills = loadAgentSkills({ category: 'agent-skills-backend' })
 const registry = buildAgentSkillRegistry({ category: 'agent-skills-frontend' })
 // …or serve the same skills over MCP with the stock agent-skills-* entries.
@@ -78,7 +80,7 @@ In the scaffold's `src/index.ts`, route every interactive pause to your UI —
 or keep `autoApprove: true` for a local/demo agent:
 
 ```ts
-import { createAgent } from 'smoke-monkey-harness'
+import { createAgent } from '@smoke-monkey/harness'
 
 const agent = createAgent({
   provider: process.env.PROVIDER ?? 'nvidia',            // openai | openrouter | nvidia | xai | gemini | opencode | omniroute | ollama
@@ -124,6 +126,38 @@ task's output in `result.messages`. Then grow the task.
    tools surface as `<server>__<tool>` while `mcp_<id>` is active; disabled
    servers pause for `resolveMcpDecision`.
 
+### Step 6b — Give it a chat surface (skip only for a headless build)
+
+If anything about this product is conversational, do not hand-roll a chat UI.
+`@smoke-monkey/ui` is a published browser package built for exactly this
+harness, and `harness_guide_ui()` is the reference.
+
+Where it fits:
+
+| you are building | start from |
+| --- | --- |
+| a help chat inside your existing app | `ChatPanel` in a drawer or route |
+| a support/chat widget on a site you do not own the app shell of | `SmokeMonkeyChat` in an iframe or shadow root |
+| a new agent product | `useSmokeMonkeyChat` + `WebSocketTransport` |
+| something with a bespoke layout | `ChatRuntime` + `applyChatEvent` + the components you want |
+
+The one thing you must not skip: `permission.required` and `ask_user.required`
+**pause the run** until the host answers. Render them and route the answer
+back into `agent.respond()` / `agent.resolvePermission()`, or the run
+deadlocks with no error anywhere. `createHarnessBridge()` from the UI package
+does the whole translation, including that routing.
+
+```ts
+const bridge = createHarnessBridge({ agent, messageId });
+for await (const event of bridge.events()) socket.send(JSON.stringify(event));
+
+socket.on('message', (raw) => {
+  const { type, data } = JSON.parse(raw);
+  if (type === 'resolve_ask_user') bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
+  if (type === 'resolve_permission') bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+});
+```
+
 ### Step 7 — Ship
 - Persist memory: pass a `store` (implement the small `Storage` interface) +
   a stable `sessionId` to resume across runs.
@@ -131,7 +165,8 @@ task's output in `result.messages`. Then grow the task.
   `tool.started/output/progress/completed/failed`, `text.delta/thought/end`,
   `phase.changed`, `context.updated`, `permission.required`, `ask_user.required`,
   `mcp.approval_required`, `mcp.resolved`, `compaction.started/completed`,
-  `todo.updated`.
+  `todo.updated`. With `@smoke-monkey/ui`, `createHarnessBridge()` maps all of
+  these for you — see `harness_guide_ui()`.
 - The loop guards (no-progress, repeated-failure, same-output, empty-response,
   runaway `MAX_STEPS`) and auto-compaction keep long runs healthy.
 

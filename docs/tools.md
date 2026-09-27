@@ -43,7 +43,7 @@ automatically. Restrict with `options.tools: ['core', 'search']`.
 Pass `ToolDefinition[]` in `options.tools`:
 
 ```ts
-import { createAgent, buildToolRegistry } from 'smoke-monkey-harness';
+import { createAgent, buildToolRegistry } from '@smoke-monkey/harness';
 
 const timeTool = {
   name: 'current_time',
@@ -58,6 +58,74 @@ const agent = createAgent({ provider: 'nvidia', model: '...',
   workspacePath: process.cwd(), tools: [timeTool] });
 ```
 
+Tools passed this way are exposed to the model from the **first run step**. If a
+tool is registered after the run begins (`agent.registerTool()` inside a hook,
+say) the model never sees it, and a call to it is rejected as unexposed — so
+register custom tools up front.
+
+### Presenting a tool
+
+Add `presentation` to give the UI a titled, iconed tool card:
+
+```ts
+const timeTool = {
+  name: 'current_time',
+  description: 'Return the current UTC time',
+  inputSchema: { type: 'object', properties: {} },
+  presentation: { label: 'Time', icon: 'clock', tone: 'info', group: 'utilities' },
+  async execute() { /* … */ },
+};
+```
+
+| field | meaning |
+|---|---|
+| `label` | title shown on the card |
+| `icon` | icon key the host maps to its own set |
+| `tone` | `success` \| `error` \| `warning` \| `info` — drives the accent |
+| `group` | optional grouping for the host's own UI |
+
+It is a plain serialisable object, so it survives the trip to a browser, and it
+is never sent to the model. `family` is an older alias for `group` and still
+resolves. Read everything registered with:
+
+```ts
+agent.getToolPresentations(); // { current_time: { label, icon, tone, group } }
+```
+
+Every `tool.*` event also carries `toolName`, and `tool.started` plus each
+`tool.completed` carry `presentation`, so a card keeps its identity even when
+the call errors. A `presentation` on the individual event takes precedence over
+the registered one.
+
+### Blocking a tool call
+
+Deny a call from a `beforeToolCall` hook by returning `block: true`. The reason
+is fed back to the model as the tool's result, so the run recovers instead of
+dying:
+
+```ts
+createAgent({
+  // …
+  hooks: {
+    beforeToolCall: ({ toolName, input }) => {
+      if (toolName === 'write_file' && !isInsideWorkspace(input.path)) {
+        return { block: true, reason: 'path is outside the workspace' };
+      }
+      // Return nothing to allow the call unchanged.
+    },
+  },
+});
+```
+
+A blocked call is a policy decision, not a crash. It is reported to the
+`afterToolCall` hook with `blocked: true` and an `error` carrying your reason,
+which is what lets an audit tell a refusal apart from a genuine failure. The
+UI sees the same thing as any other tool error — there is no separate
+"blocked" event.
+
+`beforeToolCall` can also return `{ input }` to rewrite the arguments before
+the tool runs, which is the hook's other job.
+
 ## Skills (SKILL.md)
 
 Skills bundle instructions into `<dir>/<skill>/SKILL.md` or `<dir>/<skill>.md`
@@ -71,7 +139,7 @@ Codex, and opencode.
   next turn — just-in-time.
 
 ```ts
-import { loadSkillsFromDirs } from 'smoke-monkey-harness';
+import { loadSkillsFromDirs } from '@smoke-monkey/harness';
 
 const skills = loadSkillsFromDirs([`${process.cwd()}/.mine/skills`]);
 const agent = createAgent({ /* … */, skills });

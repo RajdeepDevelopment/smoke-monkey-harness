@@ -1,0 +1,209 @@
+@layer components {
+
+// ══════════════════════════════════════════════════════════════
+// COMPONENTS — agent live status rail (sub-contexts + task list)
+// Pinned to the top of the chat scroll area. Cards sit on their own
+// solid surfaces (gradient + border accent) so the rail itself stays
+// TRANSPARENT — no full-width translucent band, meaning the chat edges
+// on the left/right are never blurred or washed out.
+// ══════════════════════════════════════════════════════════════
+.agent-status-rail {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+// When there is room to the LEFT of the chat (workspace sidebar / editor
+// closed), the status cards move into a fixed side column and the chat is
+// pushed to the right. The column disappears as soon as the work is done.
+.agent-side-rail {
+  flex-shrink: 0;
+  width: clamp(240px, 26%, 300px);
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px 8px 12px;
+  border-right: 1px solid hsl(var(--surface-600) / 0.5);
+  .agent-card {
+    margin-left: 0;
+  }
+  .agent-card__body {
+    padding-left: 4px;
+  }
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    padding-left: 4px;
+  }
+  &__title {
+    flex: 1;
+    min-width: 0;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: hsl(var(--ink-muted));
+  }
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    color: hsl(var(--ink-muted));
+    transition: all 0.15s ease;
+    cursor: pointer;
+    &:hover {
+      color: hsl(var(--ink-primary));
+      background: hsl(var(--surface-800));
+    }
+  }
+}
+.agent-card {
+  margin-left: 24px;
+  padding: 3px 4px;
+  border: 1px solid hsl(var(--surface-600) / 0.5);
+  border-radius: 8px;
+  background: linear-gradient(180deg, hsl(var(--surface-850) / 0.9), hsl(var(--surface-900) / 0.8));
+  box-shadow: 0 1px 0 hsl(var(--ink-primary) / 0.04) inset, 0 2px 10px -6px hsl(var(--bg) / 0.55);
+  transition: border-color 150ms ease;
+  &--context {
+    border-left: 2px solid hsl(var(--primary) / 0.45);
+  }
+  &--todo {
+    border-left: 2px solid hsl(var(--success) / 0.5);
+  }
+  &:hover {
+    border-color: hsl(var(--primary) / 0.35);
+  }
+  &__header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+    text-align: left;
+    color: hsl(var(--ink-primary));
+    transition: color 150ms ease;
+    &:hover {
+      color: hsl(var(--ink-primary));
+    }
+  }
+  &__icon {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+  }
+  &__title {
+    font-size: 11px;
+    font-weight: 500;
+    color: hsl(var(--ink-secondary));
+  }
+  &__count {
+    font-size: 10px;
+    color: hsl(var(--ink-muted));
+  }
+  &__chevron {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    color: hsl(var(--ink-muted) / 0.8);
+    &:hover {
+      color: hsl(var(--ink-secondary));
+    }
+  }
+  &__body {
+    padding: 0 0 4px 16px;
+  }
+}
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 4px;
+  border: 1px solid hsl(var(--primary) / 0.22);
+  border-radius: 8px;
+  background: hsl(var(--primary) / 0.1);
+  font-size: 10px;
+  line-height: 1.3;
+  color: hsl(var(--primary) / 0.9);
+  overflow-wrap: break-word;
+  svg {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    color: hsl(var(--primary) / 0.6);
+  }
+}
+.status-event {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  &--open {
+    color: hsl(var(--success));
+  }
+  &--close {
+    color: hsl(var(--ink-muted) / 0.6);
+  }
+}
+.todo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 11px;
+  &--cancelled {
+    opacity: 0.4;
+  }
+  &__check {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border: 1px solid hsl(var(--surface-600) / 0.7);
+    border-radius: 9999px;
+    svg {
+      width: 10px;
+      height: 10px;
+    }
+    &--done {
+      border-color: hsl(var(--success) / 0.6);
+      background: hsl(var(--success) / 0.15);
+      color: hsl(var(--success));
+    }
+    &--active {
+      border-color: hsl(var(--info) / 0.6);
+      background: hsl(var(--info) / 0.15);
+      color: rgb(147, 197, 253);
+    }
+  }
+  &__text {
+    min-width: 0;
+    flex: 1;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+    color: hsl(var(--ink-secondary));
+    &--done,
+    &--cancelled {
+      text-decoration: line-through;
+      color: hsl(var(--ink-muted) / 0.75);
+}
+}
+}
+}

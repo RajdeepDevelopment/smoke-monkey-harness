@@ -28,6 +28,40 @@ export {
   type McpApprovalDecision,
 } from './services/agent-loop.js';
 export {
+  AgentHookRunner,
+  HookBlockedError,
+  type AgentHooks,
+  type HookRunInfo,
+  type BeforeModelCallContext,
+  type BeforeModelCallResult,
+  type AfterModelCallContext,
+  type BeforeToolCallContext,
+  type BeforeToolCallResult,
+  type AfterToolCallContext,
+  type BeforeHookOutcome,
+} from './services/agent-hooks.js';
+export {
+  toAgentErrorInfo,
+  errorMessageOf,
+  classifyProviderError,
+  toolNotFoundError,
+  toolBlockedError,
+  toolCancelledError,
+  toolFailedError,
+  toolError,
+  permissionDeniedError,
+  runHardStopError,
+  repeatedErrorError,
+  emptyResponseError,
+  hookBlockedError,
+  hookFailedError,
+  transportError,
+  connectionLostError,
+  type AgentErrorInfo,
+  type AgentErrorLayer,
+  type AgentErrorSeverity,
+} from './services/agent-error.js';
+export {
   classifyTaskGroups,
   createEmptySnapshot,
   estimateTokens,
@@ -90,6 +124,10 @@ export {
   type ToolContext,
   type ToolResult,
   type AgentTool,
+  type ToolPresentation,
+  type ToolFamily,
+  type ToolTone,
+  TOOL_FAMILIES,
 } from './tools/tool-registry.js';
 
 // Tool factories (register these yourself to customise the toolset)

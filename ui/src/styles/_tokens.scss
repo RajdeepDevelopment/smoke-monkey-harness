@@ -1,0 +1,92 @@
+// ══════════════════════════════════════════════════════════════
+// DESIGN TOKENS  (Smoke Monkey layered dark theme)
+// Generated into CSS custom properties on :root.
+//
+// bg → primary → secondary → elevated → hover
+// (never flat, never pure black)
+// ══════════════════════════════════════════════════════════════
+@layer base {
+  :root {
+    color-scheme: dark;
+
+  // Core surfaces
+  @each $k, $v in (
+    'bg': 220 38% 5%,
+    'bg-elevated': 219 33% 8%,
+    'surface-950': 220 38% 5%,
+    'surface-900': 219 33% 8%,
+    'surface-850': 222 30% 10%,
+    'surface-800': 221 39% 11%,
+    'surface-750': 223 30% 13%,
+    'surface-700': 223 28% 12%,
+    'surface-600': 226 22% 20%,
+  ) {
+    --#{$k}: #{$v};
+  }
+
+  // Ink (text)
+  @each $k, $v in (
+    'ink-primary': 210 40% 98%,
+    'ink-secondary': 213 27% 65%,
+    'ink-muted': 215 20% 47%,
+  ) {
+    --#{$k}: #{$v};
+  }
+
+  // Brand — purple accent (Smoke Monkey primary)
+  @each $k, $v in (
+    'primary': 258 88% 63%,
+    'primary-hover': 260 92% 74%,
+    'primary-deep': 263 74% 50%,
+    'primary-subtle': 258 88% 63% / 0.15,
+    'primary-foreground': 0 0% 100%,
+    'accent': 188 94% 43%,
+    'accent-hover': 189 86% 53%,
+    'accent-subtle': 188 94% 43% / 0.12,
+    'accent-foreground': 0 0% 100%,
+  ) {
+    --#{$k}: #{$v};
+  }
+
+  // Semantic
+  @each $k, $v in (
+    'success': 142 71% 45%,
+    'success-subtle': 142 71% 45% / 0.12,
+    'warning': 38 92% 50%,
+    'warning-subtle': 38 92% 50% / 0.12,
+    'destructive': 0 84% 60%,
+    'destructive-foreground': 0 0% 100%,
+    'error-subtle': 0 84% 60% / 0.12,
+    'info': 199 89% 60%,
+  ) {
+    --#{$k}: #{$v};
+  }
+
+  // shadcn-ui aliases — no alpha baked in so Tailwind's border-border/40
+  // modifiers resolve to a valid hsl(via-variable) declaration.
+  @each $k, $v in (
+    'border': 215 22% 22%,
+    'border-strong': 215 22% 32%,
+    'input': 215 25% 20%,
+    'ring': 262 83% 58%,
+    'secondary': 219 40% 11%,
+    'secondary-foreground': 213 27% 65%,
+    'muted': 219 40% 10%,
+    'muted-foreground': 215 20% 47%,
+    'popover': 216 35% 8%,
+    'popover-foreground': 210 40% 98%,
+    'card': 216 35% 8%,
+    'card-foreground': 210 40% 98%,
+  ) {
+    --#{$k}: #{$v};
+  }
+
+  // Alias tokens that reference other custom properties
+  --background: var(--bg);
+  --foreground: var(--ink-primary);
+
+  // Radii
+  --radius: 12px;
+  --radius-card: 14px;
+}
+}

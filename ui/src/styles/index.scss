@@ -1,0 +1,31 @@
+// ══════════════════════════════════════════════════════════════
+// smoke-monkey-ui — style entry (SCSS → CSS → dist/index.css)
+//
+// Compiled with `sass` (nesting, token maps, mixins) then piped
+// through the Tailwind/postcss pipeline which resolves @apply &
+// @tailwind. Partials are order-sensitive (`@import` keeps their
+// output inline where written), so Tailwind's directives stay on top
+// exactly like the previous single-file stylesheet.
+// ══════════════════════════════════════════════════════════════
+
+// ── External stylesheets required by components in this library ──
+@import '@xyflow/react/dist/style.css';
+
+// ── Tailwind (utility classes power the component markup) ──────
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// ── Smoke Monkey design system (SCSS partials) ──────────────────
+@import 'tokens';
+@import 'themes';
+@import 'base';
+@import 'primitives';
+@import 'md-body';
+@import 'syntax';
+@import 'md-theme';
+@import 'agent-rail';
+@import 'tool-run';
+@import 'visual-shells';
+@import 'chart';
+@import 'utilities';

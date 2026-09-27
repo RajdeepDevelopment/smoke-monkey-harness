@@ -1,0 +1,63 @@
+// ══════════════════════════════════════════════════════════════
+// BASE — reset, selection, scrollbars, reduced-motion
+// ══════════════════════════════════════════════════════════════
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    height: 100%;
+    // Never allow content to push the page wider than the viewport. Anything
+    // that needs horizontal scrolling must do so in an internal scroll
+    // container (diagrams, tables, code blocks), never at page level.
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-bg font-sans text-ink-primary antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.32);
+    color: #fff;
+  }
+
+  // Scrollbars
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(223, 28%, 12%);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(226, 22%, 20%);
+    background-clip: content-box;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(223, 28%, 12%) transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+}
+}
+}

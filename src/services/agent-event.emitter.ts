@@ -1,4 +1,6 @@
 import { Logger } from '../logger.js';
+import { AgentErrorInfo, toAgentErrorInfo } from './agent-error.js';
+import type { ToolPresentation } from '../tools/tool-registry.js';
 
 export interface AgentEvent {
   type: string;
@@ -87,8 +89,27 @@ export class AgentEventEmitter {
     this.emitRun(sessionId, runId, 'text.end', { messageId, content, toolCalls, reasoning });
   }
 
-  emitToolStarted(sessionId: string, runId: string, toolCallId: string, toolName: string, args: unknown): void {
-    this.emitRun(sessionId, runId, 'tool.started', { toolCallId, toolName, args });
+  /**
+   * A tool call began.
+   *
+   * `presentation` rides along so a client can draw the tool's own icon without
+   * a separate registry lookup — a custom tool's glyph is declared once, in
+   * Node, and still shows up in the browser.
+   */
+  emitToolStarted(
+    sessionId: string,
+    runId: string,
+    toolCallId: string,
+    toolName: string,
+    args: unknown,
+    presentation?: ToolPresentation,
+  ): void {
+    this.emitRun(sessionId, runId, 'tool.started', {
+      toolCallId,
+      toolName,
+      args,
+      ...(presentation ? { presentation } : {}),
+    });
   }
 
   emitToolOutput(sessionId: string, runId: string, toolCallId: string, output: string): void {
@@ -108,12 +129,43 @@ export class AgentEventEmitter {
     this.emitRun(sessionId, runId, 'tool.progress', { toolCallId, ...progress });
   }
 
-  emitToolCompleted(sessionId: string, runId: string, toolCallId: string, result: unknown): void {
-    this.emitRun(sessionId, runId, 'tool.completed', { toolCallId, result });
+  /**
+   * A tool call returned.
+   *
+   * `toolName` is part of the payload, not something the consumer has to have
+   * remembered from `tool.started`: a subscriber that only cares about
+   * completions should still be able to say *which* tool finished. The
+   * presentation rides along too, so a consumer that replays only the terminal
+   * events of a run still gets the right icon.
+   */
+  emitToolCompleted(
+    sessionId: string,
+    runId: string,
+    toolCallId: string,
+    toolName: string,
+    result: unknown,
+    presentation?: ToolPresentation,
+  ): void {
+    this.emitRun(sessionId, runId, 'tool.completed', {
+      toolCallId,
+      toolName,
+      result,
+      ...(presentation ? { presentation } : {}),
+    });
   }
 
-  emitToolFailed(sessionId: string, runId: string, toolCallId: string, error: string): void {
-    this.emitRun(sessionId, runId, 'tool.failed', { toolCallId, error });
+  /**
+   * A tool call failed. `error` stays a plain string for backward compatibility;
+   * `errorInfo` is the structured form new consumers should read.
+   */
+  emitToolFailed(
+    sessionId: string,
+    runId: string,
+    toolCallId: string,
+    error: string | AgentErrorInfo,
+  ): void {
+    const errorInfo = toAgentErrorInfo(error, { layer: 'tool', severity: 'error', retryable: true });
+    this.emitRun(sessionId, runId, 'tool.failed', { toolCallId, error: errorInfo.message, errorInfo });
   }
 
   emitTodoUpdated(sessionId: string, runId: string, todos: unknown[]): void {
@@ -132,12 +184,27 @@ export class AgentEventEmitter {
     this.emitRun(sessionId, runId, 'run.completed');
   }
 
-  emitRunInterrupted(sessionId: string, runId: string, reason: string): void {
-    this.emitRun(sessionId, runId, 'run.interrupted', { reason });
+  emitRunInterrupted(sessionId: string, runId: string, reason: string, errorInfo?: AgentErrorInfo): void {
+    this.emitRun(sessionId, runId, 'run.interrupted', errorInfo ? { reason, errorInfo } : { reason });
   }
 
-  emitRunFailed(sessionId: string, runId: string, error: string): void {
-    this.emitRun(sessionId, runId, 'run.failed', { error });
+  /**
+   * The run failed. `error` stays a plain string for backward compatibility;
+   * `errorInfo` carries the layer/severity/hint so the UI can react properly.
+   */
+  /**
+   * A non-terminal failure. The run is still going — this is how a provider
+   * rate limit or a dropped socket reaches the UI *while* the loop retries,
+   * instead of only surfacing once the run finally gives up.
+   */
+  emitRunWarning(sessionId: string, runId: string, error: string | AgentErrorInfo): void {
+    const errorInfo = toAgentErrorInfo(error, { layer: 'run', severity: 'warning', retryable: true });
+    this.emitRun(sessionId, runId, 'run.warning', { error: errorInfo.message, errorInfo });
+  }
+
+  emitRunFailed(sessionId: string, runId: string, error: string | AgentErrorInfo): void {
+    const errorInfo = toAgentErrorInfo(error, { layer: 'run', severity: 'fatal', retryable: true });
+    this.emitRun(sessionId, runId, 'run.failed', { error: errorInfo.message, errorInfo });
   }
 
   emitStepStarted(sessionId: string, runId: string, step: number): void {

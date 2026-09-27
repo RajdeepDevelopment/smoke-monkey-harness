@@ -70,6 +70,20 @@ replace_lines/apply_patch/delete/list_directory/inspect), terminal
 `annotations.readOnlyHint` auto-allows; mutating via `ctx` gets guard
 bookkeeping. `options.tools` = group names[] or your `ToolDefinition[]`.
 
+Custom `options.tools` entries are exposed to the model from the **first run
+step**; a tool registered later was silently invisible to the model.
+
+**Presentation.** Add `presentation: {label, icon, tone, group}` to a
+`ToolDefinition` to get a titled, iconed tool card. `tone` is one of
+`success | error | warning | info` and drives the card accent. Read them all via
+`agent.getToolPresentations()`; a `presentation` on the individual event wins.
+
+**Blocking a call.** A `beforeToolCall` hook returns `{block: true, reason}` to
+deny a call; the reason is fed back to the model as the tool's result and the
+call reaches `afterToolCall` with `blocked: true` plus an `error`, so an audit
+can tell a policy refusal from a crash. The same hook returns `{input}` to
+rewrite arguments before the tool runs.
+
 ## 6. Loop — phases, guards, compaction
 
 `explore → plan → edit → verify → recover → complete`. Automatic guards:
@@ -103,7 +117,44 @@ conversation. `HarnessRun`/`HarnessSession` carry step + token/cost counters.
 Subscribe `agent.on(type, fn)` / `agent.onAny(fn)`; payload in `e.data`.
 Lifecycle: `run.started/completed/failed/interrupted` · `step.started/ended` ·
 `phase.changed`. Streaming chat: `text.delta` · `text.thought` · `text.end`.
-Tool cards: `tool.started/output/progress/completed/failed`. Pauses:
+Tool cards: `tool.started/output/progress/completed/failed` (each with
+`toolName` + `presentation`; a denied call arrives as `tool.failed` like any
+other error). Pauses:
 `permission.required` · `ask_user.required` · `mcp.approval_required` (+
 resolutions). State/context: `context.updated` · `state.changed` ·
 `todo.updated` · `compaction.started/completed` · `llm.thinking`.
+
+## 10. The chat UI — `@smoke-monkey/ui`
+
+A published browser package built for this harness: normalized stream events, a
+headless runtime, transports, and the chat/tool/prompt components. It is a
+**separate npm package** and the two share no interface, so something must
+translate. Ship that translation with the UI instead of rewriting it:
+
+```ts
+import { createHarnessBridge } from '@smoke-monkey/ui';
+const bridge = createHarnessBridge({ agent, messageId });
+for await (const event of bridge.events()) socket.send(JSON.stringify(event));
+
+// and back, for the two pauses:
+socket.on('message', (raw) => {
+  const { type, data } = JSON.parse(raw);
+  if (type === 'resolve_ask_user') bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
+  if (type === 'resolve_permission') bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+});
+```
+
+**The pause is the whole trap.** `permission.required` and `ask_user.required`
+suspend the run; nothing resolves them by themselves. Render them *and* route
+the answer back, or the run deadlocks with no error logged anywhere — it looks
+like a hung request, not a bug.
+
+Where it fits: `ChatPanel` for a help chat in an existing app,
+`SmokeMonkeyChat` in an iframe for a widget on a site you do not own,
+`useSmokeMonkeyChat` + `WebSocketTransport` for a new agent product,
+`ChatRuntime` + `applyChatEvent` for a bespoke layout. The bridge is
+transport-agnostic, so all four use the same code.
+
+`mapHarnessEvent(event, { messageId })` is the one-shot mapping if you want the
+events without the subscription. `message:start` comes from the transport, not
+the bridge — emit it first or nothing attaches to a message.

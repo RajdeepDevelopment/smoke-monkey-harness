@@ -193,7 +193,16 @@ try {
   const pkg = JSON.parse(fs.readFileSync(path.join(tmp, 'package.json'), 'utf8'));
   if (pkg.name !== 'my-agent') throw new Error(`scaffold name substitution failed: ${pkg.name}`);
   const idx = fs.readFileSync(path.join(tmp, 'src/index.ts'), 'utf8');
-  if (!idx.includes('smoke-monkey-harness')) throw new Error('scaffold src missing import');
+  // Accept either the scoped or the legacy unscoped package name: the scaffold
+  // ships the scoped one, but the unscoped package must keep working.
+  if (!/from '@smoke-monkey\/harness'|from 'smoke-monkey-harness'/.test(idx)) throw new Error('scaffold src missing import');
+  const scaffoldDep = JSON.parse(fs.readFileSync(path.join(tmp, 'package.json'), 'utf8')).dependencies ?? {};
+  const depName = Object.keys(scaffoldDep).find((d) => d.endsWith('smoke-monkey-harness') || d === '@smoke-monkey/harness');
+  if (!depName) throw new Error('scaffold package.json is missing the harness dependency');
+  // The import and the dependency must name the same package, or the generated
+  // project installs one and imports the other.
+  const imported = /from '(@smoke-monkey\/harness|smoke-monkey-harness)'/.exec(idx)?.[1];
+  if (imported !== depName) throw new Error(`scaffold mismatch: imports ${imported} but depends on ${depName}`);
   console.log(`  harness_scaffold ok into ${tmp} (package ${pkg.name}, .mcp.json present)`);
   fs.rmSync(tmp, { recursive: true, force: true });
 

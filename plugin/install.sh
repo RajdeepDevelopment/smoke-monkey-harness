@@ -48,34 +48,58 @@ PKG="$ROOT"
 SKILL_SRC="$ROOT/skills/$NAME"
 AGENT_SKILLS_SRC="$ROOT/agent-skills/skills"
 SERVER_SRC="$ROOT/mcp/server.mjs"
-ANTIGRAVITY_SRC="$UP/.agents/plugins/$NAME"
+ANTIGRAVITY_SRC="$PKG"
 FORCE=0
 LOCAL=0
 REPO=0
 AGENT_SELECT=""
 LIST=0
+ALL=0
 
-for arg in "$@"; do
-  case "$arg" in
-    --force) FORCE=1 ;;
-    --local) LOCAL=1 ;;
-    --repo) REPO=1 ;;
-    --list) LIST=1 ;;
-    --agent|-a) AGENT_SELECT="${2:-}"; shift ;;
-    --agent=*) AGENT_SELECT="${arg#*=}" ;;
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --force) FORCE=1; shift ;;
+    --local) LOCAL=1; shift ;;
+    --repo) REPO=1; shift ;;
+    --list) LIST=1; shift ;;
+    --all) ALL=1; shift ;;
+    --agent|-a)
+      if [ -z "${2:-}" ] || [[ "${2:-}" == --* ]]; then
+        echo "error: --agent requires an agent id (see --list)" >&2
+        exit 2
+      fi
+      AGENT_SELECT="$2"
+      shift 2
+      ;;
+    --agent=*)
+      AGENT_SELECT="${1#*=}"
+      shift
+      ;;
     --help|-h)
-      echo "Install the smoke-monkey-harness plugin (skill + MCP server + 25 bundled agent-skills) for ~70 agents."
+      echo "Install the smoke-monkey-harness plugin (skill + MCP server + 25 bundled agent-skills)."
       echo ""
-      echo "  install.sh            install for all agents (home skills dirs)"
-      echo "  install.sh --local    also install into the current project and write .mcp.json + .agents/mcp_config.json + opencode.json"
-      echo "  install.sh --agent <id>  install only for one agent (see plugin/agents.json)"
-      echo "  install.sh --list     print the supported-agent table"
-      echo "  install.sh --force    overwrite any existing installs (including the agent-skills bundle)"
-      echo "  install.sh --repo     print the Claude marketplace / Codex install commands for this repo"
+      echo "Usage:"
+      echo "  install.sh --agent <id> [--local]   install for a specific agent (e.g. claude-code, antigravity, cursor)"
+      echo "  install.sh <id> [--local]           shorthand for --agent <id>"
+      echo "  install.sh --all [--local]          install for all ~70 supported agents"
+      echo "  install.sh --list                   print the supported-agent table"
+      echo "  install.sh --force                  overwrite existing installs"
+      echo "  install.sh --repo                   print Claude marketplace / Codex install commands"
       exit 0
       ;;
-    --*) echo "unknown argument: $arg (see --help)" >&2; exit 2 ;;
-    *) AGENT_SELECT="$arg" ;;
+    --*)
+      echo "error: unknown argument: $1 (see --help)" >&2
+      exit 2
+      ;;
+    *)
+      if [ -z "$AGENT_SELECT" ]; then
+        AGENT_SELECT="$1"
+        shift
+      else
+        echo "error: unexpected argument: $1" >&2
+        exit 2
+      fi
+      ;;
   esac
 done
 
@@ -261,12 +285,14 @@ while IFS=$'\t' read -r id display project global native; do
 
   # Local (project) install for this agent.
   if [ "$LOCAL" -eq 1 ] && [ -n "$project" ]; then
-    if [[ "$project" == /* ]]; then
-      install_skill "$project/$NAME"
-      install_agent_skills "$project"
-    else
-      install_skill "$CWD/$project/$NAME"
-      install_agent_skills "$CWD/$project"
+    if [ -n "$SELECTED_AGENT" ] || [ "$ALL" -eq 1 ] || [ "$native" = "1" ]; then
+      if [[ "$project" == /* ]]; then
+        install_skill "$project/$NAME"
+        install_agent_skills "$project"
+      else
+        install_skill "$CWD/$project/$NAME"
+        install_agent_skills "$CWD/$project"
+      fi
     fi
   fi
 

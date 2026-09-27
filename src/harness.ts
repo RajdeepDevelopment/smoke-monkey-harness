@@ -34,6 +34,7 @@ import {
   type AgentEventListener,
 } from './services/agent-event.emitter.js';
 import { LLMClient } from './services/llm-client.js';
+import { AgentHookRunner, type AgentHooks } from './services/agent-hooks.js';
 import { ContextCompactionService, mergeSnapshot } from './services/compaction.service.js';
 import {
   LLMMessage,
@@ -52,7 +53,8 @@ import {
 } from './services/run-context.js';
 import { renderContextPanel, SubContextManager, getSubContext, registerSubContext } from './context/sub-context.js';
 import type { SubContext } from './context/sub-context.js';
-import { ToolRegistry, type ToolDefinition } from './tools/tool-registry.js';
+import { ToolRegistry, type ToolDefinition, type ToolPresentation } from './tools/tool-registry.js';
+import { withCustomTools } from './services/tool-library.js';
 import { shapeSpilledOutput } from './services/artifact-store.js';
 import { McpManager, type McpServerConfig } from './services/mcp-manager.js';
 import {
@@ -159,6 +161,11 @@ export interface AgentOptions {
    * Codex / AniGravity-style folders all use the same format).
    */
   skillsDir?: string | string[];
+  /**
+   * Lifecycle hooks around the model and tool calls this agent makes.
+   * See `AgentHooks` for ordering and failure semantics.
+   */
+  hooks?: AgentHooks;
   /** Logger configuration. */
   logger?: LoggerOptions;
 }
@@ -329,6 +336,7 @@ export class AgentHarness {
 
     this.loopDeps = {
       toolRegistry,
+      hooks: options.hooks ? new AgentHookRunner(options.hooks) : undefined,
       workspaceIndex: null,
       eventEmitter: this.events,
       permissionService: {
@@ -400,6 +408,39 @@ export class AgentHarness {
   /** Subscribe to a harness event type ('tool.completed', 'permission.required', …). */
   on(type: string, listener: AgentEventListener): () => void {
     return this.events.on(type, listener);
+  }
+
+  /**
+   * Add a custom tool after construction.
+   *
+   * The constructor's `tools` option is the declarative path; this is the
+   * dynamic one, for a host that discovers its tools at runtime (an MCP
+   * server that just came up, a plugin the user just enabled).
+   *
+   * ```ts
+   * agent.registerTool({
+   *   name: 'charge_card',
+   *   description: 'Charge a customer's saved card',
+   *   inputSchema: { type: 'object', properties: { amount: { type: 'number' } }, required: ['amount'] },
+   *   presentation: { icon: '\u{1F4B3}', label: 'Charge card', family: 'run' },
+   *   annotations: { destructiveHint: true },
+   *   execute: async ({ amount }) => ({ success: true, output: `charged $${amount}` }),
+   * });
+   * ```
+   */
+  registerTool(tool: ToolDefinition): void {
+    this.loopDeps.toolRegistry.register(tool);
+    this.logger.log(`Registered custom tool: ${tool.name}`);
+  }
+
+  /**
+   * Every tool's icon/label, keyed by tool name.
+   *
+   * Send this to a browser client on connect so custom tools render correctly
+   * before their first call, and so replayed history keeps its icons.
+   */
+  getToolPresentations(): Record<string, ToolPresentation> {
+    return this.loopDeps.toolRegistry.getPresentations();
   }
 
   /** Receive every harness event. */
@@ -646,7 +687,10 @@ export class AgentHarness {
       inputTokens: 0,
       outputTokens: 0,
       abortController,
-      exposedTools: resolveExposedTools(toolGroups),
+      // Built-in groups, plus any tool a host registered that they do not
+      // cover — otherwise a custom tool is registered but never sent to the
+      // model, and a call to it is rejected as unexposed.
+      exposedTools: withCustomTools(resolveExposedTools(toolGroups), this.loopDeps.toolRegistry),
       phase: initialPhase(),
       lastToolCalls: [],
       lastCompactTokens: 0,

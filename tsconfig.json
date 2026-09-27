@@ -17,7 +17,11 @@
     "forceConsistentCasingInFileNames": true,
     "noUncheckedIndexedAccess": false,
     "useDefineForClassFields": true,
-    "tsBuildInfoFile": "dist/.tsbuildinfo"
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "baseUrl": ".",
+    "paths": {
+      "@smoke-monkey/harness": ["./src/index.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "examples"]

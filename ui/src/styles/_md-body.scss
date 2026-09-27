@@ -1,0 +1,218 @@
+@layer components {
+
+// ══════════════════════════════════════════════════════════════
+// COMPONENTS — markdown body (assistant answers)
+// Premium token styling tuned for the near-black surface (#080B12):
+// each element carries its own accent so long answers stay scannable.
+// ══════════════════════════════════════════════════════════════
+.md-body {
+  @apply text-[14px] leading-[1.6] text-ink-primary;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  font-feature-settings: 'kern', 'liga', 'calt';
+  p,
+  li {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+  > *:first-child {
+    @apply mt-0;
+  }
+  > *:last-child {
+    @apply mb-0;
+  }
+  p {
+    @apply my-2;
+  }
+  // Headings — one accent per level, all legible on the black bg.
+  // Google-Docs style size ladder so hierarchy reads even when skimming.
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply mb-1.5 mt-4 font-semibold first:mt-0;
+    letter-spacing: -0.015em;
+    scroll-margin-top: 4rem;
+    text-wrap: balance;
+  }
+  h1 {
+    @apply text-[24px] font-bold leading-[1.15] tracking-tight text-ink-primary;
+    position: relative;
+    padding-bottom: 0.15rem;
+    &::after {
+      content: '';
+      display: block;
+      width: 48px;
+      height: 2.5px;
+      margin-top: 0.4rem;
+      border-radius: 999px;
+      background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary-hover)));
+      box-shadow: 0 0 12px hsl(var(--primary) / 0.4);
+    }
+  }
+  h2 {
+    @apply text-[19px] font-bold leading-[1.25] text-primary;
+    border-left: 3px solid transparent;
+    padding-left: 0.6rem;
+    border-image: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary-hover))) 1;
+  }
+  h3 {
+    @apply text-[16px] leading-[1.3] text-accent;
+  }
+  h4 {
+    @apply text-[15px] leading-[1.35] text-accent;
+  }
+  h5 {
+    @apply text-[13.5px] leading-[1.4] text-success;
+  }
+  h6 {
+    @apply text-[12px] font-medium uppercase leading-[1.4] tracking-widest text-ink-muted;
+  }
+  // Lists — gradient bullets (ul) / accent numbers (ol)
+  ul {
+    @apply my-2 list-none space-y-1 pl-6;
+    > li {
+      @apply relative;
+      &::before {
+        content: '';
+        position: absolute;
+        left: -1.05rem;
+        top: 0.58em;
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, hsl(var(--primary)), 55%, hsl(var(--primary-hover)));
+        box-shadow: 0 0 7px hsl(var(--primary) / 0.55);
+      }
+    }
+    li ul > li::before {
+      width: 5px;
+      height: 5px;
+      top: 0.6em;
+      background: transparent;
+      border: 1px solid hsl(var(--accent) / 0.65);
+      box-shadow: none;
+    }
+  }
+  ol {
+    @apply my-2 list-decimal space-y-1 pl-7;
+    counter-reset: none;
+    > li::marker {
+      @apply font-semibold;
+      color: hsl(var(--accent));
+    }
+  }
+  li {
+    @apply my-0.5;
+  }
+  // Task lists (GFM checkboxes)
+  ul.contains-task-list {
+    @apply list-none space-y-2 pl-0;
+    > li::before {
+      content: none;
+    }
+  }
+  li.task-list-item {
+    @apply flex items-start gap-2.5;
+    input[type='checkbox'] {
+      @apply mt-0.5 h-4 w-4 shrink-0 cursor-default rounded;
+      accent-color: hsl(var(--accent));
+    }
+  }
+  // Links / inline code
+  a {
+    @apply text-accent underline decoration-accent/40 underline-offset-4 transition-[color,text-decoration-color] hover:text-accent-hover hover:decoration-accent-hover/50;
+  }
+  code:not(pre code) {
+    @apply rounded-md border border-border bg-surface-800 px-1.5 py-0.5 font-mono text-[0.85em] text-accent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    overflow-wrap: break-word;
+  }
+  em {
+    color: hsl(var(--primary-hover));
+  }
+  del {
+    @apply text-ink-muted;
+  }
+  strong {
+    @apply font-semibold text-ink-primary;
+  }
+  // Code blocks — chrome lives in <CodeBlock/>; keep raw <pre> neutral,
+  // except classless ones (react-markdown without a pre component)
+  pre {
+    @apply m-0 rounded-none border-0 bg-transparent p-0;
+    &:not([class]) {
+      @apply my-2 overflow-x-auto rounded-lg border border-surface-600 bg-surface-950 p-3;
+      box-shadow: 0 10px 30px -20px rgba(0, 0, 0, 0.8);
+    }
+    code {
+      @apply bg-transparent p-0 font-mono text-[13px] leading-relaxed text-ink-primary;
+    }
+  }
+  // Blockquote — accent bar + soft cyan wash card
+  blockquote {
+    @apply my-2.5 overflow-hidden rounded-r-xl py-2 pl-4 pr-3.5 text-ink-secondary;
+    border-left: 3px solid hsl(var(--accent));
+    border-top: 1px solid hsl(var(--accent) / 0.16);
+    border-right: 1px solid hsl(var(--accent) / 0.12);
+    border-bottom: 1px solid hsl(var(--accent) / 0.12);
+    background: linear-gradient(135deg, hsl(var(--accent) / 0.07), hsl(var(--primary) / 0.03) 45%, transparent);
+    border-radius: 0 0.75rem 0.75rem 0;
+    p {
+      @apply my-0.5;
+    }
+    > :last-child {
+      @apply mb-0;
+    }
+  }
+  // Tables — purple-tinted header, zebra + hover rows
+  table {
+    @apply w-full border-collapse text-[13px];
+  }
+  th {
+    @apply border border-surface-600/70 px-2.5 py-1.5 text-left font-semibold text-ink-primary;
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.16), hsl(var(--primary) / 0.03));
+  }
+  td {
+    @apply border border-surface-600/70 px-2.5 py-1.5 text-ink-secondary;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  tbody {
+    tr:nth-child(even) td {
+      background: hsl(var(--foreground) / 0.023);
+    }
+    tr:hover td {
+      background: hsl(var(--primary) / 0.07);
+    }
+  }
+  // Horizontal rule — gradient hairline
+  hr {
+    @apply my-4 border-0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.55), hsl(var(--primary-hover) / 0.5), transparent);
+  }
+  // Media / misc
+  img,
+  video,
+  iframe {
+    @apply my-2 max-w-full rounded-xl border border-white/10;
+    box-shadow: 0 14px 40px -18px rgba(0, 0, 0, 0.8);
+  }
+  details {
+    @apply my-2 rounded-lg border border-surface-700 bg-surface-900/60 p-2.5;
+  }
+  summary {
+    @apply cursor-pointer font-medium text-ink-primary;
+  }
+  .footnotes {
+    @apply mt-6 border-t border-surface-700 pt-3 text-xs text-ink-muted;
+    ol {
+      @apply pl-5;
+}
+}
+}
+}

@@ -6,6 +6,87 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ── Scoped mirror of the two legacy unscoped packages ──────────────────────
+  # smoke-monkey-harness and smoke-monkey-harness-mcp have real download counts,
+  # so they stay published and keep their names. These jobs publish the same
+  # code alongside them under the @smoke-monkey scope, which is the name new
+  # installs should use. The package name is rewritten at publish time and the
+  # repo's own package.json is never edited, so the unscoped packages keep
+  # publishing unchanged.
+  publish-scoped:
+    name: Publish @smoke-monkey/{harness,mcp}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dir: .
+            scope_name: '@smoke-monkey/harness'
+            legacy_name: smoke-monkey-harness
+            built: true
+          - dir: mcp-server
+            scope_name: '@smoke-monkey/mcp'
+            legacy_name: smoke-monkey-harness-mcp
+            # Zero-devDependency: it only re-exports the harness, so there is
+            # no lockfile to install from and nothing to typecheck or build.
+            built: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+          cache-dependency-path: ${{ matrix.built && format('{0}/pnpm-lock.yaml', matrix.dir) || '' }}
+      - name: Install dependencies
+        if: matrix.built
+        working-directory: ${{ matrix.dir }}
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        if: matrix.built
+        working-directory: ${{ matrix.dir }}
+        run: pnpm typecheck
+      # Build before the version check so `files` is populated either way; the
+      # harness tarball is 4 MB and a missing dist would ship an empty package.
+      - name: Build
+        if: matrix.built
+        working-directory: ${{ matrix.dir }}
+        run: pnpm build
+      - name: Skip if this version is already published
+        id: check
+        run: |
+          VERSION="$(node -p "require('./${{ matrix.dir }}/package.json').version")"
+          if npm view "${{ matrix.scope_name }}@$VERSION" version &>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Rewrite the package name for the scoped registry
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            const p = '${{ matrix.dir }}/package.json';
+            const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+            j.name = '${{ matrix.scope_name }}';
+            // npm strips the scope from bin names, so '@smoke-monkey/mcp'
+            // would install a bare `mcp` command. Keep an explicit one.
+            if (j.bin) {
+              j.bin = { 'smoke-monkey-mcp': Object.values(j.bin)[0] };
+            }
+            fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
+          "
+      - name: Publish to npm
+        if: steps.check.outputs.exists == 'false'
+        working-directory: ${{ matrix.dir }}
+        run: pnpm publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   publish:
     runs-on: ubuntu-latest
     permissions:
@@ -44,6 +125,43 @@ jobs:
             git tag -a "v$VERSION" -m "Release v$VERSION"
             git push origin "v$VERSION"
           fi
+  publish-ui:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+      - name: Install UI dependencies
+        working-directory: ui
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck the UI
+        working-directory: ui
+        run: pnpm typecheck
+      - name: Skip if this version is already published
+        id: check
+        run: |
+          VERSION="$(node -p "require('./ui/package.json').version")"
+          if npm view @smoke-monkey/ui@"$VERSION" version &>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish @smoke-monkey/ui to npm
+        if: steps.check.outputs.exists == 'false'
+        working-directory: ui
+        # prepublishOnly builds from a clean dist, so the tarball can never
+        # ship a stale artifact left over from a previous run.
+        run: pnpm publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   publish-mcp-server:
     runs-on: ubuntu-latest
     permissions:

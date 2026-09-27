@@ -1,0 +1,32 @@
+@layer components {
+
+// ══════════════════════════════════════════════════════════════
+// COMPONENTS — visual block shells
+// `premium-card` / `addon-shell` have no CSS definition in the web
+// app (used only as class-name hooks in components/visuals/*.tsx),
+// so they are defined here from the surface tokens to match the
+// utility classes those components apply inline.
+// ══════════════════════════════════════════════════════════════
+.premium-card {
+  position: relative;
+  border: 1px solid hsl(var(--surface-700));
+  border-radius: 0.5rem;
+  background: linear-gradient(to bottom, hsl(var(--surface-850)), hsl(var(--surface-900)));
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.35), transparent);
+    pointer-events: none;
+  }
+}
+.addon-shell {
+  position: relative;
+  border: 1px solid hsl(var(--surface-600));
+  border-radius: 0.5rem;
+  background: hsl(var(--surface-900));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 4px 16px -10px rgba(0, 0, 0, 0.6);
+}
+}

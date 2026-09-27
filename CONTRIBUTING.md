@@ -101,6 +101,33 @@ change plugin behaviour:
 - **Never commit secrets.** No `.env*`, raw API keys, or private paths. Runtime
   secrets come from environment variables only.
 
+## Releasing
+
+Merging to `main` runs `.github/workflows/npm-publish.yml`, which publishes to
+**five** packages — each scoped name *and* its legacy unscoped name:
+
+| Job | Publishes |
+|---|---|
+| `publish` | `smoke-monkey-harness` (also tags `v<version>`) |
+| `publish-mcp-server` | `smoke-monkey-harness-mcp` |
+| `publish-ui` | `@smoke-monkey/ui` |
+| `publish-scoped` | `@smoke-monkey/harness` and `@smoke-monkey/mcp` |
+
+To cut a release, bump `version` in the relevant `package.json`, merge to
+`main`, and let the workflow do the rest. Every job skips when that version
+already exists, so re-running is safe.
+
+Two things to know when you touch the publishing jobs:
+
+- **The unscoped names are load-bearing.** They have download counts, so they
+  stay published under their original names. Do not rename the repository's own
+  `package.json` files.
+- **The scope is applied at publish time.** `publish-scoped` rewrites `name` in
+  the runner, immediately before `pnpm publish`, and never commits the change.
+  If you add a package to that matrix, give it a `built: true|false` flag —
+  `mcp-server` is a zero-devDependency package with no lockfile and no scripts,
+  so install/typecheck/build must be skipped or the job fails.
+
 ## License
 
 By contributing you agree that your contributions are licensed under the

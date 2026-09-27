@@ -1,0 +1,32 @@
+// ══════════════════════════════════════════════════════════════
+// SYNTAX HIGHLIGHTING — scoped to the chat widget.
+//
+// highlight.js ships one flat, global stylesheet per theme, so the dark
+// palette leaked into light themes (and out into the host app). These
+// are the same token colors, scoped to `[data-sm-chat]`, with a light
+// palette applied for every theme listed in `$light-themes`.
+//
+// Only `color` is carried over: unlayered CSS outranks Tailwind's
+// utilities layer, so re-declaring padding/background here would
+// override <CodeBlock/>'s own layout.
+// ══════════════════════════════════════════════════════════════
+
+[data-sm-chat] code.hljs,
+[data-sm-chat] pre code.hljs {
+  color: hsl(var(--ink-primary));
+}
+
+  [data-sm-chat] .hljs-doctag, [data-sm-chat] .hljs-keyword, [data-sm-chat] .hljs-meta .hljs-keyword, [data-sm-chat] .hljs-template-tag, [data-sm-chat] .hljs-template-variable, [data-sm-chat] .hljs-type, [data-sm-chat] .hljs-variable.language_ { color: #ff7b72; }
+  [data-sm-chat] .hljs-title, [data-sm-chat] .hljs-title.class_, [data-sm-chat] .hljs-title.class_.inherited__, [data-sm-chat] .hljs-title.function_ { color: #d2a8ff; }
+  [data-sm-chat] .hljs-attr, [data-sm-chat] .hljs-attribute, [data-sm-chat] .hljs-literal, [data-sm-chat] .hljs-meta, [data-sm-chat] .hljs-number, [data-sm-chat] .hljs-operator, [data-sm-chat] .hljs-variable, [data-sm-chat] .hljs-selector-attr, [data-sm-chat] .hljs-selector-class, [data-sm-chat] .hljs-selector-id { color: #79c0ff; }
+  [data-sm-chat] .hljs-regexp, [data-sm-chat] .hljs-string, [data-sm-chat] .hljs-meta .hljs-string { color: #a5d6ff; }
+  [data-sm-chat] .hljs-built_in, [data-sm-chat] .hljs-symbol { color: #ffa657; }
+  [data-sm-chat] .hljs-comment, [data-sm-chat] .hljs-code, [data-sm-chat] .hljs-formula { color: #8b949e; }
+  [data-sm-chat] .hljs-name, [data-sm-chat] .hljs-quote, [data-sm-chat] .hljs-selector-tag, [data-sm-chat] .hljs-selector-pseudo { color: #7ee787; }
+  [data-sm-chat] .hljs-subst { color: #c9d1d9; }
+  [data-sm-chat] .hljs-section { color: #1f6feb; }
+  [data-sm-chat] .hljs-bullet { color: #f2cc60; }
+  [data-sm-chat] .hljs-emphasis { color: #c9d1d9; }
+  [data-sm-chat] .hljs-strong { color: #c9d1d9; }
+  [data-sm-chat] .hljs-addition { color: #aff5b4; }
+  [data-sm-chat] .hljs-deletion { color: #ffdcd7; }

@@ -17,7 +17,17 @@ recovering from failures, and resuming work**.
 
 **No NestJS. No database. Zero dependencies. Just the agent runtime.**
 
-**npm:** [smoke-monkey-harness](https://www.npmjs.com/package/smoke-monkey-harness) · **dependencies:** 0 · **license:** MIT · **CI:** [passing](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions) · **types:** TypeScript
+**npm:** [@smoke-monkey/harness](https://www.npmjs.com/package/@smoke-monkey/harness) · **dependencies:** 0 · **license:** MIT · **CI:** [passing](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions) · **types:** TypeScript
+
+> **Package names.** New installs should use the scoped names below. The older
+> unscoped `smoke-monkey-harness` and `smoke-monkey-harness-mcp` still work and
+> are still published — they are kept for existing installs, not deprecated.
+>
+> | Package | Use this | Replaces |
+> |---|---|---|
+> | Agent runtime | [`@smoke-monkey/harness`](https://www.npmjs.com/package/@smoke-monkey/harness) | `smoke-monkey-harness` |
+> | MCP server | [`@smoke-monkey/mcp`](https://www.npmjs.com/package/@smoke-monkey/mcp) | `smoke-monkey-harness-mcp` |
+> | Chat UI | [`@smoke-monkey/ui`](https://www.npmjs.com/package/@smoke-monkey/ui) | — |
 
 </div>
 
@@ -26,8 +36,8 @@ recovering from failures, and resuming work**.
 ## Install
 
 ```bash
-pnpm add smoke-monkey-harness
-# or: npm install smoke-monkey-harness
+pnpm add @smoke-monkey/harness
+# or: npm install @smoke-monkey/harness
 # or: yarn add smoke-monkey-harness
 ```
 
@@ -52,7 +62,7 @@ pnpm add @rajdeepdevelopment/smoke-monkey-harness
 ## Quickstart
 
 ```ts
-import { createAgent } from 'smoke-monkey-harness';
+import { createAgent } from '@smoke-monkey/harness';
 
 const agent = createAgent({
   provider: 'nvidia',
@@ -109,7 +119,7 @@ needed:
   "mcpServers": {
     "smoke-monkey-harness": {
       "command": "npx",
-      "args": ["-y", "smoke-monkey-harness-mcp"]
+      "args": ["-y", "@smoke-monkey/mcp"]
     }
   }
 }
@@ -129,10 +139,10 @@ const agent = createAgent({
   mcp: [
     {
       id: 'smoke-monkey',
-      name: 'smoke-monkey-harness-mcp',
+      name: '@smoke-monkey/mcp',
       description: 'Build agents on Smoke Monkey',
       command: 'npx',
-      args: ['-y', 'smoke-monkey-harness-mcp'],
+      args: ['-y', '@smoke-monkey/mcp'],
       enabled: true,
     },
   ],
@@ -237,6 +247,12 @@ const agent = createAgent({ /* ... */, sessionId: 'project-123' })
 
 ---
 
+**💬 Chat UI — [`@smoke-monkey/ui`](https://www.npmjs.com/package/@smoke-monkey/ui)**
+A published browser package built for this harness: streaming markdown, tool
+cards with icons and live progress, inline pause dialogs, artifacts, sources,
+and charts. Drop-in (`ChatPanel`, `SmokeMonkeyChat`) or headless
+(`ChatRuntime`). A help chat, a support widget, or a whole agent app.
+
 ## Built for
 
 - AI coding assistants
@@ -275,6 +291,51 @@ Providers   + Custom Tools
 
 ---
 
+## Connect the chat UI
+
+`@smoke-monkey/harness` (Node) and `@smoke-monkey/ui` (browser) ship as
+separate packages and **share no interface**, so something has to translate.
+`createHarnessBridge` is that translation, and it ships with the UI:
+
+```ts
+// server
+import { createHarnessBridge } from '@smoke-monkey/ui';
+
+const bridge = createHarnessBridge({ agent, messageId });
+for await (const event of bridge.events()) socket.send(JSON.stringify(event));
+
+// the two paused-run answers, coming back from the browser
+socket.on('message', (raw) => {
+  const { type, data } = JSON.parse(raw);
+  if (type === 'resolve_ask_user') {
+    bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
+  } else if (type === 'resolve_permission') {
+    bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+  }
+});
+```
+
+```tsx
+// browser
+import { SmokeMonkeyChat, WebSocketTransport } from '@smoke-monkey/ui';
+import '@smoke-monkey/ui/ui.css';
+
+<SmokeMonkeyChat
+  transport={new WebSocketTransport({ url: 'wss://api.example.com/ws' })}
+  toolPresentations={agent.getToolPresentations()}
+/>
+```
+
+> **`permission.required` and `ask_user.required` pause the run.** Nothing
+> resolves them on their own. Render them *and* route the answer back, or the
+> run deadlocks with nothing logged — it looks like a hung request, not a bug.
+
+A runnable example lives in
+[`examples/chat-demo`](examples/chat-demo) — it consumes both packages from npm.
+The full mapping table, the component-by-component breakdown, and a wiring
+checklist are in [`ui/README.md`](ui/README.md#mapping-harness-events) and in
+the MCP server's `harness_guide_ui()`.
+
 ## MCP configuration
 
 **Connect your agent to the outside world.** Smoke Monkey supports MCP servers
@@ -282,7 +343,7 @@ over stdio and Streamable HTTP. Servers connect lazily and can require explicit
 user approval before activation.
 
 ```ts
-import { createAgent, stockToMcpConfig, findStockEntry } from 'smoke-monkey-harness';
+import { createAgent, stockToMcpConfig, findStockEntry } from '@smoke-monkey/harness';
 
 const agent = createAgent({
   provider: 'nvidia',
@@ -376,7 +437,7 @@ spawning the MCP server. Categories mirror the stock MCP entries, so a run can
 register just the backend (or frontend/devops/qa) skill set:
 
 ```ts
-import { loadAgentSkills, buildAgentSkillRegistry, AGENT_SKILL_CATEGORIES } from 'smoke-monkey-harness';
+import { loadAgentSkills, buildAgentSkillRegistry, AGENT_SKILL_CATEGORIES } from '@smoke-monkey/harness';
 
 // catalog of the 4 categories: agent-skills-backend / -frontend / -devops / -qa
 console.log(AGENT_SKILL_CATEGORIES.map((c) => `${c.id} → ${c.domain}`));
@@ -404,6 +465,7 @@ so list-wise behavior never drifts between the skill loader and the server.
 
 - `agent.run(task, opts?)` — run the agent to completion, pausing on questions / permission prompts.
 - `agent.respond(toolCallId, text)` — answer a pending `ask_user`.
+- `agent.getToolPresentations()` — host-provided `{ name: Presentation }` map for custom tools (pass to UI before first events)
 - `agent.resolvePermission(toolCallId, 'allow' | 'deny')` — resolve a `permission.required` pause.
 - `agent.resolveMcpDecision(toolCallId, { action: 'enable' | 'add' | 'skip', names })` — resolve an `mcp.approval_required` pause.
 - `agent.addMcpServer(config)` / `agent.removeMcpServer(id)` / `agent.listMcpServers()` — manage MCP servers at runtime.
@@ -414,13 +476,64 @@ so list-wise behavior never drifts between the skill loader and the server.
 
 **Events:** `run.started`, `step.started/ended`, `tool.started/output/progress/completed/failed`,
 `text.delta/thought/end`, `phase.changed`, `agent.state`, `context.updated`,
+`tool.started`/`tool.completed` include `presentation` when declared (precedence: per-call event → host map → inferred),
 `ask_user.required`, `permission.required`, `mcp.approval_required`,
 `mcp.resolved`, `compaction.started/completed`, `llm.thinking`,
 `todo.updated`, `run.completed/failed/interrupted`.
 
 For the full sliced-by-area surface (tools, providers, subcontexts, loop,
-permissions) see **[docs/api.md](docs/api.md)**, and start with
+permissions, hooks) see **[docs/api.md](docs/api.md)**, and start with
 **[docs/getting-started.md](docs/getting-started.md)**.
+
+### Hooks
+
+`hooks` are the seam for logging, metrics, tracing, cost accounting,
+authorization, and custom policy — no fork required:
+
+```ts
+const agent = createAgent({
+  workspacePath: '/repo',
+  hooks: {
+    async beforeToolCall({ toolName, input, userId }) {
+      if (toolName === 'write_file' && !(await isAllowed(userId ?? 'anonymous', input.path))) {
+        return { block: true, reason: 'outside the writable allowlist' };
+      }
+      return { input: { ...input, content: redact(input.content) } };
+    },
+    async afterToolCall({ toolName, result, durationMs }) {
+      metrics.timing('tool.call', { tool: toolName, durationMs, ok: result?.success !== false });
+    },
+    async afterModelCall({ usage, error }) { cost.record({ usage, failed: Boolean(error) }); },
+  },
+});
+```
+
+`beforeModelCall` / `beforeToolCall` can rewrite the payload or block the
+call; `after*` are observability only and fire on every exit path. A throwing
+`before*` hook fails **closed** — a crashing authz check never allows the
+call. Details in **[docs/api.md](docs/api.md#hooks--lifecycle-extension-points)**.
+
+### Errors
+
+Every failure is classified before it leaves the loop, so a client can tell the
+cases apart instead of pattern-matching prose:
+
+```ts
+interface AgentErrorInfo {
+  code: string;                   // 'provider_rate_limited'
+  layer: 'provider' | 'tool' | 'run' | 'hook' | 'permission' | 'transport';
+  severity: 'info' | 'warning' | 'error' | 'fatal';
+  message: string;                // user-facing, no stack traces
+  retryable: boolean;             // is a retry worth offering?
+  hint?: string;                  // the actionable next step
+}
+```
+
+`run.warning` is the non-terminal one: the loop is still retrying, so a rate
+limit can be surfaced the moment it happens instead of only after the run
+gives up. `retryable: false` on a `fatal` error means the UI should not offer a
+Retry button that cannot work. Full table in
+**[docs/api.md](docs/api.md#errors--every-failure-carries-a-layer-a-severity-and-a-hint)**.
 
 ---
 
