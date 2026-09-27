@@ -1,5 +1,7 @@
 # smoke-monkey-harness plugin — for ~70 agents, not just a handful
 
+> 🌐 **Official Documentation & Live Simulator:** [https://smoke-monkey-harness.vercel.app/](https://smoke-monkey-harness.vercel.app/)
+
 Turn **any** agent into a "build a looping agent" machine. This repo ships a
 plugin at `plugin/` that bundles:
 

@@ -7,7 +7,7 @@
     "name": "Rajdeep Development",
     "url": "https://github.com/RajdeepDevelopment"
   },
-  "homepage": "https://github.com/RajdeepDevelopment/smoke-monkey-harness",
+  "homepage": "https://smoke-monkey-harness.vercel.app/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RajdeepDevelopment/smoke-monkey-harness.git"

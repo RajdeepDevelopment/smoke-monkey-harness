@@ -14,6 +14,7 @@ Framework-agnostic: `agent = prompt + loop + tools + context`. The library
 ships the loop (LLM-turn orchestration), 24 tools in 5 groups, permissions,
 sub-contexts, skills, MCP clients, and compaction — no NestJS/database lock-in.
 You wire a provider key + optional UI; it does the rest.
+Documentation & live simulator: [https://smoke-monkey-harness.vercel.app/](https://smoke-monkey-harness.vercel.app/)
 
 Decide which path is available:
 

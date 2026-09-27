@@ -2,6 +2,8 @@
 
 A friendly, runnable demo for the **`@smoke-monkey/ui`** chat component.
 
+> 🌐 **Live Online Showcase & Simulator:** [https://smoke-monkey-harness.vercel.app/](https://smoke-monkey-harness.vercel.app/)
+
 **No backend. No API keys. No setup.** Just run it and type.
 
 It installs `@smoke-monkey/ui` from npm exactly like your own app would — no
