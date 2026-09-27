@@ -50,9 +50,9 @@
 Tool events (`tool.started/output/progress/completed/failed`) all carry
 `toolName`, and tool cards carry `presentation` (`{label, icon, tone, group}`)
 on start and on every completion, so a failed card never loses its icon. A call
-stopped with `failToolCall(id, { blocked: true })` completes with
-`status: 'blocked'` and `blocked: true` instead of throwing — that is how a
-policy refusal reaches the UI as a state distinct from an error.
+denied by a `beforeToolCall` hook reaches `afterToolCall` with `blocked: true`
+and an `error` carrying the reason — a policy refusal, distinguishable from a
+crash by an audit, though the UI itself just renders it as a tool error.
 
 ## Built-in tools by group
 - filesystem: read_file write_file edit_file line_edit replace_lines apply_patch delete_file list_directory inspect

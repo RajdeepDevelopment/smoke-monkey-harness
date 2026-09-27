@@ -126,6 +126,38 @@ task's output in `result.messages`. Then grow the task.
    tools surface as `<server>__<tool>` while `mcp_<id>` is active; disabled
    servers pause for `resolveMcpDecision`.
 
+### Step 6b — Give it a chat surface (skip only for a headless build)
+
+If anything about this product is conversational, do not hand-roll a chat UI.
+`@smoke-monkey/ui` is a published browser package built for exactly this
+harness, and `harness_guide_ui()` is the reference.
+
+Where it fits:
+
+| you are building | start from |
+| --- | --- |
+| a help chat inside your existing app | `ChatPanel` in a drawer or route |
+| a support/chat widget on a site you do not own the app shell of | `SmokeMonkeyChat` in an iframe or shadow root |
+| a new agent product | `useSmokeMonkeyChat` + `WebSocketTransport` |
+| something with a bespoke layout | `ChatRuntime` + `applyChatEvent` + the components you want |
+
+The one thing you must not skip: `permission.required` and `ask_user.required`
+**pause the run** until the host answers. Render them and route the answer
+back into `agent.respond()` / `agent.resolvePermission()`, or the run
+deadlocks with no error anywhere. `createHarnessBridge()` from the UI package
+does the whole translation, including that routing.
+
+```ts
+const bridge = createHarnessBridge({ agent, messageId });
+for await (const event of bridge.events()) socket.send(JSON.stringify(event));
+
+socket.on('message', (raw) => {
+  const { type, data } = JSON.parse(raw);
+  if (type === 'resolve_ask_user') bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
+  if (type === 'resolve_permission') bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+});
+```
+
 ### Step 7 — Ship
 - Persist memory: pass a `store` (implement the small `Storage` interface) +
   a stable `sessionId` to resume across runs.
@@ -133,7 +165,8 @@ task's output in `result.messages`. Then grow the task.
   `tool.started/output/progress/completed/failed`, `text.delta/thought/end`,
   `phase.changed`, `context.updated`, `permission.required`, `ask_user.required`,
   `mcp.approval_required`, `mcp.resolved`, `compaction.started/completed`,
-  `todo.updated`.
+  `todo.updated`. With `@smoke-monkey/ui`, `createHarnessBridge()` maps all of
+  these for you — see `harness_guide_ui()`.
 - The loop guards (no-progress, repeated-failure, same-output, empty-response,
   runaway `MAX_STEPS`) and auto-compaction keep long runs healthy.
 

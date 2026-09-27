@@ -1,4 +1,4 @@
-# Driving the smoke-monkey-harness MCP server (18 tools)
+# Driving the smoke-monkey-harness MCP server (21 tools)
 
 Call order for building an agent: `harness_status` → `harness_guide` →
 `harness_plan({ goal })` → optional `harness_guide_<feature>` deep dives →
@@ -19,8 +19,11 @@ Call order for building an agent: `harness_status` → `harness_guide` →
 
 `harness_guide_subcontexts` · `harness_guide_skills` · `harness_guide_mcp` ·
 `harness_guide_providers` · `harness_guide_tools` · `harness_guide_loop` ·
-`harness_guide_permissions` · `harness_guide_storage` · `harness_guide_events` —
-no args; pick the one matching the part of the product you are unsure about.
+`harness_guide_permissions` · `harness_guide_storage` · `harness_guide_events` ·
+`harness_guide_ui` — no args; pick the one matching the part of the product you
+are unsure about. `harness_guide_ui` is the one to reach for the moment the
+product needs a chat surface at all: an in-app help chat, a support widget on a
+marketing site, or a whole agent app built on the UI package.
 
 ## Building & verifying
 

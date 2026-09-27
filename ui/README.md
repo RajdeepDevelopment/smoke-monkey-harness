@@ -78,7 +78,9 @@ const transport = new FetchTransport({
 ### Connect the Smoke Monkey agent
 
 If your backend is the [`smoke-monkey-harness`](https://github.com/RajdeepDevelopment/smoke-monkey-harness)
-agent, it already emits this exact event contract — wire the two together:
+agent, it already emits this exact event contract — wire the two together. On
+the server, [`createHarnessBridge`](#mapping-harness-events) does the mapping
+and routes paused-run answers back into the run; below is the browser half:
 
 ```tsx
 import { SmokeMonkeyChat, WebSocketTransport, StreamParser } from '@smoke-monkey/ui';
@@ -268,9 +270,71 @@ servers and proxies that only relay text still render correctly.
 
 ### Mapping harness events
 
-If you are driving this UI from `@smoke-monkey/harness`, register the built-in
-parsers instead of mapping `run.*` by hand — the severity and terminal/non-
-terminal choice is already made for you:
+The harness and this package are separate and share no interface, so something
+has to translate. Ship that translation with the UI rather than writing it per
+app — `createHarnessBridge` is the whole loop, in both directions:
+
+```ts
+// ── server ────────────────────────────────────────────────────────────────
+import { createHarnessBridge } from '@smoke-monkey/ui';
+
+const bridge = createHarnessBridge({ agent, messageId });
+for await (const event of bridge.events()) socket.send(JSON.stringify(event));
+
+// ── the answers, coming back ──────────────────────────────────────────────
+socket.on('message', (raw) => {
+  const { type, data } = JSON.parse(raw);
+  if (type === 'resolve_ask_user') {
+    bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
+  } else if (type === 'resolve_permission') {
+    bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+  }
+});
+```
+
+| harness | UI | |
+|---|---|---|
+| `run.started` / `run.completed` | `agent:start` / `agent:complete` | `+ message:complete` |
+| `run.warning` / `run.interrupted` | `notice` | **not** terminal |
+| `run.failed` | `error` | terminal |
+| `step.started` / `step.ended` | `agent:step` | |
+| `text.delta` | `text:delta` | |
+| `text.thought` | `reasoning:start` then `reasoning:delta` | opened once, not per token |
+| `tool.started` | `tool:start` | carries `toolName` + `presentation` |
+| `tool.output` / `tool.progress` | `tool:delta` | live progress |
+| `tool.completed` | `tool:result` | |
+| `tool.failed` | `tool:error` | scoped to the call, run continues |
+| `ask_user.required` | `prompt:ask` | **pauses the run** |
+| `permission.required` | `prompt:permission` | **pauses the run** |
+| `ask_user.response` | `prompt:resolved` | |
+
+Events with no UI surface (`context.updated`, `state.changed`, `mcp.resolved`)
+are dropped, so you never have to enumerate what to ignore.
+
+**`tool:error` is scoped to one call; `error` ends the run.** A failing tool in
+an otherwise healthy run is normal and recoverable. Mapping `run.warning` to
+`error` kills a run that was about to succeed — which is how a rate limit
+turns into a dead conversation.
+
+`bridge.answer()` throws when no prompt is pending, and names the missing
+capability when the agent cannot answer that kind of pause. Don't swallow
+either: both mean a run is stuck.
+`bridge.answer()` also emits `prompt:resolved` and clears the pending entry, so
+the dialog closes immediately. Do not wait for the harness to echo it back: it
+echoes `ask_user.response` for a question and **nothing at all** for a resolved
+permission, so a host that only listened would leave a permission dialog on
+screen long after the run moved on. Answering the same prompt twice throws.
+
+
+`mapHarnessEvent(event, { messageId })` is the same mapping one event at a
+time, if you want the events without the subscription. Note that
+`message:start` comes from the **transport**, not the bridge — emit it first,
+or the reducer has no message to attach the run to.
+
+#### Errors only
+
+If you already map the rest of the run and just want the harness' severity and
+terminal/non-terminal decisions for failures, register the built-in parsers:
 
 ```ts
 import { StreamParser, createAgentEventParsers } from '@smoke-monkey/ui';

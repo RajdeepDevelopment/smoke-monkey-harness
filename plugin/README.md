@@ -156,6 +156,7 @@ project `--local` installs write `.opencode/skills/`). MCP goes in
 | `harness_guide_permissions` | —                     | deep dive: the three pauses + how to resolve them                                                                    |
 | `harness_guide_storage`     | —                     | deep dive: Storage interface, sessions, resume                                                                       |
 | `harness_guide_events`      | —                     | deep dive: event catalog + UI wiring                                                                                 |
+| `harness_guide_ui`          | —                     | deep dive: connecting `@smoke-monkey/ui` — help chat, widget, or full app; `createHarnessBridge`; routing paused-run answers |
 | `harness_events`            | —                     | event catalog (wire a UI/log layer)                                                                                  |
 | `harness_status`            | —                     | installed library version + server capabilities                                                                      |
 | `harness_scaffold`          | `targetDir`, `name?`  | a complete starter project (package.json, tsconfig, src/index.ts, sample skill, README, .mcp.json)                   |
@@ -182,7 +183,7 @@ plugin/                          # plugin package (plugin root)
     SKILL.md
     references/{api,features,mcp-tools}.md
   mcp/
-    server.mjs                   # dependency-free stdio MCP server (18 tools)
+    server.mjs                   # dependency-free stdio MCP server (21 tools)
     guide.md                     # master instructions (the mouth of the plugin)
     reference.md                 # authoritative API reference (harness_api)
     features/                    # deep per-feature guides (harness_guide_<feature>)

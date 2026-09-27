@@ -99,16 +99,32 @@ the registered one.
 
 ### Blocking a tool call
 
-`failToolCall` ends a call in flight. Pass `{ blocked: true }` to report a
-policy refusal rather than a crash:
+Deny a call from a `beforeToolCall` hook by returning `block: true`. The reason
+is fed back to the model as the tool's result, so the run recovers instead of
+dying:
 
 ```ts
-agent.failToolCall(call.id, { blocked: true, error: 'path outside workspace' });
+createAgent({
+  // …
+  hooks: {
+    beforeToolCall: ({ toolName, input }) => {
+      if (toolName === 'write_file' && !isInsideWorkspace(input.path)) {
+        return { block: true, reason: 'path is outside the workspace' };
+      }
+      // Return nothing to allow the call unchanged.
+    },
+  },
+});
 ```
 
-The call then completes with `status: 'blocked'` and `blocked: true` instead of
-throwing, so the UI can render a refusal distinctly from a genuine failure.
-Called with just an error (`failToolCall(id, 'boom')`) it behaves as before.
+A blocked call is a policy decision, not a crash. It is reported to the
+`afterToolCall` hook with `blocked: true` and an `error` carrying your reason,
+which is what lets an audit tell a refusal apart from a genuine failure. The
+UI sees the same thing as any other tool error — there is no separate
+"blocked" event.
+
+`beforeToolCall` can also return `{ input }` to rewrite the arguments before
+the tool runs, which is the hook's other job.
 
 ## Skills (SKILL.md)
 

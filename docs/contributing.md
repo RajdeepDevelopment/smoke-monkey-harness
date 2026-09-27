@@ -16,7 +16,8 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full process.
 - `docs/getting-started.md` — quick start
 - `docs/architecture.md` — layers and control flow
 - `docs/api.md` — options, surface, events, sub-contexts, loop, permissions
-- `docs/tools.md` — built-in tools, groups, custom tools, skills
+- `docs/tools.md` — built-in tools, groups, custom tools, tool presentation
+- `ui/README.md` — the chat UI package, and how a host wires a run to it
 - `docs/providers.md` — provider matrix, NVIDIA reference
 - `docs/mcp.md` — stdio / HTTP servers, approvals, stock catalog
 

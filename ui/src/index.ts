@@ -48,6 +48,16 @@ export type { StreamParserFn } from './runtime/StreamParser';
 export { createAgentEventParsers } from './runtime/agentEventParsers';
 export type { AgentEventParserOptions } from './runtime/agentEventParsers';
 export { ChatRuntime } from './runtime/ChatRuntime';
+// The harness <-> UI translation layer. A host needs this to connect a live
+// `AgentHarness` run to a chat surface, and to route paused-run answers back
+// into the run. See the module doc for the full event mapping.
+export { createHarnessBridge, mapHarnessEvent } from './runtime/harnessBridge';
+export type {
+  BridgeAgent,
+  HarnessBridge,
+  HarnessBridgeOptions,
+  HarnessEvent,
+} from './runtime/harnessBridge';
 
 // ── Storage ───────────────────────────────────────────────────────────────
 export { MemoryStore } from './store/memoryStore';

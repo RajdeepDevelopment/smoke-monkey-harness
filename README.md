@@ -247,6 +247,12 @@ const agent = createAgent({ /* ... */, sessionId: 'project-123' })
 
 ---
 
+**💬 Chat UI — [`@smoke-monkey/ui`](https://www.npmjs.com/package/@smoke-monkey/ui)**
+A published browser package built for this harness: streaming markdown, tool
+cards with icons and live progress, inline pause dialogs, artifacts, sources,
+and charts. Drop-in (`ChatPanel`, `SmokeMonkeyChat`) or headless
+(`ChatRuntime`). A help chat, a support widget, or a whole agent app.
+
 ## Built for
 
 - AI coding assistants
@@ -284,6 +290,51 @@ Providers   + Custom Tools
 ```
 
 ---
+
+## Connect the chat UI
+
+`@smoke-monkey/harness` (Node) and `@smoke-monkey/ui` (browser) ship as
+separate packages and **share no interface**, so something has to translate.
+`createHarnessBridge` is that translation, and it ships with the UI:
+
+```ts
+// server
+import { createHarnessBridge } from '@smoke-monkey/ui';
+
+const bridge = createHarnessBridge({ agent, messageId });
+for await (const event of bridge.events()) socket.send(JSON.stringify(event));
+
+// the two paused-run answers, coming back from the browser
+socket.on('message', (raw) => {
+  const { type, data } = JSON.parse(raw);
+  if (type === 'resolve_ask_user') {
+    bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
+  } else if (type === 'resolve_permission') {
+    bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+  }
+});
+```
+
+```tsx
+// browser
+import { SmokeMonkeyChat, WebSocketTransport } from '@smoke-monkey/ui';
+import '@smoke-monkey/ui/ui.css';
+
+<SmokeMonkeyChat
+  transport={new WebSocketTransport({ url: 'wss://api.example.com/ws' })}
+  toolPresentations={agent.getToolPresentations()}
+/>
+```
+
+> **`permission.required` and `ask_user.required` pause the run.** Nothing
+> resolves them on their own. Render them *and* route the answer back, or the
+> run deadlocks with nothing logged — it looks like a hung request, not a bug.
+
+A runnable example lives in
+[`examples/chat-demo`](examples/chat-demo) — it consumes both packages from npm.
+The full mapping table, the component-by-component breakdown, and a wiring
+checklist are in [`ui/README.md`](ui/README.md#mapping-harness-events) and in
+the MCP server's `harness_guide_ui()`.
 
 ## MCP configuration
 
