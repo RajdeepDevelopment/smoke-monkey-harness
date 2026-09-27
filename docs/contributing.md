@@ -21,7 +21,13 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full process.
 - `docs/mcp.md` — stdio / HTTP servers, approvals, stock catalog
 
 Keep docs in sync when you change behaviour. The plugin distribution is
-validated by the offline fixtures (`scripts/fixtures/test-plugin-mcp.ts`).
+validated by the offline fixtures (`scripts/fixtures/test-plugin-mcp.ts`), which
+also fail if the four universal skill copies (`.agents/skills`, `.opencode/skills`,
+`.github/skills`, `.agents/plugins/…/skills`) drift from the source in
+`plugin/skills/`. Edit the source, then copy it out — never the reverse.
+
+Releasing is documented in [CONTRIBUTING.md](../CONTRIBUTING.md#releasing): a
+merge to `main` publishes both the scoped and the legacy unscoped names.
 
 ## Code of conduct
 

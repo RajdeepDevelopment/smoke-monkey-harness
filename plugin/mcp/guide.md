@@ -24,10 +24,12 @@ loop guards and compaction). You wire a provider key and a UI, then ship.
 
 ### Step 1 — Install the library
 ```sh
-npm install smoke-monkey-harness            # published release
+npm install @smoke-monkey/harness           # published release
 # or, while pre-release:
 npm install github:RajdeepDevelopment/smoke-monkey-harness#main
 ```
+Prefer the scoped name. The legacy unscoped `smoke-monkey-harness` is still
+published and still resolves, so existing projects need no change.
 Needs Node ≥ 18. TypeScript projects: add `"types": ["node"]` and install
 `@types/node` (the scaffold's `tsconfig.json` already does both).
 
@@ -67,7 +69,7 @@ Browse and load them directly through this server, category-wise:
 Then wire the same set into your agent in `src/index.ts`:
 
 ```ts
-import { buildAgentSkillRegistry, loadAgentSkills } from 'smoke-monkey-harness'
+import { buildAgentSkillRegistry, loadAgentSkills } from '@smoke-monkey/harness'
 const backendSkills = loadAgentSkills({ category: 'agent-skills-backend' })
 const registry = buildAgentSkillRegistry({ category: 'agent-skills-frontend' })
 // …or serve the same skills over MCP with the stock agent-skills-* entries.
@@ -78,7 +80,7 @@ In the scaffold's `src/index.ts`, route every interactive pause to your UI —
 or keep `autoApprove: true` for a local/demo agent:
 
 ```ts
-import { createAgent } from 'smoke-monkey-harness'
+import { createAgent } from '@smoke-monkey/harness'
 
 const agent = createAgent({
   provider: process.env.PROVIDER ?? 'nvidia',            // openai | openrouter | nvidia | xai | gemini | opencode | omniroute | ollama

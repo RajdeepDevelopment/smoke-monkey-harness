@@ -39,6 +39,13 @@ library — this server just drives it from any MCP client.
 ## Run with npx
 
 ```sh
+npx -y @smoke-monkey/mcp
+```
+
+The scoped package installs a `smoke-monkey-mcp` binary. The older unscoped
+`smoke-monkey-harness-mcp` still works unchanged:
+
+```sh
 npx -y smoke-monkey-harness-mcp
 ```
 
@@ -49,7 +56,7 @@ Talk to it with any MCP client over stdio:
   "mcpServers": {
     "smoke-monkey-harness": {
       "command": "npx",
-      "args": ["-y", "smoke-monkey-harness-mcp"]
+      "args": ["-y", "@smoke-monkey/mcp"]
     }
   }
 }

@@ -62,7 +62,7 @@ pnpm add @rajdeepdevelopment/smoke-monkey-harness
 ## Quickstart
 
 ```ts
-import { createAgent } from 'smoke-monkey-harness';
+import { createAgent } from '@smoke-monkey/harness';
 
 const agent = createAgent({
   provider: 'nvidia',
@@ -292,7 +292,7 @@ over stdio and Streamable HTTP. Servers connect lazily and can require explicit
 user approval before activation.
 
 ```ts
-import { createAgent, stockToMcpConfig, findStockEntry } from 'smoke-monkey-harness';
+import { createAgent, stockToMcpConfig, findStockEntry } from '@smoke-monkey/harness';
 
 const agent = createAgent({
   provider: 'nvidia',
@@ -386,7 +386,7 @@ spawning the MCP server. Categories mirror the stock MCP entries, so a run can
 register just the backend (or frontend/devops/qa) skill set:
 
 ```ts
-import { loadAgentSkills, buildAgentSkillRegistry, AGENT_SKILL_CATEGORIES } from 'smoke-monkey-harness';
+import { loadAgentSkills, buildAgentSkillRegistry, AGENT_SKILL_CATEGORIES } from '@smoke-monkey/harness';
 
 // catalog of the 4 categories: agent-skills-backend / -frontend / -devops / -qa
 console.log(AGENT_SKILL_CATEGORIES.map((c) => `${c.id} → ${c.domain}`));

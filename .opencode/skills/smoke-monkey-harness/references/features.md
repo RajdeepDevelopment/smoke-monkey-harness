@@ -70,6 +70,18 @@ replace_lines/apply_patch/delete/list_directory/inspect), terminal
 `annotations.readOnlyHint` auto-allows; mutating via `ctx` gets guard
 bookkeeping. `options.tools` = group names[] or your `ToolDefinition[]`.
 
+Custom `options.tools` entries are exposed to the model from the **first run
+step**; a tool registered later was silently invisible to the model.
+
+**Presentation.** Add `presentation: {label, icon, tone, group}` to a
+`ToolDefinition` to get a titled, iconed tool card. `tone` is one of
+`success | error | warning | info` and drives the card accent. Read them all via
+`agent.getToolPresentations()`; a `presentation` on the individual event wins.
+
+**Blocking a call.** `failToolCall(toolCallId, { blocked: true })` ends the call
+as `status: 'blocked'` rather than a thrown error, so policy refusals and
+guard-rail rejections render differently from genuine failures.
+
 ## 6. Loop — phases, guards, compaction
 
 `explore → plan → edit → verify → recover → complete`. Automatic guards:
@@ -103,7 +115,9 @@ conversation. `HarnessRun`/`HarnessSession` carry step + token/cost counters.
 Subscribe `agent.on(type, fn)` / `agent.onAny(fn)`; payload in `e.data`.
 Lifecycle: `run.started/completed/failed/interrupted` · `step.started/ended` ·
 `phase.changed`. Streaming chat: `text.delta` · `text.thought` · `text.end`.
-Tool cards: `tool.started/output/progress/completed/failed`. Pauses:
+Tool cards: `tool.started/output/progress/completed/failed` (each with
+`toolName` + `presentation`; a blocked call arrives as `completed` carrying
+`status: 'blocked'`). Pauses:
 `permission.required` · `ask_user.required` · `mcp.approval_required` (+
 resolutions). State/context: `context.updated` · `state.changed` ·
 `todo.updated` · `compaction.started/completed` · `llm.thinking`.

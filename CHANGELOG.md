@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The `@smoke-monkey` scope.** The library, the MCP server, and the chat UI
+  are now published under a scope, and `main` deploys every package to both the
+  scoped and the unscoped name on each version bump:
+
+  | Package | Name | Status |
+  |---|---|---|
+  | Agent runtime | `@smoke-monkey/harness` | new, `1.2.0` |
+  | MCP server | `@smoke-monkey/mcp` | new, `1.0.2` |
+  | Chat UI | `@smoke-monkey/ui` | new, `0.1.1` |
+  | Agent runtime | `smoke-monkey-harness` | unchanged, still published |
+  | MCP server | `smoke-monkey-harness-mcp` | unchanged, still published |
+
+  The unscoped packages are kept exactly as they are because they have real
+  download counts; nothing is renamed, moved, or deprecated. The publishing
+  workflow rewrites `package.json`'s `name` in the runner at publish time only,
+  so the repository's own manifests keep the legacy names and the legacy jobs
+  keep publishing untouched. New installs should use the scoped names.
+
+  `@smoke-monkey/mcp` installs a `smoke-monkey-mcp` binary. Naming the bin
+  `@smoke-monkey/mcp` would have produced a bare `mcp` command, because npm
+  strips the scope from bin names.
+
 - **Custom tools can now be presented, and are actually reachable.** A tool
   registered through `tools: […]` or `agent.registerTool()` was added to the
   registry but never sent to the model — the exposed set was seeded only from

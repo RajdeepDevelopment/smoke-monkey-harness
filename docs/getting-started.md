@@ -7,10 +7,14 @@ editor.
 ## Install
 
 ```bash
-pnpm add smoke-monkey-harness
+pnpm add @smoke-monkey/harness
 ```
 
 Requires **Node >= 18**. TypeScript types ship with the package.
+
+> The older unscoped `smoke-monkey-harness` still resolves and is still
+> published, so existing installs keep working. New projects should use the
+> scoped name.
 
 ## Set an API key
 
@@ -25,7 +29,7 @@ Keys are read from environment variables at runtime; they never live in code.
 ## First agent
 
 ```ts
-import { createAgent } from 'smoke-monkey-harness';
+import { createAgent } from '@smoke-monkey/harness';
 
 const agent = createAgent({
   provider: 'nvidia',

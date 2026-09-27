@@ -33,6 +33,10 @@
 - `agent.resolveMcpDecision(toolCallId, { action, names })` — answer `mcp.approval_required`
 - `agent.addMcpServer(cfg)` / `removeMcpServer(id)` / `listMcpServers()`
 - `agent.skills.all()` / `.get(id)` / `.count` — live skill registry
+- `agent.getToolPresentations()` → `Record<string, {label, icon, tone, group}>`
+  — icon/label metadata for every registered tool, so a UI can render a tool card
+  before the first event arrives. A `presentation` passed on the individual
+  event overrides the registered one.
 - `agent.abort()` — stop the run
 - `agent.on(type, cb)` / `agent.onAny(cb)` / `agent.events` / `agent.store`
 
@@ -42,6 +46,13 @@
 `phase.changed` · `context.updated` · `permission.required` ·
 `ask_user.required` · `mcp.approval_required` · `mcp.resolved` ·
 `compaction.started/completed` · `llm.thinking` · `todo.updated`
+
+Tool events (`tool.started/output/progress/completed/failed`) all carry
+`toolName`, and tool cards carry `presentation` (`{label, icon, tone, group}`)
+on start and on every completion, so a failed card never loses its icon. A call
+stopped with `failToolCall(id, { blocked: true })` completes with
+`status: 'blocked'` and `blocked: true` instead of throwing — that is how a
+policy refusal reaches the UI as a state distinct from an error.
 
 ## Built-in tools by group
 - filesystem: read_file write_file edit_file line_edit replace_lines apply_patch delete_file list_directory inspect

@@ -44,7 +44,7 @@ Decide which path is available:
 2. Scaffold manually (or `npx create-…` if one exists) from this skeleton:
 
 ```ts
-import { createAgent } from 'smoke-monkey-harness'
+import { createAgent } from '@smoke-monkey/harness'
 const agent = createAgent({
   provider: process.env.PROVIDER ?? 'nvidia',
   model: process.env.MODEL ?? 'nvidia/nemotron-3-super-120b-a12b',
