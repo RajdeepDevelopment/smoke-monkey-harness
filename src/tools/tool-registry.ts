@@ -69,11 +69,42 @@ export interface ToolAnnotations {
   destructiveHint?: boolean;
 }
 
+/**
+ * The families a UI can fall back to when a tool ships no icon of its own.
+ * Mirrors the FE's `ToolFamily` so one value works on both sides.
+ */
+export const TOOL_FAMILIES = ['inspect', 'edit', 'run', 'verify', 'git', 'plan', 'ask'] as const;
+export type ToolFamily = (typeof TOOL_FAMILIES)[number];
+
+export type ToolTone = 'default' | 'primary' | 'success' | 'warning' | 'destructive';
+
+/**
+ * How a tool presents itself in a UI.
+ *
+ * Serializable on purpose. A custom tool is declared once in Node but has to
+ * render in a browser, and a React component cannot cross that boundary — so
+ * the icon is an emoji and everything else is plain data. The result travels
+ * out on `tool.started`, which means the glyph a user sees is the glyph the
+ * tool declared, with no second registry on the frontend to keep in sync.
+ */
+export interface ToolPresentation {
+  /** Emoji glyph, e.g. `"💳"`. Wins over `family` when both are given. */
+  icon?: string;
+  /** Human label. The UI falls back to a title-cased tool name. */
+  label?: string;
+  /** Family key, so a UI can pick a sensible glyph when `icon` is absent. */
+  family?: ToolFamily;
+  /** Accent for the glyph, mapped to the active theme's tokens. */
+  tone?: ToolTone;
+}
+
 export interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
   annotations?: ToolAnnotations;
+  /** Icon/label for the UI. Purely presentational; the model never sees it. */
+  presentation?: ToolPresentation;
   execute(input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult | {
     content: ToolContent[];
     isError?: boolean;
@@ -85,6 +116,7 @@ export interface AgentTool {
   description: string;
   parameterSchema: Record<string, unknown>;
   permissionAction: string;
+  presentation?: ToolPresentation;
   execute(input: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult>;
 }
 
@@ -94,6 +126,7 @@ export function definitionToAgentTool(def: ToolDefinition): AgentTool {
     description: def.description,
     parameterSchema: def.inputSchema,
     permissionAction: def.annotations?.destructiveHint ? 'ask' : 'allow',
+    ...(def.presentation ? { presentation: def.presentation } : {}),
     execute: async (input, ctx) => {
       // Both union members are ToolResult-compatible; unify for field access.
       const result = (await def.execute(input, ctx)) as ToolResult;
@@ -131,6 +164,31 @@ export class ToolRegistry {
 
   getAll(): AgentTool[] {
     return Array.from(this.tools.values());
+  }
+
+  /** Presentation for one tool, if it declared any. */
+  getPresentation(name: string): ToolPresentation | undefined {
+    return this.tools.get(name)?.presentation;
+  }
+
+  /**
+   * Every tool's presentation, keyed by tool name.
+   *
+   * A server sends this once on connect so a freshly loaded client can render
+   * custom tools correctly *before* the first `tool.started` arrives, and so a
+   * history replayed from storage keeps its icons.
+   */
+  getPresentations(): Record<string, ToolPresentation> {
+    const out: Record<string, ToolPresentation> = {};
+    for (const [name, tool] of this.tools) {
+      // Copied, not aliased. This is the one place a bulk map escapes the
+      // registry, and a host that merges it (or a test that pokes at it) would
+      // otherwise be editing the very objects later `tool.started` payloads
+      // are built from — one bad write, and every future event ships the
+      // mutated icon.
+      if (tool.presentation) out[name] = { ...tool.presentation };
+    }
+    return out;
   }
 
   getDefinitions(only?: Set<string>): Array<{

@@ -1,0 +1,45 @@
+@layer components {
+
+// ══════════════════════════════════════════════════════════════
+// COMPONENTS — reusable primitives
+// ══════════════════════════════════════════════════════════════
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-150 hover:bg-primary-hover hover:shadow-md hover:shadow-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50;
+}
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-850 px-4 py-2 text-sm font-medium text-ink-secondary shadow-soft-panel transition-all duration-150 hover:bg-surface-800 hover:text-ink-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50;
+}
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-ink-secondary transition-colors duration-150 hover:bg-surface-800 hover:text-ink-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50;
+}
+.input {
+  @apply w-full rounded-lg border border-input bg-surface-900 px-3 py-2 text-sm text-ink-primary shadow-sm placeholder:text-ink-muted focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-ring/25;
+}
+.card {
+  @apply rounded-card border border-border bg-card/70 shadow-soft-panel;
+}
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60;
+}
+// Card hover lift used across interactive surfaces.
+.card-interactive {
+  @apply rounded-card border border-border bg-card/70 shadow-soft-panel transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-card-lift;
+}
+// Card header — ONE treatment for every card shell (artifact, table, code,
+// chart, tree, workflow, card block). Previously each used a different
+// hardcoded wash: a baked-in purple, a brand tint, a white overlay, or
+// nothing at all, which is why the cards did not read as one system.
+//
+// The wash is derived from --ink-primary rather than a literal white or
+// brand hex, so it stays correct in dark AND light themes and follows
+// custom themes.
+.sm-card-head {
+  border-bottom: 1px solid hsl(var(--surface-700) / 0.7);
+  background-image: linear-gradient(180deg, hsl(var(--ink-primary) / 0.035), transparent);
+}
+// Slightly stronger wash for headers that carry a toolbar rather than a title.
+.sm-card-head--toolbar {
+  border-bottom: 1px solid hsl(var(--surface-700) / 0.7);
+  background-image: linear-gradient(180deg, hsl(var(--ink-primary) / 0.05), transparent);
+}
+}

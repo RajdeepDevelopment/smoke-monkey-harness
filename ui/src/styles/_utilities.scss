@@ -1,0 +1,206 @@
+// ══════════════════════════════════════════════════════════════
+// UTILITIES — elevation, glass, borders, focus glow, workspace bg
+// ══════════════════════════════════════════════════════════════
+@layer utilities {
+.checkerboard {
+  background-color: #0d131c;
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.035) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.035) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.glass {
+  background: hsla(219, 38%, 8%, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.text-gradient {
+  background: linear-gradient(
+    100deg,
+    hsl(var(--ink-primary)) 0%,
+    hsl(var(--ink-primary)) 45%,
+    hsl(var(--primary)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+// Tailwind v3 ships no `overflow-wrap-anywhere` utility — long URLs / hashes in
+// agent prose would otherwise force a horizontal scrollbar on narrow screens.
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+// Glassmorphism utilities
+.glass-panel {
+  background: hsla(219, 33%, 8%, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.glass-hover {
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background: hsla(219, 33%, 8%, 0.85);
+  }
+}
+
+.glass-active {
+  background: hsla(258, 90%, 66%, 0.1);
+  border-color: hsl(var(--primary) / 0.4);
+}
+
+.glass-border {
+  border-color: rgba(148, 163, 184, 0.1);
+}
+.glass-border-bottom {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+.glass-border-top {
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+.glass-border-left {
+  border-left: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+// Border hierarchy (from the design system)
+.bd-subtle {
+  border-color: rgba(148, 163, 184, 0.1);
+} // default separation
+.bd-hover {
+  border-color: hsl(var(--primary) / 0.35);
+} // hover
+.bd-active {
+  border-color: hsl(var(--primary) / 0.55);
+} // active/focused
+.hover-bd-hover:hover {
+  border-color: hsl(var(--primary) / 0.35);
+}
+
+// Surface elevation ladder
+.surface-elevated {
+  background: hsl(var(--surface-700));
+}
+.surface-hover {
+  background: hsl(var(--surface-750));
+}
+
+// Focus glow (purple) — used instead of heavy ring stacks
+.focus-glow {
+  transition: box-shadow 150ms ease, border-color 150ms ease;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.35), 0 8px 30px hsl(var(--primary-deep) / 0.18);
+  }
+}
+
+// Workspace background
+.workspace-bg {
+  background:
+    radial-gradient(circle at 22% 8%, hsla(258, 90%, 66%, 0.09), transparent 32%),
+    radial-gradient(circle at 82% 80%, hsla(217, 90%, 50%, 0.05), transparent 30%),
+    hsl(220, 38%, 5%);
+}
+}
+
+// ══════════════════════════════════════════════════════════════
+// SAFE AREA — notched / home-indicator devices
+// ══════════════════════════════════════════════════════════════
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+  .mt-safe {
+    margin-top: env(safe-area-inset-top);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MISC HELPERS + KEYFRAMES
+// ══════════════════════════════════════════════════════════════
+.touch-target {
+  min-height: 40px;
+  min-width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes smokeShimmer {
+  0% {
+    background-position: -600px 0;
+  }
+  100% {
+    background-position: 600px 0;
+  }
+}
+
+@keyframes smokeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes smokePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes smokeOrbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mobileBubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-mobile-bubble {
+  animation: mobileBubbleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

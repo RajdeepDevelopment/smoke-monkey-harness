@@ -1,0 +1,133 @@
+// ══════════════════════════════════════════════════════════════
+// Tool-run rail — connects repeated tool calls into one visual run.
+//
+// Unlayered on purpose: hand-written classes inside a Tailwind layer get
+// tree-shaken from the bundle (same reason as `themes` / `syntax`).
+//
+// Geometry mirrors the desktop transcript: a 24px gutter with the 1px line at
+// 11px and a 6px node dot straddling it at y=8. The top stub hands off to a
+// downward-fading line so a run reads as one continuous timeline.
+// ══════════════════════════════════════════════════════════════
+
+.sm-tool-run {
+  --sm-run-gap: 0.375rem;
+  --sm-run-stub: 10px;
+
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+
+  // Cards are separated by a real gap. The incoming stub on the next row is
+  // pulled up by that same gap, so the rail reads as one unbroken line.
+  & + .sm-tool-run {
+    margin-top: var(--sm-run-gap);
+  }
+}
+
+.sm-tool-run__gutter {
+  position: relative;
+  width: 1.5rem;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.sm-tool-run__line {
+  position: absolute;
+  left: 11px;
+  width: 1px;
+  background: hsl(var(--accent) / 0.3);
+}
+
+// Joins down from the previous row's dot, reaching back across the row gap.
+.sm-tool-run__line--top {
+  top: calc(-1 * var(--sm-run-gap, 0.375rem));
+  height: calc(var(--sm-run-stub, 10px) + var(--sm-run-gap, 0.375rem));
+}
+
+// Continues to the next row, fading out as it goes.
+.sm-tool-run__line--main {
+  top: var(--sm-run-stub, 10px);
+  bottom: 0;
+  background: linear-gradient(to bottom, hsl(var(--accent) / 0.3), hsl(var(--accent) / 0.05));
+}
+
+.sm-tool-run__node {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  height: 0.375rem;
+  width: 0.375rem;
+  border-radius: 9999px;
+  background: hsl(var(--accent));
+  box-shadow: 0 0 8px hsl(var(--accent) / 0.45);
+  // A ring in the page background keeps the dot legible over the line.
+  outline: 2px solid hsl(var(--bg));
+  outline-offset: -1px;
+}
+
+// Status tints the node so a running call still reads as "in progress".
+.sm-tool-run__node--running {
+  background: hsl(var(--primary));
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.5);
+  animation: sm-tool-pulse 1.6s ease-in-out infinite;
+}
+
+.sm-tool-run__node--error {
+  background: hsl(var(--destructive));
+  box-shadow: 0 0 8px hsl(var(--destructive) / 0.5);
+}
+
+@keyframes sm-tool-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.sm-tool-run__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.sm-tool-run__header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: 1.5rem;
+  padding: 0 0 0.125rem;
+}
+
+.sm-tool-run__header-dot {
+  height: 0.25rem;
+  width: 0.25rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: hsl(var(--accent));
+  box-shadow: 0 0 6px hsl(var(--accent) / 0.5);
+}
+
+.sm-tool-run__label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: hsl(var(--accent));
+}
+
+.sm-tool-run__count {
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  // ink-secondary, not ink-muted: on a bubble background ink-muted lands
+  // between 3.7:1 and 5.7:1 across the 14 themes, under AA at 9px.
+  color: hsl(var(--ink-secondary));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-tool-run__node--running {
+    animation: none;
+  }
+}

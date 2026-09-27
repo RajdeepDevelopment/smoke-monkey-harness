@@ -16,6 +16,7 @@ import { Logger } from '../logger.js';
 import { ToolRegistry } from '../tools/tool-registry.js';
 import {
   PHASE_TOOLS,
+  TOOL_GROUPS,
   type AgentPhase,
 } from './run-context.js';
 import type { McpRuntime } from './run-context.js';
@@ -69,6 +70,34 @@ const LONG_TOOL_TIMEOUT_MS = 7 * 60_000;
 const LONG_TOOL_NAMES = new Set(['write_file', 'edit_file', 'apply_patch', 'replace_lines', 'line_edit']);
 
 // ── Tool resolution ──────────────────────────────────────────────────────────
+
+/** Every built-in tool name, across all groups. */
+const BUILTIN_TOOL_NAMES: ReadonlySet<string> = new Set(
+  Object.values(TOOL_GROUPS).flat(),
+);
+
+/**
+ * Names of tools a host registered that the built-in groups do not cover.
+ *
+ * A custom tool is *registered* but was not *exposed*: `exposedTools` is seeded
+ * from the built-in groups, and only those names were ever sent to the model.
+ * So a custom tool was reachable but invisible — the model was never told it
+ * existed, and a call to it was rejected as unexposed. Custom tools are
+ * host-provided capabilities, so they are exposed from the first step.
+ */
+export function customToolNames(registry: ToolRegistry): string[] {
+  return registry
+    .getAll()
+    .map((t) => t.name)
+    .filter((name) => !BUILTIN_TOOL_NAMES.has(name));
+}
+
+/** `exposedTools` seeded from the built-in groups, widened to include custom tools. */
+export function withCustomTools(groups: Set<string>, registry: ToolRegistry): Set<string> {
+  const names = new Set(groups);
+  for (const name of customToolNames(registry)) names.add(name);
+  return names;
+}
 
 /**
  * Resolves the full set of LLM-ready tool definitions for the current step.

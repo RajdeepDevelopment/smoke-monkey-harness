@@ -404,6 +404,7 @@ so list-wise behavior never drifts between the skill loader and the server.
 
 - `agent.run(task, opts?)` — run the agent to completion, pausing on questions / permission prompts.
 - `agent.respond(toolCallId, text)` — answer a pending `ask_user`.
+- `agent.getToolPresentations()` — host-provided `{ name: Presentation }` map for custom tools (pass to UI before first events)
 - `agent.resolvePermission(toolCallId, 'allow' | 'deny')` — resolve a `permission.required` pause.
 - `agent.resolveMcpDecision(toolCallId, { action: 'enable' | 'add' | 'skip', names })` — resolve an `mcp.approval_required` pause.
 - `agent.addMcpServer(config)` / `agent.removeMcpServer(id)` / `agent.listMcpServers()` — manage MCP servers at runtime.
@@ -414,13 +415,64 @@ so list-wise behavior never drifts between the skill loader and the server.
 
 **Events:** `run.started`, `step.started/ended`, `tool.started/output/progress/completed/failed`,
 `text.delta/thought/end`, `phase.changed`, `agent.state`, `context.updated`,
+`tool.started`/`tool.completed` include `presentation` when declared (precedence: per-call event → host map → inferred),
 `ask_user.required`, `permission.required`, `mcp.approval_required`,
 `mcp.resolved`, `compaction.started/completed`, `llm.thinking`,
 `todo.updated`, `run.completed/failed/interrupted`.
 
 For the full sliced-by-area surface (tools, providers, subcontexts, loop,
-permissions) see **[docs/api.md](docs/api.md)**, and start with
+permissions, hooks) see **[docs/api.md](docs/api.md)**, and start with
 **[docs/getting-started.md](docs/getting-started.md)**.
+
+### Hooks
+
+`hooks` are the seam for logging, metrics, tracing, cost accounting,
+authorization, and custom policy — no fork required:
+
+```ts
+const agent = createAgent({
+  workspacePath: '/repo',
+  hooks: {
+    async beforeToolCall({ toolName, input, userId }) {
+      if (toolName === 'write_file' && !(await isAllowed(userId ?? 'anonymous', input.path))) {
+        return { block: true, reason: 'outside the writable allowlist' };
+      }
+      return { input: { ...input, content: redact(input.content) } };
+    },
+    async afterToolCall({ toolName, result, durationMs }) {
+      metrics.timing('tool.call', { tool: toolName, durationMs, ok: result?.success !== false });
+    },
+    async afterModelCall({ usage, error }) { cost.record({ usage, failed: Boolean(error) }); },
+  },
+});
+```
+
+`beforeModelCall` / `beforeToolCall` can rewrite the payload or block the
+call; `after*` are observability only and fire on every exit path. A throwing
+`before*` hook fails **closed** — a crashing authz check never allows the
+call. Details in **[docs/api.md](docs/api.md#hooks--lifecycle-extension-points)**.
+
+### Errors
+
+Every failure is classified before it leaves the loop, so a client can tell the
+cases apart instead of pattern-matching prose:
+
+```ts
+interface AgentErrorInfo {
+  code: string;                   // 'provider_rate_limited'
+  layer: 'provider' | 'tool' | 'run' | 'hook' | 'permission' | 'transport';
+  severity: 'info' | 'warning' | 'error' | 'fatal';
+  message: string;                // user-facing, no stack traces
+  retryable: boolean;             // is a retry worth offering?
+  hint?: string;                  // the actionable next step
+}
+```
+
+`run.warning` is the non-terminal one: the loop is still retrying, so a rate
+limit can be surfaced the moment it happens instead of only after the run
+gives up. `retryable: false` on a `fatal` error means the UI should not offer a
+Retry button that cannot work. Full table in
+**[docs/api.md](docs/api.md#errors--every-failure-carries-a-layer-a-severity-and-a-hint)**.
 
 ---
 

@@ -1,0 +1,46 @@
+// ══════════════════════════════════════════════════════════════
+// CHART CHROME
+//
+// Static SVG parts of the chart renderers (axis lines, tick labels,
+// tooltip bubbles, donut track). Series colours are dynamic and are
+// applied through inline `style` props from the `--chart-N` scale,
+// because SVG presentation attributes cannot resolve `var()`.
+//
+// Everything here reads semantic tokens, so charts follow the active
+// built-in theme and any custom theme.
+// ══════════════════════════════════════════════════════════════
+@layer components {
+  .sm-chart-grid {
+    stroke: hsl(var(--surface-600));
+  }
+
+  .sm-chart-label {
+    fill: hsl(var(--ink-secondary));
+  }
+
+  .sm-chart-axis-title {
+    fill: hsl(var(--ink-secondary));
+    font-weight: 600;
+  }
+
+  .sm-chart-total {
+    fill: hsl(var(--ink-primary));
+  }
+
+  .sm-chart-track {
+    stroke: hsl(var(--surface-700));
+  }
+
+  .sm-chart-dot-core {
+    fill: hsl(var(--surface-900));
+  }
+
+  .sm-chart-tip-bg {
+    fill: hsl(var(--surface-950));
+    opacity: 0.92;
+  }
+
+  .sm-chart-tip-text {
+    fill: hsl(var(--ink-primary));
+  }
+}

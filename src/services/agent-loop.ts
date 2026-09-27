@@ -62,6 +62,23 @@ import {
   type LLMToolDef,
 } from './tool-library.js';
 import { type LLMResponse, STREAMING_PROVIDERS } from './llm-client.js';
+import { AgentHookRunner, HookBlockedError, type AfterModelCallContext } from './agent-hooks.js';
+import {
+  classifyProviderError,
+  type AgentErrorInfo,
+  emptyResponseError,
+  errorMessageOf,
+  hookBlockedError,
+  permissionDeniedError,
+  repeatedErrorError,
+  runHardStopError,
+  toolBlockedError,
+  toolCancelledError,
+  toolError,
+  toolFailedError,
+  toolNotFoundError,
+  toAgentErrorInfo,
+} from './agent-error.js';
 export type { LLMResponse };
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -95,27 +112,49 @@ export interface CreateRunContextArgs {
  * unrelated one-line errors (timeout, auth, corrupt-stream) so the card stays
  * calm no matter what the API actually threw.
  */
+/**
+ * @deprecated Kept for backward compatibility. Use `classifyProviderError` from
+ * `services/agent-error.js`, which returns the same sentence plus the layer,
+ * severity and retryability.
+ */
 export function formatProviderError(raw: string, modelName?: string): string {
-  const msg = (raw || '').trim();
-  if (!msg) return 'The model returned an empty error from the provider.';
-  const status = /\b(429|403|401|408|500|502|503|504|520|529)\b/.exec(msg)?.[1];
-  const model =
-    /(?:^|[/\s])(oc|cfp|auto|openpipe|omniroute)\/([A-Za-z0-9._-]+)/i.exec(msg)?.[2] ||
-    /model\s*[:=]\s*["']?([A-Za-z0-9._/-]+)["']?/i.exec(msg)?.[1] ||
-    /([A-Za-z0-9_.-]+\/[A-Za-z0-9_.:-]+)/i.exec(msg)?.[1];
-  const isRate = /rate.?limit|too many|overloaded|429|quota|insufficient_quota/i.test(msg);
-  const isAuth = /403|forbidden|unauthorized|invalid (?:api|access) key|permission|free ?tier/i.test(msg);
-  const isTimeout = /timeout|timed out|stalled|no tokens|etimedout|idle/i.test(msg);
-  const tail = isRate
-    ? 'is rate-limited (429); wait a moment and try again.'
-    : isAuth
-      ? 'refused the request (403 — free-tier/permission); pick a different provider or retry later.'
-      : isTimeout
-        ? 'timed out (no tokens for a while); try again.'
-        : `returned an error from the provider ${status ? `(${status})` : ''}: ${msg.slice(0, 120)}`;
-  return `Model \`${modelName || model || 'your selected model'}\` ${tail}`.replace(/\s+/g, ' ').trim();
+  return classifyProviderError(raw, modelName).message;
 }
 
+/**
+ * Classify a throwable that escaped the run loop.
+ *
+ * Provider failures keep their specific layer/severity so the UI can offer
+ * "retry" for a rate limit but not for bad credentials. Anything unrecognised
+ * is an internal failure, which is a fatal-but-retryable `run` error: the run
+ * is over, yet the user can reasonably try again.
+ */
+function classifyTerminalFailure(err: unknown): AgentErrorInfo {
+  const msg = errorMessageOf(err);
+  if (/rate.?limit|too many|overloaded|429|quota/i.test(msg)) return classifyProviderError(msg);
+  if (/403|forbidden|unauthorized|invalid (?:api|access) key|permission|free ?tier/i.test(msg)) {
+    return classifyProviderError(msg);
+  }
+  if (/timeout|timed out|stalled|no tokens|etimedout|idle/i.test(msg)) return classifyProviderError(msg);
+  if (/abort|cancel/i.test(msg)) {
+    return {
+      code: 'run_cancelled',
+      layer: 'run',
+      severity: 'info',
+      message: 'The run was cancelled.',
+      retryable: true,
+    };
+  }
+  return {
+    code: 'run_internal_error',
+    layer: 'run',
+    severity: 'fatal',
+    message: msg,
+    retryable: true,
+    hint: 'Your work so far is saved — reply to continue from here.',
+    details: { stack: err instanceof Error ? err.stack?.split('\n').slice(0, 4) : undefined },
+  };
+}
 
 export interface AgentLoopParams {
   sessionId: string;
@@ -141,6 +180,20 @@ export interface McpApprovalDecision {
  * messages, emit events, call the model, and finalize — it never touches
  * NestJS services directly, keeping the loop testable in isolation.
  */
+/**
+ * Mutable bag the tool-call body uses to report its outcome to `afterToolCall`.
+ *
+ * `input` holds the *effective* arguments — the ones the tool actually received,
+ * i.e. after a `beforeToolCall` rewrite. Snapshotting the caller's object before
+ * the hook runs would make `afterToolCall` report arguments that were never used.
+ */
+interface ToolHookOutcome {
+  result?: ToolResult;
+  error?: Error;
+  blocked?: boolean;
+  input?: Record<string, unknown>;
+}
+
 export interface AgentLoopDeps {
   toolRegistry: ToolRegistry;
   workspaceIndex?: { build(dir: string): Promise<void> } | null;
@@ -165,6 +218,8 @@ export interface AgentLoopDeps {
   waitForPermission(ctx: RunContext, toolCallId: string, meta: { userId: string; workspacePath: string; toolName: string }): Promise<PermissionEffect>;
   waitForMcpDecision(ctx: RunContext, toolCallId: string): Promise<McpApprovalDecision>;
   persistToolStatus(assistantMsg: AgentMessage, toolCallId: string, status: ToolCallJson['status'], output: string, result?: unknown): Promise<void>;
+  /** Lifecycle hooks. Optional so existing embedders need no changes. */
+  hooks?: AgentHookRunner;
 }
 
 // ── AgentLoop ────────────────────────────────────────────────────────────────
@@ -259,19 +314,71 @@ export class AgentLoop {
           this.deps.eventEmitter.emitLlmThinking(sessionId, runId, step + 1);
           this.deps.eventEmitter.emitAgentState(sessionId, runId, ctx.phase, 'active', 'Thinking…');
           await this.deps.runService.updateStatus(runId, 'thinking');
-          response = await this.deps.callLLMWithRetry(
-            this.deps.buildLLMMessages(ctx, extra),
-            tools,
-            provider,
-            model,
+          // beforeModelCall: observability + guardrails. It may rewrite the
+          // outgoing messages/tools, or block the call and abort the run.
+          const hookInfo = {
             sessionId,
             runId,
-            ctx.userId,
-          );
+            userId: ctx.userId,
+            workspacePath: ctx.workspacePath,
+            step,
+            provider,
+            model,
+          };
+          let outgoing = { messages: this.deps.buildLLMMessages(ctx, extra), tools };
+          if (this.deps.hooks) {
+            const outcome = await this.deps.hooks.beforeModelCall({ ...hookInfo, ...outgoing });
+            if (outcome.action === 'block') {
+              throw new HookBlockedError(outcome.reason);
+            }
+            outgoing = outcome.value;
+          }
+
+          const modelStartedAt = Date.now();
+          try {
+            response = await this.deps.callLLMWithRetry(
+              outgoing.messages,
+              outgoing.tools,
+              provider,
+              model,
+              sessionId,
+              runId,
+              ctx.userId,
+            );
+          } catch (modelErr) {
+            // afterModelCall still fires on failure so cost/latency/tracing
+            // hooks can record the attempt that did not land.
+            await this.deps.hooks?.afterModelCall({
+              ...hookInfo,
+              error: modelErr instanceof Error ? modelErr : new Error(String(modelErr)),
+              durationMs: Date.now() - modelStartedAt,
+            });
+            throw modelErr;
+          }
+          await this.deps.hooks?.afterModelCall({
+            ...hookInfo,
+            response,
+            durationMs: Date.now() - modelStartedAt,
+            usage: response.usage as AfterModelCallContext['usage'],
+          });
           this.logger.debug(`LLM response: content=${(response.content || '').slice(0, 100)} tool_calls=${response.tool_calls?.length || 0} finish=${response.finish_reason ?? '?'} usage=${JSON.stringify(response.usage)}`);
         } catch (err) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          const friendly = formatProviderError(errMsg, model);
+          // A beforeModelCall hook vetoed the call. Stop immediately — retrying
+          // the provider would just re-trip the same guard every attempt.
+          if (err instanceof HookBlockedError) {
+            this.logger.warn(`Run ${runId} blocked by beforeModelCall hook at step ${step + 1}: ${err.message}`);
+            await this.deps.appendSystemNote(ctx, `Run blocked by an agent hook: ${err.message}`);
+            await this.deps.persistContext(ctx);
+            await this.deps.runService.updateStatus(runId, 'failed');
+            this.deps.eventEmitter.emitRunFailed(
+              sessionId, runId,
+              hookBlockedError('beforeModelCall', `Run blocked by an agent hook: ${err.message}`),
+            );
+            return;
+          }
+          const errMsg = errorMessageOf(err);
+          const providerInfo = classifyProviderError(errMsg, model);
+          const friendly = providerInfo.message;
           // Surface the FIRST occurrence of each distinct provider error to the
           // chat immediately as a small card, so the user sees e.g. "429 (rate
           // limited)" or a 403 while the run is still retrying — not only after
@@ -281,13 +388,22 @@ export class AgentLoop {
           guards.errorHistory.push(friendly);
           if (!seenBefore) {
             await this.deps.appendSystemNote(ctx, friendly);
+            // The system note is what the *model* reads. The warning event is
+            // what the *user* sees, so a 429 shows up immediately rather than
+            // only after the repeated-error threshold fails the run.
+            this.deps.eventEmitter.emitRunWarning(sessionId, runId, providerInfo);
           }
           if (guards.errorHistory.filter((e) => e === friendly).length >= MAX_SAME_ERROR) {
             this.logger.warn(`LLM call failed (step ${step + 1}): ${errMsg}`);
             await this.deps.appendSystemNote(ctx, `Repeated error detected: ${friendly}. Stopping to prevent an infinite loop.`);
             await this.deps.persistContext(ctx);
             await this.deps.runService.updateStatus(runId, 'failed');
-            this.deps.eventEmitter.emitRunFailed(sessionId, runId, 'repeated_error');
+            this.deps.eventEmitter.emitRunFailed(
+              sessionId, runId,
+              repeatedErrorError(
+                `Repeated error detected: ${friendly}. Stopping to prevent an infinite loop.`,
+              ),
+            );
             return;
           }
 
@@ -394,7 +510,7 @@ export class AgentLoop {
             await this.deps.persistContext(ctx);
             await this.deps.runService.updateStatus(runId, 'failed');
             await this.deps.sessionService.updateStatus(sessionId, 'failed');
-            this.deps.eventEmitter.emitRunFailed(sessionId, runId, ctx.hardStopReason);
+            this.deps.eventEmitter.emitRunFailed(sessionId, runId, runHardStopError(ctx.hardStopReason));
             this.deps.eventEmitter.emitStepEnded(sessionId, runId, step + 1);
             return;
           }
@@ -426,8 +542,9 @@ export class AgentLoop {
               '(HTTP 429). Stopping the run to avoid wasting tokens. You can reply below to retry in a moment.');
             await this.deps.runService.updateStatus(runId, 'failed');
             await this.deps.sessionService.updateStatus(sessionId, 'failed');
-            this.deps.eventEmitter.emitRunFailed(sessionId, runId,
-              `model \`${model || provider || 'selected model'}\` returned empty responses repeatedly`);
+            this.deps.eventEmitter.emitRunFailed(
+              sessionId, runId, emptyResponseError(model || provider),
+            );
             this.deps.eventEmitter.emitStepEnded(sessionId, runId, step + 1);
             return;
           }
@@ -557,28 +674,38 @@ export class AgentLoop {
     }
   }
 
+  /**
+   * Structural completion signal, not a keyword blacklist.
+   *
+   * A keyword match is only meaningful once the model has committed to a
+   * verdict: an agent that is still narrating ("I will now check the logs and
+   * summarize") mentions the same words without being done. Requiring a heading
+   * or a completion phrase at the start of a line keeps mid-sentence mentions
+   * from finalizing a run early.
+   */
   private isFinalReport(content: string): boolean {
     const FINAL_REPORT_RE =
-      /(^|\n)[ \t]*(?:[-*•][ \t]*)?[*_]*(Changed|Verified|Result|Summary|Done|Status)[*_]*[ \t]*:|TASK (COMPLETE|COMPLETED)|completed successfully|verification (passed|green)|all checks (passed|green)/im;
+      /(^|\n)[ \t]*(?:[-*\u2022][ \t]*)?[*_]*(Changed|Verified|Result|Summary|Done|Status)[*_]*[ \t]*:|TASK (COMPLETE|COMPLETED)|completed successfully|verification (passed|green)|all checks (passed|green)/im;
     return FINAL_REPORT_RE.test(content);
   }
 
-  /** Returns the first non-empty line of a tool output. */
   private firstErrorLine(output: string): string {
     const line = output.split('\n').find((l) => l.trim().length > 0) || 'Tool failed';
     return line.slice(0, 200);
   }
 
-  // ── Tool scheduling ─────────────────────────────────────────────────────
-
   /**
-   * Executes one turn's tool calls. READ tools are side-effect free → run
-   * concurrently; writes/terminal/ask_user stay sequential in call order.
+   * Split this step's calls into a parallel batch and a sequential batch.
+   *
+   * Only calls that are read-only AND already permitted are batched: anything
+   * that could prompt, mutate, or trip a loop guard has to run alone so its
+   * permission prompt and side effects stay ordered with respect to the rest of
+   * the turn.
    */
   private async executeToolCalls(
     ctx: RunContext,
     assistantMsg: AgentMessage,
-    calls: Array<{ id: string; function: { name: string; arguments: string } }>,
+    calls: Array<{ id: string; function: { name: string; arguments: string }; thought_signature?: string }>,
     guards: RunGuards,
     ids: { agentId: string; userId: string },
   ): Promise<void> {
@@ -589,10 +716,17 @@ export class AgentLoop {
     const evaluated = await Promise.all(
       parsed.map(async (p) => ({
         ...p,
-        permission: await this.deps.permissionService.evaluate(p.call.function.name, '*', ids.agentId, ids.userId, ctx.workspacePath),
+        permission: await this.deps.permissionService.evaluate(
+          p.call.function.name,
+          '*',
+          ids.agentId,
+          ids.userId,
+          ctx.workspacePath,
+        ),
       })),
     );
-    const isParallelizable = (p: { call: { function: { name: string } }; args: Record<string, unknown>; permission: PermissionEffect }) =>
+
+    const isParallelizable = (p: (typeof evaluated)[number]): boolean =>
       p.permission === 'allow' &&
       READ_ONLY_TOOLS.has(p.call.function.name) &&
       !wouldTripLoopGuards(p.call.function.name, p.args, guards);
@@ -610,6 +744,7 @@ export class AgentLoop {
         ),
       );
     }
+
     for (const p of sequentialBatch) {
       if (ctx.abortController.signal.aborted) break;
       await this.executeSingleToolCall(ctx, assistantMsg, p.call, p.args, guards, ids, p.permission, turnNotes);
@@ -625,6 +760,45 @@ export class AgentLoop {
     ctx.policyViolation = null;
   }
 
+  /**
+   * Report a tool failure exactly once, to both consumers.
+   *
+   * The `tool.failed` event and the `afterToolCall` hook describe the same
+   * failure, so they are emitted from one place. Previously most early-return
+   * paths emitted the event but left the hook with `error: undefined` and
+   * `blocked: false`, so a hook could not tell a policy block from a crash.
+   *
+   * `out` and `blocked` arrive as one object rather than as two adjacent
+   * optional object parameters. They used to be separate, and the two were
+   * swapped at four call sites with no compile error: `ToolHookOutcome` has a
+   * `blocked` field, so `{ blocked: true }` satisfied both types. The real
+   * outcome then never got its `error` set and a throwaway literal was mutated
+   * instead. One object with named fields leaves nothing adjacent to get wrong.
+   */
+  private failToolCall(
+    ctx: RunContext,
+    runId: string,
+    toolCallId: string,
+    error: string | AgentErrorInfo,
+    outcome: { out?: ToolHookOutcome; blocked?: boolean } = {},
+  ): void {
+    const { out } = outcome;
+    const info = toAgentErrorInfo(error, { layer: 'tool', severity: 'error', retryable: true });
+    if (out) {
+      out.error = new Error(info.message);
+      // A blocked call is a policy decision, not a crash: say so explicitly.
+      out.blocked = outcome.blocked ?? info.severity === 'warning';
+    }
+    this.deps.eventEmitter.emitToolFailed(ctx.sessionId, runId, toolCallId, info);
+  }
+
+  /**
+   * Run one call, then report the outcome to `afterToolCall` exactly once.
+   *
+   * The hook is a post-condition observer, so it must see a truthful result for
+   * every exit path: success, a policy early return, or an exception escaping
+   * the body. Anything less makes "did my hook fire?" unaanswerable.
+   */
   private async executeSingleToolCall(
     ctx: RunContext,
     assistantMsg: AgentMessage,
@@ -635,9 +809,82 @@ export class AgentLoop {
     precomputedPermission: PermissionEffect | null,
     turnNotes: string[],
   ): Promise<void> {
+    const startedAt = Date.now();
+    const out: ToolHookOutcome = { input: toolArgs };
+    try {
+      await this.runToolCall(ctx, assistantMsg, toolCall, toolArgs, guards, ids, precomputedPermission, turnNotes, out);
+    } catch (err) {
+      // A throw escaping the body (persistence, post-processing) still has to
+      // reach the hook, otherwise `afterToolCall` reports a clean success.
+      if (!out.error) {
+        this.failToolCall(ctx, ctx.runId, toolCall.id, errorMessageOf(err), { out });
+      }
+      throw err;
+    } finally {
+      await this.deps.hooks?.afterToolCall({
+        sessionId: ctx.sessionId,
+        runId: ctx.runId,
+        userId: ids.userId,
+        workspacePath: ctx.workspacePath,
+        toolCallId: toolCall.id,
+        toolName: toolCall.function.name,
+        input: out.input ?? toolArgs,
+        result: out.result,
+        error: out.error,
+        blocked: out.blocked ?? false,
+        durationMs: Date.now() - startedAt,
+      });
+    }
+  }
+
+  private async runToolCall(
+    ctx: RunContext,
+    assistantMsg: AgentMessage,
+    toolCall: { id: string; function: { name: string; arguments: string } },
+    toolArgs: Record<string, unknown>,
+    guards: RunGuards,
+    ids: { agentId: string; userId: string },
+    precomputedPermission: PermissionEffect | null,
+    turnNotes: string[],
+    out: ToolHookOutcome,
+  ): Promise<void> {
     const { sessionId, runId } = ctx;
     const toolName = toolCall.function.name;
     const toolCallId = toolCall.id;
+
+    // beforeToolCall runs BEFORE the permission prompt, so an authorization or
+    // policy hook can reject a call without bothering the user. It may also
+    // rewrite the arguments the tool actually receives.
+    const toolHookInfo = {
+      sessionId,
+      runId,
+      userId: ids.userId,
+      workspacePath: ctx.workspacePath,
+      toolCallId,
+      toolName,
+    };
+    if (this.deps.hooks) {
+      const outcome = await this.deps.hooks.beforeToolCall({ ...toolHookInfo, input: toolArgs });
+      if (outcome.action === 'block') {
+        // Feed the reason back as a failed tool result so the model can adapt
+        // instead of retrying the same call blindly.
+        const msg = `Tool "${toolName}" was blocked by an agent hook: ${outcome.reason}`;
+        this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs, this.deps.toolRegistry.getPresentation(toolName));
+        this.failToolCall(
+          ctx, runId, toolCallId, hookBlockedError('beforeToolCall', outcome.reason, 'tool'),
+          { out, blocked: true },
+        );
+        await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, msg);
+        await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', msg);
+        guards.recentToolResults.push({ name: toolName, success: false, output: msg.slice(0, 200) });
+        if (guards.recentToolResults.length > 6) guards.recentToolResults.shift();
+        return;
+      }
+      toolArgs = outcome.value;
+      // Record the effective args so `afterToolCall` reports what the tool
+      // actually ran with, not the pre-hook snapshot.
+      out.input = toolArgs;
+    }
 
     // ── Deterministic phase advance from the OBSERVED intent. ─────────────
     this.setPhase(ctx, nextPhaseOnCall(ctx.phase, toolName));
@@ -653,8 +900,9 @@ export class AgentLoop {
         `Pick an allowed tool or, if the task is done, provide your final summary.`;
       turnNotes.push(skipMsg);
       this.logger.warn(`ToolGate blocked ${toolName} (phase=${ctx.phase}) for run ${runId}`);
-      this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs);
-      this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, 'Tool not allowed in this phase');
+      this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs, this.deps.toolRegistry.getPresentation(toolName));
+      this.failToolCall(
+        ctx, runId, toolCallId, toolNotFoundError(toolName, ctx.phase), { out, blocked: true });
       await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, skipMsg);
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', skipMsg);
       return;
@@ -670,8 +918,11 @@ export class AgentLoop {
         `DOOM LOOP DETECTED: Tool "${toolName}" with the same arguments has been called 1000+ times consecutively. ` +
         `STOP calling this tool. Take a completely different approach, or if the task appears complete, provide a final summary.`,
       );
-      this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs);
-      this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, doom.message!);
+      this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs, this.deps.toolRegistry.getPresentation(toolName));
+      this.failToolCall(
+        ctx, runId, toolCallId, toolBlockedError(toolName, 'doom loop — identical call repeated 1000+ times'),
+        { out },
+      );
       await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, doom.message!);
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', doom.message!);
       return;
@@ -684,18 +935,24 @@ export class AgentLoop {
         `SEARCH LOOP DETECTED: You have called search/list/read tools 1000+ times consecutively without making progress. ` +
         `STOP searching. You have enough context. Take action: edit a file, run a command, or provide a final answer.`,
       );
-      this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs);
-      this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, search.message!);
+      this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs, this.deps.toolRegistry.getPresentation(toolName));
+      this.failToolCall(
+        ctx, runId, toolCallId, toolBlockedError(toolName, 'search loop — searching repeatedly without progress'),
+        { out },
+      );
       await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, search.message!);
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', search.message!);
       return;
     }
 
-    this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs);
+    // Resolved once and reused by both the started and completed payloads, so
+    // the two ends of the same call can never disagree about its icon.
+    const presentation = this.deps.toolRegistry.getPresentation(toolName);
+    this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs, presentation);
 
     if (ctx.abortController.signal.aborted) {
       await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, `CANCELLED ${toolName}: the run was interrupted before execution.`);
-      this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, 'Cancelled by user');
+      this.failToolCall(ctx, runId, toolCallId, toolCancelledError(toolName), { out });
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', 'Cancelled by user');
       return;
     }
@@ -704,8 +961,13 @@ export class AgentLoop {
     if (toolName === 'finish_task') {
       const summary = String(toolArgs.summary || '').trim() || 'Task complete';
       ctx.finishSignal = { summary };
+      const presentation = this.deps.toolRegistry.getPresentation(toolName);
       this.deps.eventEmitter.emitToolOutput(sessionId, runId, toolCallId, summary);
-      this.deps.eventEmitter.emitToolCompleted(sessionId, runId, toolCallId, { success: true, output: summary, metadata: {} });
+      this.deps.eventEmitter.emitToolCompleted(
+        sessionId, runId, toolCallId, toolName,
+        { success: true, output: summary, metadata: {} },
+        presentation,
+      );
       await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, `[TASK COMPLETE] ${summary}`);
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'completed', summary);
       guards.recentToolResults.push({ name: toolName, success: true, output: summary.slice(0, 200) });
@@ -730,8 +992,13 @@ export class AgentLoop {
         await this.deps.sessionService.updateStatus(sessionId, 'running');
       }
 
+      const presentation = this.deps.toolRegistry.getPresentation(toolName);
       this.deps.eventEmitter.emitToolOutput(sessionId, runId, toolCallId, userResponse.slice(0, 2000));
-      this.deps.eventEmitter.emitToolCompleted(sessionId, runId, toolCallId, { success: true, output: userResponse, metadata: {} });
+      this.deps.eventEmitter.emitToolCompleted(
+        sessionId, runId, toolCallId, toolName,
+        { success: true, output: userResponse, metadata: {} },
+        presentation,
+      );
       await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, userResponse || '(no response)');
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'completed', userResponse.slice(0, 5000));
 
@@ -747,8 +1014,9 @@ export class AgentLoop {
     const effectivePermission = sensitive && permission === 'allow' ? 'ask' : permission;
     if (sensitive && permission === 'deny') {
       const msg = `Blocked by security policy: accessing a sensitive file (secrets/credentials) requires permission.`;
-      this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs);
-      this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, 'Permission denied (sensitive file)');
+      this.deps.eventEmitter.emitToolStarted(sessionId, runId, toolCallId, toolName, toolArgs, this.deps.toolRegistry.getPresentation(toolName));
+      this.failToolCall(
+        ctx, runId, toolCallId, permissionDeniedError('sensitive file', toolName), { out, blocked: true });
       await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, msg);
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', msg);
       return;
@@ -756,7 +1024,10 @@ export class AgentLoop {
     if (effectivePermission === 'deny') {
       const denyMsg = `Tool "${toolName}" was denied by permissions.`;
       await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, denyMsg);
-      this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, 'Permission denied');
+      this.failToolCall(
+        ctx, runId, toolCallId, permissionDeniedError('outside the allowed scope', toolName),
+        { out, blocked: true },
+      );
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', denyMsg);
       return;
     }
@@ -780,7 +1051,8 @@ export class AgentLoop {
       if (userChoice === 'deny') {
         const denyMsg = `Tool "${toolName}" was denied by user.`;
         await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, denyMsg);
-        this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, 'Permission denied by user');
+        this.failToolCall(
+          ctx, runId, toolCallId, permissionDeniedError('you declined the request', toolName), { out, blocked: true });
         await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', denyMsg);
         return;
       }
@@ -789,8 +1061,13 @@ export class AgentLoop {
     if (toolName === 'read_file') {
       const blocked = verificationReadBlocked(toolArgs, guards.fileMutationCounts, guards.postMutationReads);
       if (blocked) {
+        const presentation = this.deps.toolRegistry.getPresentation(toolName);
         this.deps.eventEmitter.emitToolOutput(sessionId, runId, toolCallId, blocked);
-        this.deps.eventEmitter.emitToolCompleted(sessionId, runId, toolCallId, { success: true, output: blocked, isError: false });
+        this.deps.eventEmitter.emitToolCompleted(
+          sessionId, runId, toolCallId, toolName,
+          { success: true, output: blocked, isError: false },
+          presentation,
+        );
         await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, blocked);
         return;
       }
@@ -800,7 +1077,10 @@ export class AgentLoop {
     if (!budget.allowed) {
       const msg = budget.message!;
       await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, msg);
-      this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, `mutation limit reached for ${toolName}`);
+      this.failToolCall(ctx, runId, toolCallId, toolError('tool_mutation_limit', `Mutation limit reached for \`${toolName}\`.`, {
+          severity: 'warning', retryable: false,
+          hint: 'The run is capped so it cannot change too many files. Retry for a smaller task.',
+        }), { out });
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', msg);
       return;
     }
@@ -875,10 +1155,13 @@ export class AgentLoop {
       }
 
       if (result.isError) {
-        this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, this.firstErrorLine(result.output ?? ''));
+        this.failToolCall(
+          ctx, runId, toolCallId, toolFailedError(toolName, this.firstErrorLine(result.output ?? '')),
+          { out },
+        );
       } else {
         this.deps.eventEmitter.emitToolOutput(sessionId, runId, toolCallId, (result.output ?? "").slice(0, 2000));
-        this.deps.eventEmitter.emitToolCompleted(sessionId, runId, toolCallId, result);
+        this.deps.eventEmitter.emitToolCompleted(sessionId, runId, toolCallId, toolName, result, presentation);
       }
 
       await this.deps.persistToolStatus(
@@ -890,7 +1173,10 @@ export class AgentLoop {
       );
     } catch (postErr) {
       this.logger.warn(`Post-execution processing failed for ${toolName}: ${postErr}`);
-      this.deps.eventEmitter.emitToolFailed(sessionId, runId, toolCallId, `Tool execution failed: ${postErr}`);
+      this.failToolCall(
+        ctx, runId, toolCallId, toolFailedError(toolName, errorMessageOf(postErr)),
+        { out },
+      );
       await this.deps.persistToolStatus(assistantMsg, toolCallId, 'failed', `Tool execution failed: ${postErr}`);
       result.isError = true;
       result.output = `${result.output || ''}\n[TOOL RESULT PROCESSING ERROR: ${postErr}]`;
@@ -903,6 +1189,8 @@ export class AgentLoop {
       ctx.filesModified.add(String(result.metadata.path));
       for (const t of TOOL_GROUPS.verification) ctx.exposedTools.add(t);
     }
+
+    out.result = result;
 
     const storedOutput = await this.deps.compactToolOutput(ctx.workspacePath, runId, toolCallId, result.output ?? "");
     await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, storedOutput);
@@ -1037,14 +1325,18 @@ export class AgentLoop {
     try {
       this.setPhase(ctx, 'complete');
       await this.deps.persistContext(ctx);
-      const reason = err instanceof Error ? err.message : String(err);
+      const info = toAgentErrorInfo(
+        classifyTerminalFailure(err),
+        { layer: 'run', severity: 'fatal', retryable: true },
+      );
+      this.logger.error(`Run ${runId} failed [${info.code}/${info.layer}]: ${info.message}`);
       await this.deps.appendAssistantMessage(
         ctx,
-        `⚠️ The run stopped unexpectedly: ${reason}\n\nYour work so far is saved. You can reply below to continue.`,
+        `⚠️ The run stopped unexpectedly: ${info.message}\n\nYour work so far is saved. You can reply below to continue.`,
       );
       await this.deps.runService.updateStatus(runId, 'failed');
       await this.deps.sessionService.updateStatus(sessionId, 'failed');
-      this.deps.eventEmitter.emitRunFailed(sessionId, runId, reason);
+      this.deps.eventEmitter.emitRunFailed(sessionId, runId, info);
     } catch (finalizeErr) {
       this.logger.error(`Failed to finalize run as failed: ${finalizeErr}`);
       // Last-resort: still pull the session out of 'running' so it is never

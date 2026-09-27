@@ -1,0 +1,449 @@
+@use 'sass:map';
+
+// ══════════════════════════════════════════════════════════════
+// THEMES — palettes layered on top of the dark default in
+// `tokens.scss`. A theme is nothing but a set of token overrides,
+// so it can be switched with a single prop:
+//
+//   <SmokeMonkeyChat theme="ocean" />
+//
+// The class lands on the chat root, so overrides are scoped to that
+// widget and never leak into the host app.
+//
+// Adding a theme: add one entry to `$palettes` below and its name to
+// `SmokeMonkeyChatTheme` in `types/options.ts`. Nothing else to do.
+//
+// NOTE: deliberately NOT wrapped in `@layer`. Tailwind tree-shakes
+// hand-written classes inside its own layers, and unlayered rules
+// always win the cascade — exactly what a token override wants.
+// ══════════════════════════════════════════════════════════════
+
+// Themes that need the light markdown/syntax treatment.
+$light-themes: ('light', 'solar', 'paper');
+
+// Each palette: surfaces, ink, brand, accent, hairlines.
+// Values are bare HSL channels so `hsl(var(--x) / <alpha>)` keeps working.
+$palettes: (
+  // ── Warm ───────────────────────────────────────────────────────
+  'yellow': (
+    scheme: dark,
+    bg: 36 24% 5%,
+    s950: 36 24% 5%,
+    s900: 35 21% 8%,
+    s850: 34 19% 10%,
+    s800: 34 17% 12%,
+    s750: 34 15% 14%,
+    s700: 34 14% 13%,
+    s600: 34 13% 21%,
+    ink: 42 60% 97%,
+    ink2: 40 22% 70%,
+    ink3: 38 15% 52%,
+    primary: 45 96% 58%,
+    primary-hover: 45 98% 66%,
+    primary-deep: 40 90% 46%,
+    primary-fg: 36 45% 8%,
+    accent: 22 95% 56%,
+    accent-hover: 26 96% 64%,
+    accent-fg: 30 45% 8%,
+    border: 36 16% 22%,
+    border-strong: 36 15% 32%,
+    input: 36 18% 20%,
+    ring: 45 96% 55%
+  ),
+
+  'ember': (
+    scheme: dark,
+    bg: 18 22% 6%,
+    s950: 18 22% 6%,
+    s900: 18 19% 9%,
+    s850: 18 17% 11%,
+    s800: 18 15% 13%,
+    s750: 18 14% 15%,
+    s700: 18 13% 14%,
+    s600: 18 12% 22%,
+    ink: 24 50% 96%,
+    ink2: 22 20% 68%,
+    ink3: 20 14% 50%,
+    primary: 14 92% 58%,
+    primary-hover: 18 96% 66%,
+    primary-deep: 8 86% 46%,
+    primary-fg: 20 45% 8%,
+    accent: 38 96% 56%,
+    accent-hover: 42 98% 64%,
+    accent-fg: 30 45% 8%,
+    border: 18 16% 22%,
+    border-strong: 18 15% 32%,
+    input: 18 18% 20%,
+    ring: 14 92% 55%
+  ),
+
+  'crimson': (
+    scheme: dark,
+    bg: 348 24% 6%,
+    s950: 348 24% 6%,
+    s900: 348 20% 9%,
+    s850: 348 18% 11%,
+    s800: 348 16% 13%,
+    s750: 348 15% 15%,
+    s700: 348 14% 14%,
+    s600: 348 12% 22%,
+    ink: 350 60% 97%,
+    ink2: 348 20% 70%,
+    ink3: 346 14% 52%,
+    primary: 348 88% 60%,
+    primary-hover: 348 92% 70%,
+    primary-deep: 350 78% 46%,
+    primary-fg: 348 45% 8%,
+    accent: 12 90% 58%,
+    accent-hover: 16 94% 66%,
+    accent-fg: 20 45% 8%,
+    border: 348 16% 22%,
+    border-strong: 348 15% 32%,
+    input: 348 18% 20%,
+    ring: 348 88% 58%
+  ),
+
+  'rose': (
+    scheme: dark,
+    bg: 335 24% 7%,
+    s950: 335 24% 7%,
+    s900: 335 20% 10%,
+    s850: 335 18% 12%,
+    s800: 335 16% 14%,
+    s750: 335 15% 16%,
+    s700: 335 14% 15%,
+    s600: 335 12% 23%,
+    ink: 340 60% 97%,
+    ink2: 338 22% 72%,
+    ink3: 336 15% 54%,
+    primary: 335 84% 64%,
+    primary-hover: 335 88% 72%,
+    primary-deep: 338 72% 50%,
+    primary-fg: 335 45% 8%,
+    accent: 292 62% 64%,
+    accent-hover: 292 66% 72%,
+    accent-fg: 292 45% 8%,
+    border: 335 16% 23%,
+    border-strong: 335 15% 33%,
+    input: 335 18% 21%,
+    ring: 335 84% 62%
+  ),
+
+  // ── Cool ───────────────────────────────────────────────────────
+  'midnight': (
+    scheme: dark,
+    bg: 224 40% 6%,
+    s950: 224 40% 6%,
+    s900: 223 34% 9%,
+    s850: 223 30% 11%,
+    s800: 223 27% 13%,
+    s750: 223 24% 15%,
+    s700: 223 22% 14%,
+    s600: 223 18% 23%,
+    ink: 213 60% 97%,
+    ink2: 215 26% 70%,
+    ink3: 217 18% 52%,
+    primary: 199 89% 60%,
+    primary-hover: 199 94% 70%,
+    primary-deep: 201 88% 48%,
+    primary-fg: 224 45% 8%,
+    accent: 262 84% 68%,
+    accent-hover: 262 88% 76%,
+    accent-fg: 262 45% 8%,
+    border: 223 18% 22%,
+    border-strong: 223 16% 32%,
+    input: 223 20% 20%,
+    ring: 199 89% 58%
+  ),
+
+  'ocean': (
+    scheme: dark,
+    bg: 196 32% 6%,
+    s950: 196 32% 6%,
+    s900: 196 28% 9%,
+    s850: 196 25% 11%,
+    s800: 196 23% 13%,
+    s750: 196 21% 15%,
+    s700: 196 20% 14%,
+    s600: 196 16% 23%,
+    ink: 190 50% 96%,
+    ink2: 192 22% 68%,
+    ink3: 194 15% 50%,
+    primary: 174 84% 44%,
+    primary-hover: 174 88% 54%,
+    primary-deep: 176 82% 34%,
+    primary-fg: 196 40% 7%,
+    accent: 199 89% 58%,
+    accent-hover: 199 94% 68%,
+    accent-fg: 199 40% 7%,
+    border: 196 18% 21%,
+    border-strong: 196 16% 31%,
+    input: 196 20% 19%,
+    ring: 174 84% 44%
+  ),
+
+  'forest': (
+    scheme: dark,
+    bg: 152 24% 6%,
+    s950: 152 24% 6%,
+    s900: 152 21% 9%,
+    s850: 152 18% 11%,
+    s800: 152 17% 13%,
+    s750: 152 15% 15%,
+    s700: 152 14% 14%,
+    s600: 152 12% 22%,
+    ink: 140 40% 96%,
+    ink2: 142 16% 68%,
+    ink3: 144 12% 50%,
+    primary: 142 66% 45%,
+    primary-hover: 142 72% 55%,
+    primary-deep: 144 68% 34%,
+    primary-fg: 150 40% 7%,
+    accent: 88 60% 52%,
+    accent-hover: 88 66% 62%,
+    accent-fg: 96 40% 7%,
+    border: 152 16% 21%,
+    border-strong: 152 15% 31%,
+    input: 152 18% 19%,
+    ring: 142 66% 45%
+  ),
+
+  // ── Expressive ─────────────────────────────────────────────────
+  'grape': (
+    scheme: dark,
+    bg: 282 30% 7%,
+    s950: 282 30% 7%,
+    s900: 282 26% 10%,
+    s850: 282 23% 12%,
+    s800: 282 21% 14%,
+    s750: 282 19% 16%,
+    s700: 282 18% 15%,
+    s600: 282 14% 24%,
+    ink: 280 60% 97%,
+    ink2: 280 20% 72%,
+    ink3: 280 14% 54%,
+    primary: 288 76% 62%,
+    primary-hover: 288 80% 70%,
+    primary-deep: 290 68% 48%,
+    primary-fg: 282 45% 8%,
+    accent: 320 80% 60%,
+    accent-hover: 320 84% 70%,
+    accent-fg: 320 45% 8%,
+    border: 282 18% 23%,
+    border-strong: 282 16% 33%,
+    input: 282 20% 21%,
+    ring: 288 76% 60%
+  ),
+
+  'synthwave': (
+    scheme: dark,
+    bg: 258 36% 8%,
+    s950: 258 36% 8%,
+    s900: 258 32% 11%,
+    s850: 258 28% 13%,
+    s800: 258 26% 15%,
+    s750: 258 24% 18%,
+    s700: 258 22% 17%,
+    s600: 258 18% 26%,
+    ink: 300 60% 97%,
+    ink2: 296 26% 76%,
+    ink3: 294 18% 58%,
+    primary: 316 92% 62%,
+    primary-hover: 316 96% 72%,
+    primary-deep: 318 84% 48%,
+    primary-fg: 258 40% 8%,
+    accent: 186 94% 56%,
+    accent-hover: 186 98% 66%,
+    accent-fg: 196 45% 8%,
+    border: 258 22% 26%,
+    border-strong: 258 20% 36%,
+    input: 258 24% 24%,
+    ring: 316 92% 60%
+  ),
+
+  'mono': (
+    scheme: dark,
+    bg: 0 0% 6%,
+    s950: 0 0% 6%,
+    s900: 0 0% 9%,
+    s850: 0 0% 11%,
+    s800: 0 0% 13%,
+    s750: 0 0% 15%,
+    s700: 0 0% 14%,
+    s600: 0 0% 22%,
+    ink: 0 0% 97%,
+    ink2: 0 0% 70%,
+    ink3: 0 0% 52%,
+    primary: 0 0% 88%,
+    primary-hover: 0 0% 96%,
+    primary-deep: 0 0% 74%,
+    primary-fg: 0 0% 8%,
+    accent: 0 0% 64%,
+    accent-hover: 0 0% 74%,
+    accent-fg: 0 0% 8%,
+    border: 0 0% 22%,
+    border-strong: 0 0% 34%,
+    input: 0 0% 20%,
+    ring: 0 0% 80%
+  ),
+
+  // ── Light ──────────────────────────────────────────────────────
+  'light': (
+    scheme: light,
+    bg: 40 40% 98%,
+    s950: 40 30% 100%,
+    s900: 40 24% 97%,
+    s850: 40 20% 95%,
+    s800: 40 18% 93%,
+    s750: 40 16% 91%,
+    s700: 40 15% 90%,
+    s600: 40 12% 82%,
+    ink: 222 30% 12%,
+    ink2: 220 14% 34%,
+    ink3: 218 12% 50%,
+    primary: 258 90% 58%,
+    primary-hover: 258 90% 50%,
+    primary-deep: 263 74% 44%,
+    primary-fg: 0 0% 100%,
+    accent: 188 90% 28%,
+    accent-hover: 188 86% 24%,
+    accent-fg: 0 0% 100%,
+    border: 220 16% 86%,
+    border-strong: 220 14% 76%,
+    input: 220 16% 84%,
+    ring: 258 90% 55%,
+    success: 142 72% 28%,
+    warning: 32 90% 34%,
+    info: 205 88% 34%,
+    destructive: 0 76% 40%
+  ),
+
+  'solar': (
+    scheme: light,
+    bg: 44 60% 97%,
+    s950: 44 60% 99%,
+    s900: 44 46% 95%,
+    s850: 44 40% 92%,
+    s800: 44 34% 89%,
+    s750: 44 30% 86%,
+    s700: 44 28% 84%,
+    s600: 44 20% 74%,
+    ink: 30 45% 12%,
+    ink2: 28 16% 32%,
+    ink3: 26 12% 46%,
+    primary: 32 90% 46%,
+    primary-hover: 28 92% 40%,
+    primary-deep: 26 88% 34%,
+    primary-fg: 30 60% 8%,
+    accent: 196 88% 34%,
+    accent-hover: 196 90% 28%,
+    accent-fg: 0 0% 100%,
+    border: 40 26% 82%,
+    border-strong: 38 24% 70%,
+    input: 40 26% 86%,
+    ring: 32 90% 46%,
+    success: 142 72% 28%,
+    warning: 20 88% 36%,
+    info: 205 88% 32%,
+    destructive: 0 76% 40%
+  ),
+
+  'paper': (
+    scheme: light,
+    bg: 30 20% 97%,
+    s950: 30 20% 99%,
+    s900: 30 14% 95%,
+    s850: 30 12% 92%,
+    s800: 30 10% 89%,
+    s750: 30 9% 86%,
+    s700: 30 8% 84%,
+    s600: 30 6% 72%,
+    ink: 24 24% 14%,
+    ink2: 24 10% 36%,
+    ink3: 24 8% 50%,
+    primary: 24 72% 40%,
+    primary-hover: 24 76% 32%,
+    primary-deep: 24 74% 26%,
+    primary-fg: 30 20% 98%,
+    accent: 200 60% 38%,
+    accent-hover: 200 64% 30%,
+    accent-fg: 0 0% 100%,
+    border: 30 12% 84%,
+    border-strong: 30 10% 72%,
+    input: 30 12% 87%,
+    ring: 24 72% 40%,
+    success: 142 72% 28%,
+    warning: 20 88% 36%,
+    info: 205 88% 32%,
+    destructive: 0 76% 40%
+  )
+);
+
+// ── Emit one scoped token block per palette ─────────────────────
+@each $name, $p in $palettes {
+  .smc-#{$name} {
+    color-scheme: map.get($p, scheme);
+
+    @each $k, $v in (
+      'bg': map.get($p, bg),
+      'bg-elevated': map.get($p, s900),
+      'surface-950': map.get($p, s950),
+      'surface-900': map.get($p, s900),
+      'surface-850': map.get($p, s850),
+      'surface-800': map.get($p, s800),
+      'surface-750': map.get($p, s750),
+      'surface-700': map.get($p, s700),
+      'surface-600': map.get($p, s600)
+    ) {
+      --#{$k}: #{$v};
+    }
+
+    @each $k, $v in (
+      'ink-primary': map.get($p, ink),
+      'ink-secondary': map.get($p, ink2),
+      'ink-muted': map.get($p, ink3)
+    ) {
+      --#{$k}: #{$v};
+    }
+
+    @each $k, $v in (
+      'primary': map.get($p, primary),
+      'primary-hover': map.get($p, primary-hover),
+      'primary-deep': map.get($p, primary-deep),
+      'primary-subtle': map.get($p, primary) / 0.15,
+      'primary-foreground': map.get($p, primary-fg),
+      'accent': map.get($p, accent),
+      'accent-hover': map.get($p, accent-hover),
+      'accent-subtle': map.get($p, accent) / 0.12,
+      'accent-foreground': map.get($p, accent-fg)
+    ) {
+      --#{$k}: #{$v};
+    }
+
+    // Optional per-palette semantic overrides: the dark defaults sit around
+    // 45% lightness, which is only ~2.2:1 on a light surface.
+    @each $sem in (success, warning, info, destructive) {
+      @if map.has-key($p, $sem) {
+        --#{$sem}: #{map.get($p, $sem)};
+        --#{$sem}-subtle: #{map.get($p, $sem)} / 0.12;
+      }
+    }
+
+    @each $k, $v in (
+      'border': map.get($p, border),
+      'border-strong': map.get($p, border-strong),
+      'input': map.get($p, input),
+      'ring': map.get($p, ring),
+      'secondary': map.get($p, s800),
+      'secondary-foreground': map.get($p, ink2),
+      'muted': map.get($p, s850),
+      'muted-foreground': map.get($p, ink3),
+      'popover': map.get($p, s900),
+      'popover-foreground': map.get($p, ink),
+      'card': map.get($p, s900),
+      'card-foreground': map.get($p, ink)
+    ) {
+      --#{$k}: #{$v};
+    }
+  }
+}
