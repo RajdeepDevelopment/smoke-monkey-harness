@@ -17,7 +17,17 @@ recovering from failures, and resuming work**.
 
 **No NestJS. No database. Zero dependencies. Just the agent runtime.**
 
-**npm:** [smoke-monkey-harness](https://www.npmjs.com/package/smoke-monkey-harness) · **dependencies:** 0 · **license:** MIT · **CI:** [passing](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions) · **types:** TypeScript
+**npm:** [@smoke-monkey/harness](https://www.npmjs.com/package/@smoke-monkey/harness) · **dependencies:** 0 · **license:** MIT · **CI:** [passing](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions) · **types:** TypeScript
+
+> **Package names.** New installs should use the scoped names below. The older
+> unscoped `smoke-monkey-harness` and `smoke-monkey-harness-mcp` still work and
+> are still published — they are kept for existing installs, not deprecated.
+>
+> | Package | Use this | Replaces |
+> |---|---|---|
+> | Agent runtime | [`@smoke-monkey/harness`](https://www.npmjs.com/package/@smoke-monkey/harness) | `smoke-monkey-harness` |
+> | MCP server | [`@smoke-monkey/mcp`](https://www.npmjs.com/package/@smoke-monkey/mcp) | `smoke-monkey-harness-mcp` |
+> | Chat UI | [`@smoke-monkey/ui`](https://www.npmjs.com/package/@smoke-monkey/ui) | — |
 
 </div>
 
@@ -26,8 +36,8 @@ recovering from failures, and resuming work**.
 ## Install
 
 ```bash
-pnpm add smoke-monkey-harness
-# or: npm install smoke-monkey-harness
+pnpm add @smoke-monkey/harness
+# or: npm install @smoke-monkey/harness
 # or: yarn add smoke-monkey-harness
 ```
 
@@ -109,7 +119,7 @@ needed:
   "mcpServers": {
     "smoke-monkey-harness": {
       "command": "npx",
-      "args": ["-y", "smoke-monkey-harness-mcp"]
+      "args": ["-y", "@smoke-monkey/mcp"]
     }
   }
 }
@@ -129,10 +139,10 @@ const agent = createAgent({
   mcp: [
     {
       id: 'smoke-monkey',
-      name: 'smoke-monkey-harness-mcp',
+      name: '@smoke-monkey/mcp',
       description: 'Build agents on Smoke Monkey',
       command: 'npx',
-      args: ['-y', 'smoke-monkey-harness-mcp'],
+      args: ['-y', '@smoke-monkey/mcp'],
       enabled: true,
     },
   ],
