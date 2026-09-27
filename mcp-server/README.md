@@ -12,10 +12,16 @@ from any MCP client.
 > npm strips the scope from bin names and a bare `mcp` would be too generic.
 > The examples below use the unscoped name, which both packages accept.
 
-![Build an agentic looping workflow in seconds](https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/development/mcp-server/smoke-monkey-harness-mcp.gif)
+[![Documentation & Live Demo](https://img.shields.io/badge/docs-smoke--monkey--harness.vercel.app-00f5d4?style=flat&logo=vercel)](https://smoke-monkey-harness.vercel.app/#mcp)
+[![npm version](https://img.shields.io/npm/v/@smoke-monkey/mcp.svg)](https://www.npmjs.com/package/@smoke-monkey/mcp)
+[![license](https://img.shields.io/npm/l/@smoke-monkey/mcp.svg)](./LICENSE)
 
 MCP server for [Smoke Monkey Harness](https://github.com/RajdeepDevelopment/smoke-monkey-harness) — an embeddable,
 framework-agnostic TypeScript agent runtime.
+
+> 🌐 **Interactive Documentation:** [https://smoke-monkey-harness.vercel.app/#mcp](https://smoke-monkey-harness.vercel.app/#mcp) — see the interactive MCP server guide, 20 tools reference, and live agent simulator.
+
+![Build an agentic looping workflow in seconds](https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/development/mcp-server/smoke-monkey-harness-mcp.gif)
 
 ## Build an AI agentic workflow in seconds
 

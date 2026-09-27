@@ -6,9 +6,12 @@ prompts — with a headless runtime and a normalized event contract, so the same
 components work against OpenAI, Anthropic, Gemini, OpenRouter, LangGraph, MCP,
 or your own agent.
 
+[![Documentation & Live Demo](https://img.shields.io/badge/docs-smoke--monkey--harness.vercel.app-00f5d4?style=flat&logo=vercel)](https://smoke-monkey-harness.vercel.app/)
 [![npm version](https://img.shields.io/npm/v/@smoke-monkey/ui.svg)](https://www.npmjs.com/package/@smoke-monkey/ui)
 [![npm downloads](https://img.shields.io/npm/dm/@smoke-monkey/ui.svg)](https://www.npmjs.com/package/@smoke-monkey/ui)
 [![license](https://img.shields.io/npm/l/@smoke-monkey/ui.svg)](./LICENSE)
+
+> 🌐 **Interactive Documentation & Live Simulator:** [https://smoke-monkey-harness.vercel.app/](https://smoke-monkey-harness.vercel.app/) — test streaming chat, tool execution cards, inline prompts, mermaid diagrams, and custom theme presets live.
 
 ## Why
 

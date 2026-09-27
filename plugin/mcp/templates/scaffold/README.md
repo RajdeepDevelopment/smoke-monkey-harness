@@ -1,6 +1,7 @@
 # {{AGENT_NAME}}
 
 A looping AI agent built on [smoke-monkey-harness](https://github.com/RajdeepDevelopment/smoke-monkey-harness)
+([documentation & live simulator](https://smoke-monkey-harness.vercel.app/))
 — the agent loop, 24 tools, permissions, sub-contexts, skills, MCP, and
 compaction, with no framework lock-in.
 
