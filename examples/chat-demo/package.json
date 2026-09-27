@@ -3,16 +3,15 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "A friendly, runnable demo for the @smoke-monkey/ui chat component. No backend, no keys — just install and run.",
+  "description": "A friendly, runnable demo for the @smoke-monkey/ui chat component. No backend, no keys \u2014 just install and run.",
   "scripts": {
-    "predev": "cd ../../ui && pnpm build",
     "dev": "vite",
-    "prebuild": "cd ../../ui && pnpm build",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@smoke-monkey/ui": "^0.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

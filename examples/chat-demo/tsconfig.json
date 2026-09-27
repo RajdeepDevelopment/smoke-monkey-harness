@@ -15,11 +15,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "@smoke-monkey/ui": ["../../ui/dist/index.d.ts"],
-      "@smoke-monkey/ui/ui.css": ["../../ui/dist/index.css"]
-    }
+    "baseUrl": "."
   },
   "include": ["src"]
 }

@@ -4,6 +4,10 @@ A friendly, runnable demo for the **`@smoke-monkey/ui`** chat component.
 
 **No backend. No API keys. No setup.** Just run it and type.
 
+It installs `@smoke-monkey/ui` from npm exactly like your own app would — no
+local build step, no Vite alias, no workspace linking. If it renders here, it
+renders for your users, because it is the same published artifact.
+
 ## Run
 
 ```bash
@@ -14,9 +18,9 @@ pnpm dev
 
 That opens [http://localhost:5173](http://localhost:5173).
 
-> `pnpm dev` first builds the library's CSS (`../../ui/dist`) automatically
-> via the `predev` script, then starts Vite. The demo imports the chat
-> component straight from `../../ui/src` so you always see the latest code.
+> Nothing is built locally first. `pnpm install` pulls the published package
+> from npm and `pnpm dev` starts Vite. Bumping the version in
+> `package.json` is how you try a new release.
 
 ## What you'll see
 
@@ -40,7 +44,7 @@ That opens [http://localhost:5173](http://localhost:5173).
 | The custom `toolCall` slot | `src/App.tsx` → `TinyToolCard` |
 | Fake models/workspaces/MCP/keys/suggestions | `src/demoData.ts` |
 | Entry point & theme import | `src/main.tsx` → `@smoke-monkey/ui/ui.css` |
-| The library itself | `../../ui/src/components/chat/SmokeMonkeyChat.tsx` |
+| The library itself | npm: [`@smoke-monkey/ui`](https://www.npmjs.com/package/@smoke-monkey/ui) |
 
 ## Props cheat-sheet
 
@@ -71,4 +75,4 @@ const transport = new FetchTransport({
 });
 ```
 
-Check `../../ui/README.md` for the stream event contract and how transports work.
+Check the [`@smoke-monkey/ui` README](https://github.com/RajdeepDevelopment/smoke-monkey-harness/tree/main/ui) for the stream event contract and how transports work.
