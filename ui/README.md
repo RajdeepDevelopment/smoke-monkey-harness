@@ -13,22 +13,6 @@ or your own agent.
 
 > 🌐 **Interactive Documentation & Live Simulator:** [https://smoke-monkey-harness.vercel.app/](https://smoke-monkey-harness.vercel.app/) — test streaming chat, tool execution cards, inline prompts, mermaid diagrams, and custom theme presets live.
 
-## Why
-
-Building an agent chat that *looks* finished is the easy part. The hard parts are
-the ones this package already solved:
-
-- **Streaming that doesn't flicker** — a normalized event model instead of
-  ad-hoc `onChunk` callbacks, so every transport renders identically.
-- **Tool calls that read well** — arguments, progress, results, failures, and
-  your own emoji/label per tool.
-- **Runs that pause for a human** — `ask_user` and permission prompts render
-  inline and resume the run over the transport.
-- **A renderer that isn't a toy** — markdown, tables, charts, mermaid, and
-  highlighted code, with streaming-safe partial output.
-- **Headless when you need it** — use the runtime and hooks without any of the
-  components.
-
 ## Install
 
 ```bash
@@ -109,6 +93,22 @@ const transport = new FetchTransport({
   }),
 });
 ```
+
+## Why
+
+Building an agent chat that *looks* finished is the easy part. The hard parts are
+the ones this package already solved:
+
+- **Streaming that doesn't flicker** — a normalized event model instead of
+  ad-hoc `onChunk` callbacks, so every transport renders identically.
+- **Tool calls that read well** — arguments, progress, results, failures, and
+  your own emoji/label per tool.
+- **Runs that pause for a human** — `ask_user` and permission prompts render
+  inline and resume the run over the transport.
+- **A renderer that isn't a toy** — markdown, tables, charts, mermaid, and
+  highlighted code, with streaming-safe partial output.
+- **Headless when you need it** — use the runtime and hooks without any of the
+  components.
 
 ## Headless usage
 

@@ -4,14 +4,6 @@
 AI agents on [Smoke Monkey Harness](https://github.com/RajdeepDevelopment/smoke-monkey-harness)
 from any MCP client.
 
-> **Two names, one server.** New installs should use the scoped
-> [`@smoke-monkey/mcp`](https://www.npmjs.com/package/@smoke-monkey/mcp) via
-> `npx -y @smoke-monkey/mcp`. The older unscoped `smoke-monkey-harness-mcp` is
-> still published and still works, so existing setups need no change. Note the
-> command name: the scoped package installs a `smoke-monkey-mcp` binary, since
-> npm strips the scope from bin names and a bare `mcp` would be too generic.
-> The examples below use the unscoped name, which both packages accept.
-
 [![Documentation & Live Demo](https://img.shields.io/badge/docs-smoke--monkey--harness.vercel.app-00f5d4?style=flat&logo=vercel)](https://smoke-monkey-harness.vercel.app/#mcp)
 [![npm version](https://img.shields.io/npm/v/@smoke-monkey/mcp.svg)](https://www.npmjs.com/package/@smoke-monkey/mcp)
 [![license](https://img.shields.io/npm/l/@smoke-monkey/mcp.svg)](./LICENSE)
@@ -44,6 +36,14 @@ library — this server just drives it from any MCP client.
 
 ## Run with npx
 
+> **Two names, one server.** New installs should use the scoped
+> [`@smoke-monkey/mcp`](https://www.npmjs.com/package/@smoke-monkey/mcp) via
+> `npx -y @smoke-monkey/mcp`. The older unscoped `smoke-monkey-harness-mcp` is
+> still published and still works, so existing setups need no change. Note the
+> command name: the scoped package installs a `smoke-monkey-mcp` binary, since
+> npm strips the scope from bin names and a bare `mcp` would be too generic.
+> The instructions below use the scoped name, which both packages accept.
+
 ```sh
 npx -y @smoke-monkey/mcp
 ```
@@ -68,7 +68,7 @@ Talk to it with any MCP client over stdio:
 }
 ```
 
-## Tools (20)
+## Tools (22)
 
 ### Build the agent (harness workflow)
 
