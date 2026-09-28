@@ -660,7 +660,7 @@ rl.on('line', async (rawLine) => {
       result: {
         protocolVersion: msg.params?.protocolVersion ?? '2024-11-05',
         capabilities: { tools: {} },
-        serverInfo: { name: 'smoke-monkey-harness', version: '1.3.0' },
+        serverInfo: { name: 'smoke-monkey-harness', version: '1.3.1' },
       },
     });
     return;
