@@ -5,18 +5,30 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0] - 2026-09-28
 
-Ships as `smoke-monkey-harness@1.2.1` and `@smoke-monkey/ui@0.1.2`. The
+Ships as `smoke-monkey-harness@1.3.0` and `@smoke-monkey/ui@0.1.2`. The
 `smoke-monkey-harness-mcp` package needs no bump of its own: it is a thin
 launcher that resolves `plugin/mcp/server.mjs` out of the harness package
 (`smoke-monkey-harness@^1.2.0`), so
 `harness_guide_errors_validation_and_pauses` reaches
 `npx -y smoke-monkey-harness-mcp` with the harness release.
 
+### Fixed
+
+- **Plugin manifests no longer drift from the published package.** `plugin.json`,
+  `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, the Antigravity
+  `marketplace.json`, and the MCP server's `serverInfo` were all still reporting
+  `1.2.0` while the library was at `1.2.1` — so `harness_status` told a client it
+  was talking to an older build than the one installed beside it. They are bumped
+  with the package now, and the plugin fixture asserts the manifests match
+  `package.json` so the next bump cannot skip them again.
+
 ### Changed
 
-- **Guide tools renamed to self-describing names.** The eleven
+- **Guide tools renamed to self-describing names.** *(Released as `1.3.0` rather than
+  `1.2.1`: the rename is a breaking change to the public tool surface, and a
+  patch bump would not signal that.)* The eleven
   `harness_guide_<feature>` tools now carry a descriptive suffix, because a
   `tools/list` dump gets truncated and `harness_guide_ui` tells a model nothing:
   `harness_guide_subcontexts_activation_and_switching`,
