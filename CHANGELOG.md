@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.0] - 2026-09-28
 
-Ships as `smoke-monkey-harness@1.3.0` and `@smoke-monkey/ui@0.1.2`. The
-`smoke-monkey-harness-mcp` package needs no bump of its own: it is a thin
-launcher that resolves `plugin/mcp/server.mjs` out of the harness package
-(`smoke-monkey-harness@^1.2.0`), so
-`harness_guide_errors_validation_and_pauses` reaches
-`npx -y smoke-monkey-harness-mcp` with the harness release.
+Ships as `smoke-monkey-harness@1.3.0`, `@smoke-monkey/ui@0.1.2`, and the MCP
+wrappers at `1.1.0`. The wrappers are thin launchers that resolve
+`plugin/mcp/server.mjs` out of the harness package; they are republished at
+`1.1.0` retargeted to `smoke-monkey-harness@^1.3.0` so the renamed guide tools
+`harness_guide_errors_validation_and_pauses` and the rest reach
+`npx -y smoke-monkey-harness-mcp` and `npx -y @smoke-monkey/mcp` with the
+harness release.
 
 ### Fixed
 
@@ -59,6 +60,14 @@ launcher that resolves `plugin/mcp/server.mjs` out of the harness package
   enable *configured-but-disabled* servers — adding one is a host call
   (`addMcpServer`) — and that a stock server is only reachable by the model if it
   ships in `options.mcp`.
+
+- **MCP wrapper packages retargeted to `^1.3.0` (`1.1.0`).** Both
+  `smoke-monkey-harness-mcp` and `@smoke-monkey/mcp` are unchanged launchers —
+  they ship the same `bin/` that resolves `plugin/mcp/server.mjs` from the
+  installed harness — so the only real change is the dependency floor: `^1.2.0`
+  is now `^1.3.0`. That guarantees the renamed guide tools and the manifest
+  drift fix are what an `npx` consumer actually runs, rather than a possibly
+  stale 1.2.x in a lockfile.
 
 - **`inspect_mcp_stock` is opt-in and no longer hijacks runs.** The MCP stock
   search is now gated behind `mcpStockSearch: true` (default **off**). Two
