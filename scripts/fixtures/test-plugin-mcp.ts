@@ -13,6 +13,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const server = path.join(root, 'plugin', 'mcp', 'server.mjs');
 
+const pkgVersion: string = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
+
 /**
  * Feature key -> the guide tool that serves it. Single source of truth: the
  * expected-name check, the tools/list check, and the per-guide call check all
@@ -90,6 +92,24 @@ try {
   const serverName = init.result?.serverInfo?.name;
   if (serverName !== 'smoke-monkey-harness') throw new Error(`unexpected serverInfo: ${JSON.stringify(init.result)}`);
   console.log('  initialize ok —', `${serverName} @ ${init.result.serverInfo.version}`);
+
+  // The manifests and the serverInfo a client sees MUST agree with package.json.
+  // They drifted once already (all reporting 1.2.0 against a 1.2.1 package), so
+  // a version bump that skips them is now a fixture failure, not a silent lie in
+  // harness_status.
+  if (init.result?.serverInfo?.version !== pkgVersion) {
+    throw new Error(`serverInfo ${init.result?.serverInfo?.version} != package.json ${pkgVersion}`);
+  }
+  for (const rel of [
+    'plugin/plugin.json',
+    'plugin/.claude-plugin/plugin.json',
+    'plugin/.codex-plugin/plugin.json',
+    '.agents/plugins/marketplace.json',
+  ]) {
+    const v = JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8')).version;
+    if (v !== pkgVersion) throw new Error(`${rel} version ${v} != package.json ${pkgVersion}`);
+  }
+  console.log(`  version coherence ok — ${pkgVersion} across package, 4 manifests, serverInfo`);
 
   // tools/list
   const list = await call('tools/list', {});
