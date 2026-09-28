@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Ships as `smoke-monkey-harness@1.2.1` and `@smoke-monkey/ui@0.1.2`. The
+`smoke-monkey-harness-mcp` package needs no bump of its own: it is a thin
+launcher that resolves `plugin/mcp/server.mjs` out of the harness package
+(`smoke-monkey-harness@^1.2.0`), so
+`harness_guide_errors_validation_and_pauses` reaches
+`npx -y smoke-monkey-harness-mcp` with the harness release.
+
+### Changed
+
+- **Guide tools renamed to self-describing names.** The eleven
+  `harness_guide_<feature>` tools now carry a descriptive suffix, because a
+  `tools/list` dump gets truncated and `harness_guide_ui` tells a model nothing:
+  `harness_guide_subcontexts_activation_and_switching`,
+  `..._skills_skill_md_discovery`, `..._mcp_servers_and_discovery`,
+  `..._providers_models_and_api_keys`, `..._tools_custom_tool_implementation`,
+  `..._loop_phases_guards_and_compaction`, `..._permissions_the_three_pauses`,
+  `..._storage_sessions_runs_messages`, `..._events_streaming_and_ui_wiring`,
+  `..._ui_bridge_and_components`, `..._errors_validation_and_pauses`. **This is a
+  breaking change for any prompt or script that calls a guide by its old short
+  name** — the old names are no longer registered. Tool count is unchanged (22).
+
+- **Tools guide rewritten as a real implementation reference.** Covers
+  `ToolDefinition` vs `AgentTool` and the adapter between them, the full
+  built-in factory table, the **two different `ToolGroupName` enums**
+  (`options.tools` load groups vs `TOOL_GROUPS` exposure groups — mixing them
+  fails silently), writing and registering a custom tool, permissions
+  annotations, and UI presentation. Also documents three facts that are easy to
+  get wrong: the model only ever reads `output` (built from `content[].text`, and
+  `data` is UI-only), `inputSchema` is advertised but **not** enforced at runtime,
+  and a custom tool is `permissionAction: 'allow'` until you set
+  `annotations.destructiveHint`.
+
+- **MCP guide now documents the full discovery lifecycle.** Separates the host's
+  job from the model's: `inspect_mcp_stock` surveys **configured** servers and
+  never pauses, the model decides silently, `request_mcp_approval` is the only
+  pause, and the host resolves via `resolveMcpDecision(toolCallId, { action:
+  'enable'|'add'|'skip', names })`. Makes explicit that the model can only
+  enable *configured-but-disabled* servers — adding one is a host call
+  (`addMcpServer`) — and that a stock server is only reachable by the model if it
+  ships in `options.mcp`.
+
+- **`inspect_mcp_stock` is opt-in and no longer hijacks runs.** The MCP stock
+  search is now gated behind `mcpStockSearch: true` (default **off**). Two
+  related problems are fixed: The MCP stock
+  search is now gated behind `mcpStockSearch: true` (default **off**). Two
+  related problems are fixed:
+
+  - **A read-only listing could stop the run.** The tool used to auto-pause with
+    a `mcp.approval_required` popup whenever it surfaced a recommendation, so
+    a routine "what servers do I have?" probe could block every run before any
+    work happened — and it fired on the tool's own data rather than on a
+    decision. `inspect_mcp_stock` no longer pauses, changes run status, or asks
+    the user anything. It returns a compact, ranked inventory (bounded to 20
+    rows) and the **model decides** what it needs. `request_mcp_approval` is now
+    the single, deliberate consent path and stays available by default.
+  - **The prompt no longer teaches a tool that may not exist.** Every
+    stock-search instruction (the "run this at task start and at every phase
+    boundary" doctrine) is rendered only when the tool is actually exposed.
+    Telling a model to call an unregistered tool produces hallucinated calls and
+    stall loops. Guidance about activating and using **already-configured**
+    servers is not gated and works either way.
+
+  `mcpStockSearch` is threaded from one option through `Agent` →
+  `BuildSystemPromptOptions.mcpStockSearch` and
+  `RunOperatingRulesOpts.mcpStockSearch`, so the registry and the prompt can
+  never disagree.
+
 ### Added
 
 - **The `@smoke-monkey` scope.** The library, the MCP server, and the chat UI
@@ -30,6 +97,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `@smoke-monkey/mcp` installs a `smoke-monkey-mcp` binary. Naming the bin
   `@smoke-monkey/mcp` would have produced a bare `mcp` command, because npm
   strips the scope from bin names.
+
+- **`harness_guide_errors` (MCP server), the 22nd tool.** Prompts, tool input,
+  and failure handling in one guide: the `AgentErrorInfo` model, the
+  recoverable-vs-terminal event table, the three layers of tool-input
+  validation, and the buffering, abort and denial rules for each of the three
+  pauses. It is the reference for the two failure modes that break a hosted
+  agent without throwing — a pause nobody answers, and a tool call the model got
+  wrong. The plugin fixture now asserts that every file in `features/` is
+  registered and served, so a guide cannot ship unreachable.
 
 - **Custom tools can now be presented, and are actually reachable.** A tool
   registered through `tools: […]` or `agent.registerTool()` was added to the
@@ -126,6 +202,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `BeforeHookOutcome`. Documented in `docs/api.md`.
 
 ### Fixed
+
+- **An interrupted run hung its consumer forever.** `run.interrupted` is the
+  last event an interrupted run emits — the loop has already saved the
+  transcript, marked the run and session interrupted, and there is nothing after
+  it — but the bridge mapped it to a plain `notice` and only treated
+  `agent:complete` / `error` as terminal. A host looping over
+  `bridge.events()` waited on a stream that could never produce again, with no
+  error logged. The bridge now ends the iteration on `run.interrupted` too.
+
+- **Interrupting a run looked like a failure.** The harness's reason is the
+  string `user_interrupt`, which matches nothing in `toChatError`'s patterns, so
+  the bare string was classified as a retryable `run` error. A deliberately
+  stopped run rendered a red banner on a transcript that was fine. It is now an
+  `info`-severity notice with the code `run_interrupted`; the work is saved and
+  the session is still replyable.
+
+- **The third pause deadlocked the run.** `mcp.approval_required` suspends a
+  run until `agent.resolveMcpDecision()` is called, and the bridge had no case
+  for it, so the event was dropped: no prompt on screen and no way to answer.
+  Only the path that recommends an MCP server ever hit this.
+  - New `mcp_approval` prompt kind (`ChatPromptKind`, `prompt:mcp_approval`,
+    `ChatMcpApproval`), an `mcp.resolved` mapping, and a `resolve_mcp_approval`
+    command in `WebSocketTransport`.
+  - `ChatPromptResponse.mcpDecision` carries `{ action, names }` — the answer is
+    a configuration decision, not text to read. It is optional: omitted, the
+    bridge falls back to the ids the prompt already showed, so a host that
+    forwards `answer` alone cannot enable nothing by accident.
+  - `ChatPromptCard` renders the recommended servers and enable/add/skip.
+
+- **Structured errors were thrown away at the UI boundary.** `run.failed`,
+  `run.warning` and `tool.failed` all carry `errorInfo` next to a flat `error`
+  string, and the bridge read only the string — so `code`, `layer`, `severity`
+  and `retryable` never arrived, and the UI fell back to guessing them from the
+  wording. The bridge now passes the structured error through, and synthesizes a
+  complete one when the producer sent only a string or a half-filled object.
+
+- **One decision produced two `prompt:resolved` events.** The bridge closes a
+  prompt locally in `answer()`, and the harness then echoes `ask_user.response`
+  (and `mcp.resolved`) for the same call. The reducer is idempotent, so state
+  survived, but each answer put a second event on the wire. The echo is now
+  dropped, while still allowing the echo to close a prompt the bridge did not
+  answer itself (a bridge attached mid-run).
 
 - **Live streaming produced an empty message.** `ChatRuntime` adopted the
   transport's `message:start` into the optimistic placeholder, but only that one

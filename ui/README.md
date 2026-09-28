@@ -194,7 +194,7 @@ const transport = new WebSocketTransport({ url, parser });
 ```
 
 Implemented by both built-in transports: `WebSocketTransport` sends
-`{ type: 'resolve_ask_user' | 'resolve_permission', data: { toolCallId, … } }`
+`{ type: 'resolve_ask_user' | 'resolve_permission' | 'resolve_mcp_approval', data: { toolCallId, … } }`
 on the socket it already holds open, and `SyntheticTransport` resumes its
 generator. A custom transport can omit `respond()` — the prompt then renders
 **read-only**, explaining that the host that started the run has to answer it,
@@ -291,6 +291,13 @@ socket.on('message', (raw) => {
     bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
   } else if (type === 'resolve_permission') {
     bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+  } else if (type === 'resolve_mcp_approval') {
+    bridge.answer({
+      toolCallId: data.toolCallId,
+      kind: 'mcp_approval',
+      answer: data.action,
+      mcpDecision: { action: data.action, names: data.names ?? [] },
+    });
   }
 });
 ```
@@ -298,7 +305,8 @@ socket.on('message', (raw) => {
 | harness | UI | |
 |---|---|---|
 | `run.started` / `run.completed` | `agent:start` / `agent:complete` | `+ message:complete` |
-| `run.warning` / `run.interrupted` | `notice` | **not** terminal |
+| `run.warning` | `notice` | **not** terminal — the run is still retrying |
+| `run.interrupted` | `notice` | **terminal** — and *not* a failure |
 | `run.failed` | `error` | terminal |
 | `step.started` / `step.ended` | `agent:step` | |
 | `text.delta` | `text:delta` | |
@@ -309,10 +317,35 @@ socket.on('message', (raw) => {
 | `tool.failed` | `tool:error` | scoped to the call, run continues |
 | `ask_user.required` | `prompt:ask` | **pauses the run** |
 | `permission.required` | `prompt:permission` | **pauses the run** |
-| `ask_user.response` | `prompt:resolved` | |
+| `mcp.approval_required` | `prompt:mcp_approval` | **pauses the run** |
+| `ask_user.response` / `mcp.resolved` | `prompt:resolved` | the harness' own echo |
 
-Events with no UI surface (`context.updated`, `state.changed`, `mcp.resolved`)
-are dropped, so you never have to enumerate what to ignore.
+`run.failed`, `run.warning` and `tool.failed` all carry a structured
+`ChatErrorInfo` (`code` · `layer` · `severity` · `message` · `retryable` ·
+`hint`) alongside the harness' flat `error` string, and the structured one wins
+when it is usable. That is what lets the UI tell a retryable rate limit from a
+fatal auth failure instead of showing one red banner for both — so gate your
+retry affordance on `retryable` and branch on `code`, never on the message text.
+
+Events with no UI surface (`context.updated`, `state.changed`, …) are dropped,
+so you never have to enumerate what to ignore.
+
+**All three pauses suspend the run**, and none resolves on its own. An answer
+that never comes back is a hang with nothing in the logs, so a host that
+renders the prompt but forgets the `respond()` route deadlocks the run. The MCP
+one is the easiest to forget — it only fires when the agent happens to
+recommend a server — and its answer is a *configuration* decision
+(`{ action: 'enable' | 'add' | 'skip', names: string[] }`) rather than text, so
+it travels in `ChatPromptResponse.mcpDecision` instead of only in `answer`. Omit
+it and the bridge falls back to the server ids the prompt already showed.
+
+**`run.interrupted` ends the stream, and is not a failure.** It is the last
+event an interrupted run emits — the transcript is saved, the run and session
+are marked interrupted, and nothing follows — so a consumer still waiting for
+events would wait forever. The bridge ends the iteration on it and emits an
+`info`-severity `notice` (`code: 'run_interrupted'`), because the session is
+still replyable: a red error banner on a deliberately stopped run is a lie.
+Map it to an `error` and you both hang and lie.
 
 **`tool:error` is scoped to one call; `error` ends the run.** A failing tool in
 an otherwise healthy run is normal and recoverable. Mapping `run.warning` to

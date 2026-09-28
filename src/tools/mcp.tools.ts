@@ -4,12 +4,23 @@
  * These are lightweight/library-local implementations of the source app's
  * stock-recommendation tools. They read the runtime's CONFIGURED servers (the
  * user supplies configs via AgentOptions.mcp / addServer()) and surface
- * actionable recommendations. Their `data` payload is what triggers the loop's
- * MCP-approval pause:
+ * actionable recommendations.
  *
- *   data.recommendedToEnableIds  → servers configured but DISABLED that match
- *                                  the current task (or explicitly requested).
- *   data.recommendedToAddIds     → always [] here — the library never
+ * The two tools are deliberately asymmetric:
+ *
+ *   inspect_mcp_stock   — READ-ONLY discovery. Returns a COMPRESSED, ranked
+ *                         summary and NOTHING else: no pause, no popup, no
+ *                         status change. It is opt-in (AgentOptions.mcpStockSearch,
+ *                         default off) and is the only tool here the model must
+ *                         be told about in the prompt.
+ *   request_mcp_approval — the CONSENT path. Calling it is how the model asks
+ *                         the user to enable/add a server, and its
+ *                         `data.recommendedToEnableIds` payload is what
+ *                         triggers the loop's MCP-approval pause.
+ *
+ *   data.recommendedToEnableIds  → on request_mcp_approval ONLY: servers the
+ *                                  model decided are required but are DISABLED.
+ *   data.recommendedToAddIds     → always [] — the library never
  *                                  auto-provisions; unconfigured stock servers
  *                                  must be added to options.mcp first.
  */
@@ -33,16 +44,22 @@ export interface McpStockRow {
 
 const CATEGORY_SINKS: Array<{ id: string; category: string; enabled: boolean }> = [];
 
+/** Rows of inventory to spell out in full before collapsing into a count. */
+const MAX_LISTED_ROWS = 20;
+
 export function getInspectMcpStockTool(mcp: McpRuntime): ToolDefinition {
   return {
     name: 'inspect_mcp_stock',
     description:
-      'Inspect configured MCP servers and get recommendations for the current task. ' +
-      'Returns the catalog of configured servers with live status (enabled/disabled, ' +
-      'active, tool count, key requirements) plus recommendedToEnableIds — servers the ' +
-      'task needs but that are currently DISABLED. Call this BEFORE doing work that ' +
-      'touches an external system (browser, DB, GitHub, deploy, …). The run pauses for ' +
-      'the user to enable/skip any recommended servers.',
+      'READ-ONLY. Inspect the MCP servers configured on this agent and get a compact, ' +
+      'ranked summary of what they offer. Returns the inventory with live status ' +
+      '(enabled/disabled, active, tool count, key requirements) plus ' +
+      'recommendedToEnableIds — servers the task needs but that are currently DISABLED. ' +
+      'Call this BEFORE doing work that touches an external system (browser, DB, GitHub, ' +
+      'deploy, …) instead of hand-rolling that capability. ' +
+      'THIS TOOL NEVER PAUSES THE RUN AND NEVER ASKS THE USER ANYTHING. You decide ' +
+      'from the result whether a server is genuinely required; only then call ' +
+      'request_mcp_approval to ask the user to enable or add it.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -82,24 +99,30 @@ export function getInspectMcpStockTool(mcp: McpRuntime): ToolDefinition {
 
       const recommendedToEnableIds = recommendToEnable(filtered, task);
 
+      // Compressed output: a bounded table plus an explicit decision line, so a
+      // long server list cannot crowd out the actual work in the context window.
       const lines: string[] = [];
       lines.push(`Configured MCP servers (${rows.length}${categoryFilter.length ? `, filtered to ${categoryFilter.join(', ')}` : ''}):`);
       if (rows.length === 0) {
         lines.push('  None configured. Add servers via AgentOptions.mcp / agent.addServer(config) to make their tools available.');
       } else {
-        for (const r of filtered) {
+        for (const r of filtered.slice(0, MAX_LISTED_ROWS)) {
           const status = r.enabled ? (r.activeInRun ? 'active' : 'enabled-idle') : 'disabled';
           const keyTag = r.keyRequired ? ' · key-required' : ' · keyless';
           const toolsTag = r.activeInRun ? ` · ${r.toolCount} tools` : '';
           lines.push(`  - mcp_${r.id} [${status}${keyTag}${toolsTag}] — ${r.name}: ${r.description} (${r.category})`);
+        }
+        if (filtered.length > MAX_LISTED_ROWS) {
+          lines.push(`  … and ${filtered.length - MAX_LISTED_ROWS} more (filter by category to narrow).`);
         }
       }
 
       if (recommendedToEnableIds.length > 0) {
         lines.push('');
         lines.push(
-          `Recommended to ENABLE for this task (pausing for your decision): ${recommendedToEnableIds.join(', ')}. ` +
-            'Activate their mcp_<id> contexts after the decision to bring the tools online.',
+          `Candidates for this task (${recommendedToEnableIds.join(', ')}) — you decide. ` +
+            'If one is genuinely required, call request_mcp_approval(serverIds=[...]) to ask the ' +
+            'user; otherwise continue with the tools already available.',
         );
       } else if (rows.length > 0) {
         lines.push('');
@@ -143,10 +166,12 @@ export function getRequestMcpApprovalTool(mcp: McpRuntime): ToolDefinition {
   return {
     name: 'request_mcp_approval',
     description:
-      'Request the user approve enabling specific configured-but-DISABLED MCP servers for ' +
-      'the current task. Provide the exact server ids; the run pauses until the user decides ' +
-      '(continue / skip). Use this when a task genuinely requires a disabled server (or one ' +
-      'whose keys are missing). Never request servers that are already enabled.',
+      'Ask the user to enable or add specific configured-but-DISABLED MCP servers for the ' +
+      'current task. Provide the exact server ids; the run PAUSES until the user decides ' +
+      '(continue / skip). Call this ONLY when you have decided a server is genuinely ' +
+      'required — it is the one tool that stops the run to ask the user. Never request ' +
+      'servers that are already enabled. (inspect_mcp_stock, when enabled, only reports ' +
+      'candidates and never pauses.)',
     inputSchema: {
       type: 'object',
       properties: {

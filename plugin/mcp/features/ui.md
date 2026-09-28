@@ -1,4 +1,4 @@
-# Wiring the Smoke Monkey chat UI to a harness run
+# Feature guide — wiring the chat UI to a harness run
 
 `@smoke-monkey/ui` is a browser package: normalized stream events, a headless
 runtime, transports, and the chat/tool/prompt components. The harness is a
@@ -50,6 +50,13 @@ socket.on('message', (raw) => {
     bridge.answer({ toolCallId: msg.data.toolCallId, kind: 'ask', answer: msg.data.response });
   } else if (msg.type === 'resolve_permission') {
     bridge.answer({ toolCallId: msg.data.toolCallId, kind: 'permission', answer: msg.data.decision });
+  } else if (msg.type === 'resolve_mcp_approval') {
+    bridge.answer({
+      toolCallId: msg.data.toolCallId,
+      kind: 'mcp_approval',
+      answer: msg.data.action,
+      mcpDecision: { action: msg.data.action, names: msg.data.names ?? [] },
+    });
   }
 });
 ```
@@ -170,8 +177,9 @@ does nothing.
 
 ## Transport notes
 
-- **WebSocket** — `WebSocketTransport` already sends `resolve_ask_user` and
-  `resolve_permission`. You only write the server side.
+- **WebSocket** — `WebSocketTransport` already sends `resolve_ask_user`,
+  `resolve_permission` and `resolve_mcp_approval`. You only write the server
+  side.
 - **SSE / fetch** — there is no socket to answer on. Hold the run, stream the
   events into the response, and expose a second endpoint that calls
   `bridge.answer()`. `FetchTransport` covers the read side.

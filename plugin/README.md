@@ -149,16 +149,17 @@ project `--local` installs write `.opencode/skills/`). MCP goes in
 | `harness_guide`             | `topic?`              | the master "build an agent" end-to-end playbook                                                                      |
 | `harness_plan`              | `goal`                | a concrete build plan for your product (provider/model, agentId, tools, wiring, verify, ship)                        |
 | `harness_api`               | `area?`               | authoritative API reference: options, surface, events, tools, providers, subcontexts, skills, mcp, loop, permissions |
-| `harness_guide_subcontexts` | —                     | deep dive: context_manage, built-in catalog, custom contexts                                                         |
-| `harness_guide_skills`      | —                     | deep dive: SKILL.md format + just-in-time list_skills/use_skill                                                      |
-| `harness_guide_mcp`         | —                     | deep dive: server config, activation, approvals, stock catalog                                                       |
-| `harness_guide_providers`   | —                     | deep dive: providers, keys, models, streaming                                                                        |
-| `harness_guide_tools`       | —                     | deep dive: custom ToolDefinition, groups, annotations                                                                |
-| `harness_guide_loop`        | —                     | deep dive: phases, guards, compaction, budgets                                                                       |
-| `harness_guide_permissions` | —                     | deep dive: the three pauses + how to resolve them                                                                    |
-| `harness_guide_storage`     | —                     | deep dive: Storage interface, sessions, resume                                                                       |
-| `harness_guide_events`      | —                     | deep dive: event catalog + UI wiring                                                                                 |
-| `harness_guide_ui`          | —                     | deep dive: connecting `@smoke-monkey/ui` — help chat, widget, or full app; `createHarnessBridge`; routing paused-run answers |
+| `harness_guide_subcontexts_activation_and_switching` | —     | deep dive: context_manage, built-in catalog, custom contexts                                                         |
+| `harness_guide_skills_skill_md_discovery`           | —     | deep dive: SKILL.md format + just-in-time list_skills/use_skill                                                      |
+| `harness_guide_mcp_servers_and_discovery`           | —     | deep dive: server config, activation, approvals, stock catalog                                                       |
+| `harness_guide_providers_models_and_api_keys`       | —     | deep dive: providers, keys, models, streaming                                                                        |
+| `harness_guide_tools_custom_tool_implementation`    | —     | deep dive: custom ToolDefinition, the two group enums, annotations, UI presentation                                  |
+| `harness_guide_loop_phases_guards_and_compaction`   | —     | deep dive: phases, guards, compaction, budgets                                                                       |
+| `harness_guide_permissions_the_three_pauses`        | —     | deep dive: the three pauses + how to resolve them                                                                    |
+| `harness_guide_storage_sessions_runs_messages`      | —     | deep dive: Storage interface, sessions, resume                                                                       |
+| `harness_guide_events_streaming_and_ui_wiring`      | —     | deep dive: event catalog + UI wiring                                                                                 |
+| `harness_guide_ui_bridge_and_components`            | —     | deep dive: connecting `@smoke-monkey/ui` — help chat, widget, or full app; `createHarnessBridge`; routing paused-run answers |
+| `harness_guide_errors_validation_and_pauses`        | —     | deep dive: structured errors, tool-input validation, the three pauses                                                |
 | `harness_events`            | —                     | event catalog (wire a UI/log layer)                                                                                  |
 | `harness_status`            | —                     | installed library version + server capabilities                                                                      |
 | `harness_scaffold`          | `targetDir`, `name?`  | a complete starter project (package.json, tsconfig, src/index.ts, sample skill, README, .mcp.json)                   |
@@ -185,7 +186,7 @@ plugin/                          # plugin package (plugin root)
     SKILL.md
     references/{api,features,mcp-tools}.md
   mcp/
-    server.mjs                   # dependency-free stdio MCP server (21 tools)
+    server.mjs                   # dependency-free stdio MCP server (22 tools)
     guide.md                     # master instructions (the mouth of the plugin)
     reference.md                 # authoritative API reference (harness_api)
     features/                    # deep per-feature guides (harness_guide_<feature>)

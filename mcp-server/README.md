@@ -91,19 +91,24 @@ Talk to it with any MCP client over stdio:
 | `harness_skills_by_category` | Browse the 25 bundled agent-skills (`plugin/agent-skills/skills`) by category (agent-skills-backend/frontend/devops/qa) or raw domain |
 | `harness_skill_content` | Load one bundled skill's full `SKILL.md` workflow |
 
-### Deep dives (`harness_guide_<feature>`)
+### Deep dives (`harness_guide_<feature>_<detail>`)
+
+Each guide tool takes no arguments; the name states the job, so a truncated
+list still routes correctly.
 
 | Tool | Purpose |
 | --- | --- |
-| `harness_guide_subcontexts` | On-demand guidance blocks, context_manage, built-in catalog |
-| `harness_guide_skills` | SKILL.md format, discovery, `list_skills`/`use_skill` loading |
-| `harness_guide_mcp` | MCP server config, lazy activation, approval flow, stock catalog |
-| `harness_guide_providers` | Provider list, env keys, streaming, model selection |
-| `harness_guide_tools` | ToolDefinition shape, built-in factories, groups |
-| `harness_guide_loop` | Loop phases, automatic guards, compaction, budgets |
-| `harness_guide_permissions` | The three pauses and how to resolve each |
-| `harness_guide_storage` | Storage interface, sessions/runs/messages, resume |
-| `harness_guide_events` | Event catalog + reference UI wiring |
+| `harness_guide_subcontexts_activation_and_switching` | On-demand guidance blocks, `context_manage`, built-in catalog |
+| `harness_guide_skills_skill_md_discovery` | `SKILL.md` format, discovery, `list_skills`/`use_skill` loading |
+| `harness_guide_mcp_servers_and_discovery` | MCP server config, lazy activation, the enable-vs-add approval flow, stock catalog |
+| `harness_guide_providers_models_and_api_keys` | Provider list, env keys, streaming, model selection |
+| `harness_guide_tools_custom_tool_implementation` | `ToolDefinition` shape, built-in factories, the two group enums, custom tools, UI presentation |
+| `harness_guide_loop_phases_guards_and_compaction` | Loop phases, automatic guards, compaction, budgets |
+| `harness_guide_permissions_the_three_pauses` | The three pauses and how to resolve each |
+| `harness_guide_storage_sessions_runs_messages` | Storage interface, sessions/runs/messages, resume |
+| `harness_guide_events_streaming_and_ui_wiring` | Event catalog + reference UI wiring |
+| `harness_guide_ui_bridge_and_components` | Connecting `@smoke-monkey/ui`: help chat, widget, or full app |
+| `harness_guide_errors_validation_and_pauses` | Structured errors, tool-input validation, the three pauses |
 
 Every tool description carries `PURPOSE / WHEN TO CALL / RELATED` so agents
 route correctly between the harness-library tools and the generic

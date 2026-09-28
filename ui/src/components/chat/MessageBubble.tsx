@@ -24,7 +24,7 @@ import { ToolCallCard } from './ToolCallCard';
 import { ToolRunGroup } from './ToolRun';
 import { ErrorCard } from './ErrorCard';
 import { ChatPromptCard } from './ChatPromptCard';
-import type { ChatPrompt } from '../../types/prompt';
+import type { ChatMcpApprovalDecision, ChatPrompt } from '../../types/prompt';
 import type { ToolPresentationMap } from '../../types/tools';
 import { withPresentation } from '../../lib/toolRuns';
 
@@ -66,8 +66,11 @@ export interface MessageBubbleSlots {
   codeBlock?: ComponentType<{ language: string; children: string }>;
   chart?: ArtifactSlot;
   table?: ArtifactSlot;
-  /** Replace the inline ask_user / permission card. */
-  prompt?: ComponentType<{ prompt: ChatPrompt; onRespond?: (answer: string) => void }>;
+  /** Replace the inline ask_user / permission / MCP-approval card. */
+  prompt?: ComponentType<{
+    prompt: ChatPrompt;
+    onRespond?: (answer: string, mcpDecision?: ChatMcpApprovalDecision) => void;
+  }>;
 }
 
 export interface MessageBubbleProps {
@@ -84,7 +87,7 @@ export interface MessageBubbleProps {
    * Answer a prompt the run is blocked on. Omit when the transport cannot
    * write back, and the prompt renders read-only.
    */
-  onPromptRespond?: (prompt: ChatPrompt, answer: string) => void;
+  onPromptRespond?: (prompt: ChatPrompt, answer: string, mcpDecision?: ChatMcpApprovalDecision) => void;
   /**
    * Presentation for tools whose own event did not carry one — a history
    * replayed from storage, or a tool list fetched on connect. Keyed by tool
@@ -246,7 +249,7 @@ function renderPart(
   features: MessageBubbleFeatures,
   slots: MessageBubbleSlots,
   onRetry: ((content: string) => void) | undefined,
-  onPromptRespond?: (prompt: ChatPrompt, answer: string) => void,
+  onPromptRespond?: (prompt: ChatPrompt, answer: string, mcpDecision?: ChatMcpApprovalDecision) => void,
   toolPresentations?: ToolPresentationMap
 ): ReactNode {
   switch (part.type) {
@@ -290,7 +293,8 @@ function renderPart(
       // as a banner or a modal — keeps each question next to the message that
       // asked it, which matters once the agent chains several.
       const onRespond = onPromptRespond
-        ? (answer: string) => onPromptRespond(part.prompt, answer)
+        ? (answer: string, mcpDecision?: ChatMcpApprovalDecision) =>
+            onPromptRespond(part.prompt, answer, mcpDecision)
         : undefined;
       const Prompt = slots.prompt ?? ChatPromptCard;
       return <Prompt key={key} prompt={part.prompt} {...(onRespond ? { onRespond } : {})} />;

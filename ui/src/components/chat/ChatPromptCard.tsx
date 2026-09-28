@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CircleHelp, ShieldQuestion } from 'lucide-react';
-import type { ChatPrompt } from '../../types/prompt';
+import { CircleHelp, ShieldQuestion, Plug } from 'lucide-react';
+import type { ChatMcpApprovalDecision, ChatPrompt } from '../../types/prompt';
 import { cn } from '../../lib/cn';
 
 export interface ChatPromptCardProps {
@@ -9,18 +9,24 @@ export interface ChatPromptCardProps {
    * Send the answer. Omitted when the transport cannot write back, in which
    * case the card renders read-only — showing controls that go nowhere is
    * worse than showing none.
+   *
+   * The second argument is the MCP decision, set only for
+   * `kind: 'mcp_approval'`. A single-parameter callback stays valid; those
+   * prompts pass the action as the answer too, so `answer` alone is enough to
+   * tell enable from add from skip.
    */
-  onRespond?: (answer: string) => void;
+  onRespond?: (answer: string, mcpDecision?: ChatMcpApprovalDecision) => void;
   className?: string;
 }
 
 /**
  * The inline surface for a run that is blocked on the user.
  *
- * `ask_user` and `permission.required` both *pause* the run, so this card is
- * the only thing standing between a paused run and a deadlocked one. It sits
- * in the transcript next to the message that raised it because the agent can
- * chain several questions, and each one belongs where it was asked.
+ * All three harness pauses land here: `ask_user`, `permission.required` and
+ * `mcp.approval_required`. Each one *pauses* the run, so this card is the only
+ * thing standing between a paused run and a deadlocked one. It sits in the
+ * transcript next to the message that raised it because the agent can chain
+ * several questions, and each one belongs where it was asked.
  *
  * Answered prompts collapse to what was chosen: the transcript should read as a
  * conversation, not as a pile of dismissed forms.
@@ -30,8 +36,12 @@ export function ChatPromptCard({ prompt, onRespond, className }: ChatPromptCardP
   const [picked, setPicked] = useState<string[]>([]);
   const answered = prompt.status !== 'pending';
   const isPermission = prompt.kind === 'permission';
-  const Icon = isPermission ? ShieldQuestion : CircleHelp;
+  const isMcp = prompt.kind === 'mcp_approval';
+  const Icon = isMcp ? Plug : isPermission ? ShieldQuestion : CircleHelp;
   const readOnly = answered || !onRespond;
+  const mcp = prompt.mcp;
+  const enableIds = mcp?.recommendedToEnableIds ?? [];
+  const addIds = mcp?.recommendedToAddIds ?? [];
 
   const toggle = (value: string): void => {
     setPicked((prev) =>
@@ -58,14 +68,21 @@ export function ChatPromptCard({ prompt, onRespond, className }: ChatPromptCardP
   // transcript reads like a leak rather than an answer.
   const denied = prompt.decision === 'deny' || prompt.answer === 'deny' || prompt.answer === 'denied';
   const allowed = prompt.decision === 'allow' || prompt.answer === 'allow' || prompt.answer === 'allow_once';
+  const mcpAction = prompt.mcpDecision?.action ?? (prompt.answer as string | undefined);
   const settledAnswer =
     prompt.status === 'cancelled'
       ? 'Cancelled'
-      : denied
-        ? 'Denied'
-        : allowed
-          ? 'Allowed'
-          : (prompt.answer ?? 'Answered');
+      : isMcp
+        ? mcpAction === 'enable'
+          ? `Enabled ${prompt.mcpDecision?.names.length ?? 0}`
+          : mcpAction === 'add'
+            ? `Added ${prompt.mcpDecision?.names.length ?? 0}`
+            : 'Skipped'
+        : denied
+          ? 'Denied'
+          : allowed
+            ? 'Allowed'
+            : (prompt.answer ?? 'Answered');
 
   if (answered) {
     return (
@@ -119,6 +136,49 @@ export function ChatPromptCard({ prompt, onRespond, className }: ChatPromptCardP
           This run is waiting for an answer. The connected transport cannot send
           one, so it has to be answered from the host that started the run.
         </p>
+      ) : isMcp ? (
+        <>
+          {(enableIds.length > 0 || addIds.length > 0) && (
+            <ul className="mt-2 space-y-1">
+              {[...enableIds.map((id) => ({ id, action: 'enable' as const })),
+                ...addIds.map((id) => ({ id, action: 'add' as const }))].map(({ id, action }) => (
+                <li key={id} className="flex items-center gap-1.5 text-[11px] text-ink-secondary">
+                  <span className="truncate font-mono text-[10.5px]">{id}</span>
+                  <span className="shrink-0 rounded bg-surface-800/60 px-1 py-px text-[9.5px] uppercase tracking-wide text-ink-muted">
+                    {action === 'enable' ? 'configured' : 'to add'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            {enableIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onRespond?.('enable', { action: 'enable', names: enableIds })}
+                className="rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
+              >
+                Enable {enableIds.length}
+              </button>
+            )}
+            {addIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onRespond?.('add', { action: 'add', names: addIds })}
+                className="rounded-lg border border-surface-700/70 bg-surface-800/50 px-2.5 py-1 text-[11px] font-medium text-ink-secondary transition-colors hover:border-primary/40 hover:text-ink-primary"
+              >
+                Add {addIds.length}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onRespond?.('skip', { action: 'skip', names: [] })}
+              className="rounded-lg border border-surface-700/70 bg-surface-800/50 px-2.5 py-1 text-[11px] font-medium text-ink-secondary transition-colors hover:border-destructive/50 hover:text-destructive"
+            >
+              Skip
+            </button>
+          </div>
+        </>
       ) : isPermission ? (
         <div className="mt-2.5 flex items-center gap-1.5">
           <button

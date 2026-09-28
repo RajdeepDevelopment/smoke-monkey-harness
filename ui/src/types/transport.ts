@@ -1,5 +1,6 @@
 import type { ChatMessage } from './message';
 import type { ChatStreamEvent, ConnectionStatus, ChatErrorInfo, TokenUsage } from './stream';
+import type { ChatMcpApprovalDecision, ChatPromptKind } from './prompt';
 
 export interface ChatRequest {
   conversationId?: string;
@@ -32,12 +33,18 @@ export interface ChatPromptResponse {
   conversationId?: string;
   /** The blocked tool call. */
   toolCallId: string;
-  kind: 'ask' | 'permission';
+  kind: ChatPromptKind;
   /**
    * For `ask`: the option value(s) chosen, or the free text typed.
    * For `permission`: the decision.
+   * For `mcp_approval`: the action taken, when `mcpDecision` is omitted.
    */
   answer: string;
+  /**
+   * For `mcp_approval`: the servers to turn on. Required for that kind —
+   * `answer` alone cannot carry a list of server ids.
+   */
+  mcpDecision?: ChatMcpApprovalDecision;
 }
 
 export interface ChatTransport {

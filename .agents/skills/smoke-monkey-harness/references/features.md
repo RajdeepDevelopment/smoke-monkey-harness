@@ -1,8 +1,8 @@
-# Feature digests — the 9 building blocks
+# Feature digests — the 11 building blocks
 
 Standalone learning when the MCP server is not available. Each digest
 condenses the full feature guide (which the MCP server also serves via
-`harness_guide_<feature>`).
+`harness_guide_<feature>_<detail>`).
 
 ## 1. Sub-contexts — on-demand guidance blocks
 
@@ -38,7 +38,10 @@ mcp: [{ id, name, description, command, args, enabled }]        // stdio
 
 Lazy-connect on first `mcp_<id>` activation; tools surface as `<id>__<tool>`;
 unknown/disabled servers pause `request_mcp_approval` →
-`resolveMcpDecision(toolCallId, { action: 'enable'|'leave'|'deny', names })`.
+`resolveMcpDecision(toolCallId, { action: 'enable'|'add'|'skip', names })` — the
+`mcp.approval_required` event carries `{ toolCallId, payload }` inside
+`event.data`. The model can only turn **configured-but-disabled** servers on;
+adding a new server is a host call (`addMcpServer`).
 Curated stock: `listStockCategories()`, `findStockEntry(name)`,
 `stockToMcpConfig(entry)`. Manage at runtime: `addMcpServer/removeMcpServer/listMcpServers`.
 
@@ -61,22 +64,51 @@ retries transient 5xx with backoff; `tool_calls` without prose
 
 ## 5. Tools — everything the agent can do
 
-`ToolDefinition = { name, description, inputSchema, annotations?, execute }`.
-Built-in factories (per group): filesystem (read/write/edit/line_edit/
-replace_lines/apply_patch/delete/list_directory/inspect), terminal
-(run_command/run_test), search (glob/grep), git (status/diff/log), agent
-(ask_user/context_manage/todo_write/finish_task), mcp, skills. Groups:
-`TOOL_GROUPS.{core,filesystem,terminal,search,git,agent,mcp,skills}`.
-`annotations.readOnlyHint` auto-allows; mutating via `ctx` gets guard
-bookkeeping. `options.tools` = group names[] or your `ToolDefinition[]`.
+`ToolDefinition = { name, description, inputSchema, annotations?, presentation?,
+execute }`. Built-in factories (per group): filesystem (read_file/write_file/
+edit_file/line_edit/replace_lines/apply_patch/delete_file/list_directory/
+inspect), terminal (run_command/run_test), search (glob/grep), git
+(git_status/git_diff/git_log), agent (ask_user/context_manage/todo_write/
+finish_task), plus the mcp and skill tools (auto-registered).
+
+**Two different group enums.** `options.tools` (what the registry *loads*) takes
+`'filesystem'|'terminal'|'search'|'git'|'agent'`, `'all'`, or `[]`. The
+*exposure* groups the guards read are
+`TOOL_GROUPS.{core,exploration,editing,verification,git,docker}`. Passing the
+wrong one fails silently — the tool just never appears. `options.tools` also
+accepts `ToolDefinition[]` inline, and those are always exposed regardless of
+group.
+
+**Permissions.** `annotations.readOnlyHint: true` runs the tool without a
+`permission.required` pause. `annotations.destructiveHint: true` maps to
+`permissionAction: 'ask'` — and because that is derived from the annotation, a
+custom tool is **`allow` by default**: a tool that deletes, charges, or calls an
+external API gets no prompt until you set it. Neither annotation is a security
+boundary; enforce real policy with `permission: (req) => …` too.
 
 Custom `options.tools` entries are exposed to the model from the **first run
 step**; a tool registered later was silently invisible to the model.
 
-**Presentation.** Add `presentation: {label, icon, tone, group}` to a
-`ToolDefinition` to get a titled, iconed tool card. `tone` is one of
-`success | error | warning | info` and drives the card accent. Read them all via
-`agent.getToolPresentations()`; a `presentation` on the individual event wins.
+**Presentation.** Add `presentation: {icon, label, family, tone}` to a
+`ToolDefinition` to get a titled, iconed tool card. `family` is one of
+`TOOL_FAMILIES = inspect | edit | run | verify | git | plan | ask` and picks a
+glyph when `icon` is absent; `icon` (emoji) wins over `family`. `tone` is one of
+`default | primary | success | warning | destructive`. Read them all via
+`agent.getToolPresentations()` and send it to the browser once on connect;
+`tool.started` / `tool.completed` / `tool.failed` each carry the same
+`presentation` looked up from the registry, so icons survive a history replay.
+
+**What the model actually reads.** `ToolRegistry` normalises your result:
+every `content[].text` part is joined into `output`, and the loop sends
+`output` — nothing else — back to the model. `data` is for the UI and is never
+sent to the LLM verbatim. Return a `data`-only payload and the model receives
+the literal string `(no output)`.
+
+**Validate inside `execute`.** `inputSchema` is advertised to the model as
+`parameters`; the runtime does **not** enforce it. `required` is a request, not
+a guarantee, and `safeParseObject` will hand your `execute` a plain `{}` for
+arguments the model botched. Return `{ isError: true, output: '…' }` with text
+that says what a valid call looks like — a throw becomes an opaque crash.
 
 **Blocking a call.** A `beforeToolCall` hook returns `{block: true, reason}` to
 deny a call; the reason is fed back to the model as the tool's result and the
@@ -136,18 +168,40 @@ import { createHarnessBridge } from '@smoke-monkey/ui';
 const bridge = createHarnessBridge({ agent, messageId });
 for await (const event of bridge.events()) socket.send(JSON.stringify(event));
 
-// and back, for the two pauses:
+// and back, for all three pauses:
 socket.on('message', (raw) => {
   const { type, data } = JSON.parse(raw);
   if (type === 'resolve_ask_user') bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
   if (type === 'resolve_permission') bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+  if (type === 'resolve_mcp_approval') bridge.answer({
+    toolCallId: data.toolCallId, kind: 'mcp_approval', answer: data.action,
+    mcpDecision: { action: data.action, names: data.names ?? [] },
+  });
 });
 ```
 
-**The pause is the whole trap.** `permission.required` and `ask_user.required`
-suspend the run; nothing resolves them by themselves. Render them *and* route
-the answer back, or the run deadlocks with no error logged anywhere — it looks
-like a hung request, not a bug.
+**The pause is the whole trap.** All three of `permission.required`,
+`ask_user.required` and `mcp.approval_required` suspend the run; nothing
+resolves them by themselves. Render them *and* route the answer back, or the run
+deadlocks with no error logged anywhere — it looks like a hung request, not a
+bug. The MCP one is the easiest to forget, because it only fires when the agent
+happens to recommend a server.
+
+Two things around the pauses that are easy to get wrong:
+
+- **`run.interrupted` ends the stream.** It is the last event an interrupted run
+  emits, so a consumer still waiting for events waits forever. End the iteration
+  on it — but do not render it as a failure; the work is saved and the session
+  is still replyable. The bridge emits an `info` notice and closes.
+- **Validate tool input yourself.** A call with an empty name or unparseable
+  JSON arguments is dropped before the loop sees it, so it produces *no* event
+  at all; anything that gets through is parsed defensively, so your `execute`
+  can receive `{}`. Return `isError: true` with an actionable message rather
+  than throwing.
+
+`harness_guide_errors_validation_and_pauses` has the full model: `AgentErrorInfo` fields, the
+recoverable-vs-terminal table, the three input-validation layers, and the
+buffering/abort/denial rules for each pause.
 
 Where it fits: `ChatPanel` for a help chat in an existing app,
 `SmokeMonkeyChat` in an iframe for a widget on a site you do not own,
@@ -158,3 +212,43 @@ transport-agnostic, so all four use the same code.
 `mapHarnessEvent(event, { messageId })` is the one-shot mapping if you want the
 events without the subscription. `message:start` comes from the transport, not
 the bridge — emit it first or nothing attaches to a message.
+
+## 11. Errors & tool input — the two silent failures
+
+Every failure is an `AgentErrorInfo`: `code` (stable, match on this) · `layer`
+(`provider|tool|run|hook|permission|transport`) · `severity`
+(`info|warning|error|fatal`) · `message` (renderable, never a stack trace) ·
+`retryable` · `hint` (actionable next step) · `details` (debug only). Surface
+`message`, never `details`, and let `retryable` decide whether a retry button
+appears. `toAgentErrorInfo(err, fallback)` normalises bare strings.
+
+**Recoverable vs terminal** is the distinction that decides whether a
+conversation survives:
+
+| event | terminal? | render as |
+|---|---|---|
+| `run.warning` (rate limit, retrying) | no | notice, keep going |
+| `run.interrupted` (someone hit stop) | **yes** | `info` notice — *not* an error |
+| `tool.failed` (one call) | no | that card only |
+| `run.failed` | yes | error, end the run |
+
+**Tool input fails in three layers.** (1) `validateToolCalls` drops a call with
+an empty name or unparseable JSON arguments *before the loop sees it*, so it
+emits no event at all — "the tool never ran" and "the tool did nothing" look
+identical. (2) `safeParseObject` never throws, so `execute` can receive `{}`.
+(3) Your `inputSchema` is advertised, not enforced. Validate in `execute` and
+return `isError: true` with a message the model can act on; reserve throws for
+real faults. Note `isError: true` also emits `tool.failed`, so the card goes red
+even though the run recovers.
+
+**Pause lifecycle.** An answer that arrives before the waiter registers is
+buffered, so you never coordinate "is it paused yet". Abort resolves each
+pending pause to no: `''` for `ask_user`, `'deny'` for permission, and
+`{ action: 'skip' }` for MCP. A denied permission is a policy decision, not a
+crash: `afterToolCall` gets `blocked: true` and the model receives the reason as
+the tool result, so it can work around it.
+
+`readOnlyHint` does *not* auto-allow — the default policy checks the
+`READ_ONLY_TOOLS` name set. And a `PermissionPolicy` function receives
+`args: {}`, so anything argument-dependent belongs in a `beforeToolCall` hook,
+which does see the real input.

@@ -140,21 +140,38 @@ export class WebSocketTransport implements ChatTransport {
   /**
    * Answer a paused run.
    *
-   * The two commands mirror the harness API: `agent.respond(toolCallId, text)`
-   * and `agent.resolvePermission(toolCallId, decision)`.
+   * The three commands mirror the harness API: `agent.respond(toolCallId,
+   * text)`, `agent.resolvePermission(toolCallId, decision)` and
+   * `agent.resolveMcpDecision(toolCallId, decision)`.
    */
   respond(response: ChatPromptResponse): void {
     const socket = this.socket;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       throw new Error('Cannot answer a prompt: no open run to answer.');
     }
-    const isAsk = response.kind === 'ask';
+    if (response.kind === 'ask') {
+      socket.send(
+        JSON.stringify({
+          type: 'resolve_ask_user',
+          data: { toolCallId: response.toolCallId, response: response.answer },
+        }),
+      );
+      return;
+    }
+    if (response.kind === 'mcp_approval') {
+      const decision = response.mcpDecision ?? { action: 'skip' as const, names: [] };
+      socket.send(
+        JSON.stringify({
+          type: 'resolve_mcp_approval',
+          data: { toolCallId: response.toolCallId, ...decision },
+        }),
+      );
+      return;
+    }
     socket.send(
       JSON.stringify({
-        type: isAsk ? 'resolve_ask_user' : 'resolve_permission',
-        data: isAsk
-          ? { toolCallId: response.toolCallId, response: response.answer }
-          : { toolCallId: response.toolCallId, decision: response.answer },
+        type: 'resolve_permission',
+        data: { toolCallId: response.toolCallId, decision: response.answer },
       }),
     );
   }
