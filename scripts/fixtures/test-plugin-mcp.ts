@@ -13,6 +13,27 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const server = path.join(root, 'plugin', 'mcp', 'server.mjs');
 
+/**
+ * Feature key -> the guide tool that serves it. Single source of truth: the
+ * expected-name check, the tools/list check, and the per-guide call check all
+ * read this, so a renamed or newly-wired guide cannot drift between them.
+ * Every file in plugin/mcp/features/ MUST have an entry here — a file without
+ * one means the server cannot reach it, which fails here rather than at runtime.
+ */
+const GUIDES: Record<string, string> = {
+  subcontexts: 'harness_guide_subcontexts_activation_and_switching',
+  skills: 'harness_guide_skills_skill_md_discovery',
+  mcp: 'harness_guide_mcp_servers_and_discovery',
+  providers: 'harness_guide_providers_models_and_api_keys',
+  tools: 'harness_guide_tools_custom_tool_implementation',
+  loop: 'harness_guide_loop_phases_guards_and_compaction',
+  permissions: 'harness_guide_permissions_the_three_pauses',
+  storage: 'harness_guide_storage_sessions_runs_messages',
+  events: 'harness_guide_events_streaming_and_ui_wiring',
+  ui: 'harness_guide_ui_bridge_and_components',
+  errors: 'harness_guide_errors_validation_and_pauses',
+};
+
 const child = spawn(process.execPath, [server], { stdio: ['pipe', 'pipe', 'inherit'] });
 let buf = '';
 let nextId = 0;
@@ -84,15 +105,7 @@ try {
     'harness_plan',
     'harness_api',
     'harness_events',
-    'harness_guide_subcontexts',
-    'harness_guide_skills',
-    'harness_guide_mcp',
-    'harness_guide_providers',
-    'harness_guide_tools',
-    'harness_guide_loop',
-    'harness_guide_permissions',
-    'harness_guide_storage',
-    'harness_guide_events',
+    ...Object.values(GUIDES),
     'harness_skills_by_category',
     'harness_skill_content',
   ]) {
@@ -120,26 +133,35 @@ try {
   if (!String(apiBad.result?.content?.[0]?.text ?? '').includes('Available areas')) throw new Error('api(unknown) should list areas');
   console.log('  harness_api ok (slice + unknown-area handling)');
 
-  // harness_guide_<feature> deep dives
+  // harness_guide_<feature>_<detail> deep dives
   // Every file in features/ must be reachable and non-empty, so a guide cannot
   // ship unregistered. The list is explicit rather than read off the server so
   // that adding a file without wiring it up fails here instead of at runtime.
-  const FEATURES = ['subcontexts', 'skills', 'mcp', 'providers', 'tools', 'loop', 'permissions', 'storage', 'events', 'ui', 'errors'];
-  for (const f of FEATURES) {
-    const res = await call('tools/call', { name: `harness_guide_${f}`, arguments: {} });
+  const featuresDir = path.join(root, 'plugin', 'mcp', 'features');
+  const featureFiles = fs.readdirSync(featuresDir).filter((f) => f.endsWith('.md')).map((f) => f.replace(/\.md$/, ''));
+  const unwired = featureFiles.filter((f) => !(f in GUIDES));
+  if (unwired.length > 0) {
+    throw new Error(`feature file(s) with no guide tool: ${unwired.join(', ')}`);
+  }
+  for (const [feature, tool] of Object.entries(GUIDES)) {
+    const res = await call('tools/call', { name: tool, arguments: {} });
     const text = res.result?.content?.[0]?.text ?? '';
     if (res.result?.isError || text.length < 200 || !text.startsWith('# Feature guide')) {
-      throw new Error(`feature guide ${f} failed or empty`);
+      throw new Error(`feature guide ${feature} (${tool}) failed or empty`);
     }
   }
   const listed = await call('tools/list', {});
   const toolNames = (listed.result?.tools ?? []).map((t: { name: string }) => t.name);
-  for (const f of FEATURES) {
-    if (!toolNames.includes(`harness_guide_${f}`)) {
-      throw new Error(`harness_guide_${f} missing from tools/list`);
+  for (const [feature, tool] of Object.entries(GUIDES)) {
+    if (!toolNames.includes(tool)) {
+      throw new Error(`${tool} (${feature}) missing from tools/list`);
     }
   }
-  console.log(`  harness_guide_<feature> ok (${FEATURES.length} deep dives, all listed)`);
+  // The rename is a public contract: a stale short name must not survive.
+  for (const stale of ['harness_guide_tools', 'harness_guide_mcp', 'harness_guide_ui', 'harness_guide_errors']) {
+    if (toolNames.includes(stale)) throw new Error(`stale guide name still registered: ${stale}`);
+  }
+  console.log(`  harness_guide_<feature>_<detail> ok (${Object.keys(GUIDES).length} deep dives, all listed, no stale names)`);
 
   // harness_events — catalog for UI wiring
   const events = await call('tools/call', { name: 'harness_events', arguments: {} });

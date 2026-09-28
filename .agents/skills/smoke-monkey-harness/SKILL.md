@@ -30,7 +30,7 @@ Decide which path is available:
    wire → verify → extend → ship).
 3. `harness_plan({ goal })` — a concrete plan for THIS product: provider/model,
    agentId, tools, wiring, verification gate.
-4. For real understanding, pull the relevant `harness_guide_<feature>` deep
+4. For real understanding, pull the relevant `harness_guide_<feature>_<detail>` deep
    dive: `subcontexts` · `skills` · `mcp` · `providers` · `tools` · `loop` ·
    `permissions` · `storage` · `events` · `ui` — and/or slice
    `harness_api({ area })`. Reach for `ui` as soon as the product needs any

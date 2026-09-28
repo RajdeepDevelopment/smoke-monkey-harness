@@ -6,9 +6,14 @@
  *     - harness_guide({ topic? })          → the master instructions (guide.md)
  *     - harness_plan({ goal })             → build a concrete plan for a product goal
  *     - harness_api({ area? })             → authoritative API reference (reference.md)
- *     - harness_guide_<feature>()          → deep per-feature guides: subcontexts,
- *       skills, mcp, providers, tools, loop, permissions, storage, events, ui,
- *       errors
+ *     - harness_guide_<feature>_<detail>() → deep per-feature guides. Names are
+ *       self-describing so a truncated list still routes correctly:
+ *       subcontexts_activation_and_switching · skills_skill_md_discovery ·
+ *       mcp_servers_and_discovery · providers_models_and_api_keys ·
+ *       tools_custom_tool_implementation · loop_phases_guards_and_compaction ·
+ *       permissions_the_three_pauses · storage_sessions_runs_messages ·
+ *       events_streaming_and_ui_wiring · ui_bridge_and_components ·
+ *       errors_validation_and_pauses
  *     - harness_events()                   → the event catalog (UI wiring)
  *     - harness_status()                   → installed library + scaffold facts
  *     - harness_scaffold({ targetDir, name? }) → generate a starter agent project
@@ -72,6 +77,35 @@ const FEATURES = {
   ui: 'ui.md',
   errors: 'errors.md',
 };
+
+/**
+ * Tool name per feature, decoupled from the FEATURES key that picks the file.
+ *
+ * The name is what a model sees in a tools/list dump, and long lists get
+ * truncated — so the name has to carry the job on its own. `harness_guide_ui`
+ * says nothing; `harness_guide_ui_bridge_and_components` tells the model
+ * whether this is the right guide without reading a description. Keep the
+ * `harness_guide_` prefix (it groups the family in the list) and spend the rest
+ * of the name on what the guide actually teaches.
+ */
+const FEATURE_TOOL_NAMES = {
+  subcontexts: 'harness_guide_subcontexts_activation_and_switching',
+  skills: 'harness_guide_skills_skill_md_discovery',
+  mcp: 'harness_guide_mcp_servers_and_discovery',
+  providers: 'harness_guide_providers_models_and_api_keys',
+  tools: 'harness_guide_tools_custom_tool_implementation',
+  loop: 'harness_guide_loop_phases_guards_and_compaction',
+  permissions: 'harness_guide_permissions_the_three_pauses',
+  storage: 'harness_guide_storage_sessions_runs_messages',
+  events: 'harness_guide_events_streaming_and_ui_wiring',
+  ui: 'harness_guide_ui_bridge_and_components',
+  errors: 'harness_guide_errors_validation_and_pauses',
+};
+
+/** Reverse index so a tool NAME routes back to its guide file. */
+const FEATURE_BY_TOOL = Object.fromEntries(
+  Object.entries(FEATURE_TOOL_NAMES).map(([key, toolName]) => [toolName, key]),
+);
 
 const featureCache = new Map();
 function featureText(key) {
@@ -175,8 +209,8 @@ function plan(goal) {
         `             bridge.answer({ kind: 'permission' }) and resolve_mcp_approval ->\n` +
         `             bridge.answer({ kind: 'mcp_approval', mcpDecision }) — all three BLOCK the run until\n` +
         `             answered, so an unrouted one deadlocks it silently.\n` +
-        `     Full mapping and component choice: harness_guide_ui().\n` +
-        `     Error handling, tool-input validation and the three pauses: harness_guide_errors().\n` +
+        `     Full mapping and component choice: harness_guide_ui_bridge_and_components().\n` +
+        `     Error handling, tool-input validation and the three pauses: harness_guide_errors_validation_and_pauses().\n` +
         `   - Pass a store + sessionId to resume sessions; guard budget via resolveTokenBudget; keep loop guards on.\n\n` +
         `Dig deeper anytime with harness_api({ area }) or harness_guide({ topic: "..." }).`,
     }],
@@ -220,7 +254,7 @@ function statusText() {
     /* running outside the checkout — ignore */
   }
   lines.push(`guide length: ${guideText().length} chars (reference: ${referenceText().length} chars, features: ${Object.keys(FEATURES).length})`);
-  lines.push(`tools: harness_guide · harness_plan · harness_api · harness_events · harness_status · harness_scaffold · harness_verify · harness_examples · harness_read_example · harness_guide_${Object.keys(FEATURES).join(' · harness_guide_')}`);
+  lines.push(`tools: harness_guide · harness_plan · harness_api · harness_events · harness_status · harness_scaffold · harness_verify · harness_examples · harness_read_example · ${Object.values(FEATURE_TOOL_NAMES).join(' · ')}`);
   lines.push('usage hint: harness_guide → harness_plan({goal}) → harness_scaffold({targetDir}) → harness_verify({targetDir}).');
   return lines.join('\n');
 }
@@ -432,20 +466,20 @@ function mcpSnippet() {
 }
 
 const FEATURE_TOOL_DEFS = Object.entries(FEATURES).map(([key, file]) => ({
-  name: `harness_guide_${key}`,
+  name: FEATURE_TOOL_NAMES[key],
   description:
-    `PURPOSE: deep-dive reference on one smoke-monkey-harness feature — ${key} — while you build an agent on this library. ` +
+    `PURPOSE: deep-dive reference on ONE smoke-monkey-harness feature — ${key} — while you build an agent on this library. ` +
     {
-      subcontexts: 'on-demand guidance blocks, context_manage actions, built-in catalog, custom contexts, defaultSubContexts.',
-      skills: 'SKILL.md format, discovery (skills/skillsDir/default dirs), list_skills/use_skill just-in-time loading.',
-      mcp: 'McpServerConfig (stdio vs streamable-HTTP), lazy activation, id__tool naming, approval flow, stock catalog.',
-      providers: 'provider list, env keys, base URLs, streaming, tool-capable model selection, key resolver.',
-      tools: 'ToolDefinition shape, built-in factories, groups, read-only/mutation annotations, custom tools.',
-      loop: 'phases explore→plan→edit→verify→recover→complete, automatic guards, compaction, budgets.',
-      permissions: 'the three pauses (permission/ask_user/mcp approval) and how to resolve each, autoApprove.',
-      storage: 'Storage interface, MemoryStore, sessions/runs/messages, resume with sessionId + store.',
-      events: 'event catalog with payloads and reference UI wiring (streaming chat, tool cards, pause dialogs).',
-      ui: 'connecting @smoke-monkey/ui to a run — createHarnessBridge, the event mapping, routing answers to paused runs, tool presentation, composing the components yourself.',
+      subcontexts: 'on-demand guidance blocks, context_manage actions, the built-in catalog, custom contexts, defaultSubContexts, and the activate/deactivate lifecycle.',
+      skills: 'SKILL.md format, discovery (skills / skillsDir / default dirs), and list_skills / use_skill just-in-time loading so unused skills cost no context.',
+      mcp: 'McpServerConfig (stdio vs streamable-HTTP), lazy activation, id__tool naming, the approval flow, the curated stock catalog, and the full opt-in discovery flow (mcpStockSearch) that lets the model find and suggest servers before the user links one.',
+      providers: 'every provider, its env key, base URL, streaming support, how to pick a tool-capable model, and custom key resolution.',
+      tools: 'the complete built-in tool list (every factory, its exact group and signature), the ToolDefinition contract, the tool-input validation layers, permission annotations, UI presentation, and a worked example of writing a custom tool and wiring it into the harness and the UI.',
+      loop: 'phases explore→plan→edit→verify→recover→complete, the automatic guards, context compaction, and token/step budgets.',
+      permissions: 'the three pauses (permission / ask_user / mcp approval) and exactly how to resolve each, plus autoApprove.',
+      storage: 'the Storage interface, MemoryStore, sessions/runs/messages, and resuming a run with sessionId + store.',
+      events: 'the event catalog with payloads and the reference UI wiring (streaming chat, tool cards, pause dialogs).',
+      ui: 'connecting @smoke-monkey/ui to a run — createHarnessBridge, the event mapping, routing answers to paused runs, tool presentation, and composing the components yourself.',
       errors: 'the AgentErrorInfo model, recoverable vs terminal events, tool-input validation layers (validateToolCalls / safeParseObject / your schema), and the three pauses with their buffering, abort and denial semantics.',
     }[key] +
     ' WHEN TO CALL: when your current task touches this feature and you need the exact API details. ' +
@@ -493,7 +527,7 @@ const toolDefs = [
       'MCP config, loop/guards, permissions. Slice with area=' +
       '(options|surface|events|tools|providers|subcontexts|skills|mcp|loop|permissions|all). Default: full reference. ' +
       'WHEN TO CALL: you are writing library code (createAgent, agent.*, tool factories) and need the exact signatures. ' +
-      'RELATED: harness_guide_<feature> for a focused deep dive.',
+      'RELATED: the harness_guide_<feature>_<detail> family for a focused deep dive (e.g. harness_guide_tools_custom_tool_implementation).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -714,7 +748,7 @@ rl.on('line', async (rawLine) => {
           break;
         }
         default: {
-          const feature = name.startsWith('harness_guide_') ? name.slice('harness_guide_'.length) : null;
+          const feature = FEATURE_BY_TOOL[name] ?? null;
           if (feature && FEATURES[feature]) {
             result = { content: [{ type: 'text', text: featureText(feature) }], isError: false };
             break;

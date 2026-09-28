@@ -1,8 +1,8 @@
-# Feature digests — the 9 building blocks
+# Feature digests — the 11 building blocks
 
 Standalone learning when the MCP server is not available. Each digest
 condenses the full feature guide (which the MCP server also serves via
-`harness_guide_<feature>`).
+`harness_guide_<feature>_<detail>`).
 
 ## 1. Sub-contexts — on-demand guidance blocks
 
@@ -38,7 +38,10 @@ mcp: [{ id, name, description, command, args, enabled }]        // stdio
 
 Lazy-connect on first `mcp_<id>` activation; tools surface as `<id>__<tool>`;
 unknown/disabled servers pause `request_mcp_approval` →
-`resolveMcpDecision(toolCallId, { action: 'enable'|'leave'|'deny', names })`.
+`resolveMcpDecision(toolCallId, { action: 'enable'|'add'|'skip', names })` — the
+`mcp.approval_required` event carries `{ toolCallId, payload }` inside
+`event.data`. The model can only turn **configured-but-disabled** servers on;
+adding a new server is a host call (`addMcpServer`).
 Curated stock: `listStockCategories()`, `findStockEntry(name)`,
 `stockToMcpConfig(entry)`. Manage at runtime: `addMcpServer/removeMcpServer/listMcpServers`.
 
@@ -61,22 +64,51 @@ retries transient 5xx with backoff; `tool_calls` without prose
 
 ## 5. Tools — everything the agent can do
 
-`ToolDefinition = { name, description, inputSchema, annotations?, execute }`.
-Built-in factories (per group): filesystem (read/write/edit/line_edit/
-replace_lines/apply_patch/delete/list_directory/inspect), terminal
-(run_command/run_test), search (glob/grep), git (status/diff/log), agent
-(ask_user/context_manage/todo_write/finish_task), mcp, skills. Groups:
-`TOOL_GROUPS.{core,filesystem,terminal,search,git,agent,mcp,skills}`.
-`annotations.readOnlyHint` auto-allows; mutating via `ctx` gets guard
-bookkeeping. `options.tools` = group names[] or your `ToolDefinition[]`.
+`ToolDefinition = { name, description, inputSchema, annotations?, presentation?,
+execute }`. Built-in factories (per group): filesystem (read_file/write_file/
+edit_file/line_edit/replace_lines/apply_patch/delete_file/list_directory/
+inspect), terminal (run_command/run_test), search (glob/grep), git
+(git_status/git_diff/git_log), agent (ask_user/context_manage/todo_write/
+finish_task), plus the mcp and skill tools (auto-registered).
+
+**Two different group enums.** `options.tools` (what the registry *loads*) takes
+`'filesystem'|'terminal'|'search'|'git'|'agent'`, `'all'`, or `[]`. The
+*exposure* groups the guards read are
+`TOOL_GROUPS.{core,exploration,editing,verification,git,docker}`. Passing the
+wrong one fails silently — the tool just never appears. `options.tools` also
+accepts `ToolDefinition[]` inline, and those are always exposed regardless of
+group.
+
+**Permissions.** `annotations.readOnlyHint: true` runs the tool without a
+`permission.required` pause. `annotations.destructiveHint: true` maps to
+`permissionAction: 'ask'` — and because that is derived from the annotation, a
+custom tool is **`allow` by default**: a tool that deletes, charges, or calls an
+external API gets no prompt until you set it. Neither annotation is a security
+boundary; enforce real policy with `permission: (req) => …` too.
 
 Custom `options.tools` entries are exposed to the model from the **first run
 step**; a tool registered later was silently invisible to the model.
 
-**Presentation.** Add `presentation: {label, icon, tone, group}` to a
-`ToolDefinition` to get a titled, iconed tool card. `tone` is one of
-`success | error | warning | info` and drives the card accent. Read them all via
-`agent.getToolPresentations()`; a `presentation` on the individual event wins.
+**Presentation.** Add `presentation: {icon, label, family, tone}` to a
+`ToolDefinition` to get a titled, iconed tool card. `family` is one of
+`TOOL_FAMILIES = inspect | edit | run | verify | git | plan | ask` and picks a
+glyph when `icon` is absent; `icon` (emoji) wins over `family`. `tone` is one of
+`default | primary | success | warning | destructive`. Read them all via
+`agent.getToolPresentations()` and send it to the browser once on connect;
+`tool.started` / `tool.completed` / `tool.failed` each carry the same
+`presentation` looked up from the registry, so icons survive a history replay.
+
+**What the model actually reads.** `ToolRegistry` normalises your result:
+every `content[].text` part is joined into `output`, and the loop sends
+`output` — nothing else — back to the model. `data` is for the UI and is never
+sent to the LLM verbatim. Return a `data`-only payload and the model receives
+the literal string `(no output)`.
+
+**Validate inside `execute`.** `inputSchema` is advertised to the model as
+`parameters`; the runtime does **not** enforce it. `required` is a request, not
+a guarantee, and `safeParseObject` will hand your `execute` a plain `{}` for
+arguments the model botched. Return `{ isError: true, output: '…' }` with text
+that says what a valid call looks like — a throw becomes an opaque crash.
 
 **Blocking a call.** A `beforeToolCall` hook returns `{block: true, reason}` to
 deny a call; the reason is fed back to the model as the tool's result and the
@@ -167,7 +199,7 @@ Two things around the pauses that are easy to get wrong:
   can receive `{}`. Return `isError: true` with an actionable message rather
   than throwing.
 
-`harness_guide_errors` has the full model: `AgentErrorInfo` fields, the
+`harness_guide_errors_validation_and_pauses` has the full model: `AgentErrorInfo` fields, the
 recoverable-vs-terminal table, the three input-validation layers, and the
 buffering/abort/denial rules for each pause.
 

@@ -349,7 +349,7 @@ A runnable example lives in
 [`examples/chat-demo`](examples/chat-demo) — it consumes both packages from npm.
 The full mapping table, the component-by-component breakdown, and a wiring
 checklist are in [`ui/README.md`](ui/README.md#mapping-harness-events) and in
-the MCP server's `harness_guide_ui()`.
+the MCP server's `harness_guide_ui_bridge_and_components()`.
 
 ## MCP configuration
 

@@ -130,7 +130,7 @@ task's output in `result.messages`. Then grow the task.
 
 If anything about this product is conversational, do not hand-roll a chat UI.
 `@smoke-monkey/ui` is a published browser package built for exactly this
-harness, and `harness_guide_ui()` is the reference.
+harness, and `harness_guide_ui_bridge_and_components()` is the reference.
 
 Where it fits:
 
@@ -165,7 +165,7 @@ socket.on('message', (raw) => {
 All three pauses must be routed. The third is the one people miss, because it
 only fires when the agent happens to recommend an MCP server. The error model,
 tool-input validation, and what each pause does on abort are in
-`harness_guide_errors()`.
+`harness_guide_errors_validation_and_pauses()`.
 
 ### Step 7 — Ship
 - Persist memory: pass a `store` (implement the small `Storage` interface) +
@@ -175,7 +175,7 @@ tool-input validation, and what each pause does on abort are in
   `phase.changed`, `context.updated`, `permission.required`, `ask_user.required`,
   `mcp.approval_required`, `mcp.resolved`, `compaction.started/completed`,
   `todo.updated`. With `@smoke-monkey/ui`, `createHarnessBridge()` maps all of
-  these for you — see `harness_guide_ui()`. One detail worth getting right if
+  these for you — see `harness_guide_ui_bridge_and_components()`. One detail worth getting right if
   you bind the events yourself: `run.interrupted` is the *last* event an
   interrupted run emits, so end your stream there, but render it as an
   informational notice rather than a failure.
@@ -215,9 +215,14 @@ configs via `stockToMcpConfig(findStockEntry('…'))`.
 1. `harness_status` — confirm the plugin works.
 2. `harness_guide` — read this playbook (optionally pass `topic`).
 3. `harness_plan({ goal })` — get a concrete build plan for your exact product.
-4. `harness_guide_<feature>` — deep per-feature guides when you need real
-   understanding: `subcontexts`, `skills`, `mcp`, `providers`, `tools`, `loop`,
-   `permissions`, `storage`, `events`.
+4. `harness_guide_<feature>_<detail>` — deep per-feature guides when you need real
+   understanding. The name states the job, so pick by name:
+   `..._subcontexts_activation_and_switching`, `..._skills_skill_md_discovery`,
+   `..._mcp_servers_and_discovery`, `..._providers_models_and_api_keys`,
+   `..._tools_custom_tool_implementation`, `..._loop_phases_guards_and_compaction`,
+   `..._permissions_the_three_pauses`, `..._storage_sessions_runs_messages`,
+   `..._events_streaming_and_ui_wiring`, `..._ui_bridge_and_components`,
+   `..._errors_validation_and_pauses`.
 5. `harness_api({ area })` — exact API shapes (options, surface, events, …).
 6. `harness_scaffold` — generate the project.
 7. `harness_examples` + `harness_read_example` — study the smallest correct programs.

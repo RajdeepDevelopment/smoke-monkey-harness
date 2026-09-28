@@ -10,12 +10,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Ships as `smoke-monkey-harness@1.2.1` and `@smoke-monkey/ui@0.1.2`. The
 `smoke-monkey-harness-mcp` package needs no bump of its own: it is a thin
 launcher that resolves `plugin/mcp/server.mjs` out of the harness package
-(`smoke-monkey-harness@^1.2.0`), so `harness_guide_errors` reaches
+(`smoke-monkey-harness@^1.2.0`), so
+`harness_guide_errors_validation_and_pauses` reaches
 `npx -y smoke-monkey-harness-mcp` with the harness release.
 
 ### Changed
 
+- **Guide tools renamed to self-describing names.** The eleven
+  `harness_guide_<feature>` tools now carry a descriptive suffix, because a
+  `tools/list` dump gets truncated and `harness_guide_ui` tells a model nothing:
+  `harness_guide_subcontexts_activation_and_switching`,
+  `..._skills_skill_md_discovery`, `..._mcp_servers_and_discovery`,
+  `..._providers_models_and_api_keys`, `..._tools_custom_tool_implementation`,
+  `..._loop_phases_guards_and_compaction`, `..._permissions_the_three_pauses`,
+  `..._storage_sessions_runs_messages`, `..._events_streaming_and_ui_wiring`,
+  `..._ui_bridge_and_components`, `..._errors_validation_and_pauses`. **This is a
+  breaking change for any prompt or script that calls a guide by its old short
+  name** — the old names are no longer registered. Tool count is unchanged (22).
+
+- **Tools guide rewritten as a real implementation reference.** Covers
+  `ToolDefinition` vs `AgentTool` and the adapter between them, the full
+  built-in factory table, the **two different `ToolGroupName` enums**
+  (`options.tools` load groups vs `TOOL_GROUPS` exposure groups — mixing them
+  fails silently), writing and registering a custom tool, permissions
+  annotations, and UI presentation. Also documents three facts that are easy to
+  get wrong: the model only ever reads `output` (built from `content[].text`, and
+  `data` is UI-only), `inputSchema` is advertised but **not** enforced at runtime,
+  and a custom tool is `permissionAction: 'allow'` until you set
+  `annotations.destructiveHint`.
+
+- **MCP guide now documents the full discovery lifecycle.** Separates the host's
+  job from the model's: `inspect_mcp_stock` surveys **configured** servers and
+  never pauses, the model decides silently, `request_mcp_approval` is the only
+  pause, and the host resolves via `resolveMcpDecision(toolCallId, { action:
+  'enable'|'add'|'skip', names })`. Makes explicit that the model can only
+  enable *configured-but-disabled* servers — adding one is a host call
+  (`addMcpServer`) — and that a stock server is only reachable by the model if it
+  ships in `options.mcp`.
+
 - **`inspect_mcp_stock` is opt-in and no longer hijacks runs.** The MCP stock
+  search is now gated behind `mcpStockSearch: true` (default **off**). Two
+  related problems are fixed: The MCP stock
   search is now gated behind `mcpStockSearch: true` (default **off**). Two
   related problems are fixed:
 
