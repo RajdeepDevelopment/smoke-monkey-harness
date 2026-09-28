@@ -31,6 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `@smoke-monkey/mcp` would have produced a bare `mcp` command, because npm
   strips the scope from bin names.
 
+- **`harness_guide_errors` (MCP server), the 22nd tool.** Prompts, tool input,
+  and failure handling in one guide: the `AgentErrorInfo` model, the
+  recoverable-vs-terminal event table, the three layers of tool-input
+  validation, and the buffering, abort and denial rules for each of the three
+  pauses. It is the reference for the two failure modes that break a hosted
+  agent without throwing — a pause nobody answers, and a tool call the model got
+  wrong. The plugin fixture now asserts that every file in `features/` is
+  registered and served, so a guide cannot ship unreachable.
+
 - **Custom tools can now be presented, and are actually reachable.** A tool
   registered through `tools: […]` or `agent.registerTool()` was added to the
   registry but never sent to the model — the exposed set was seeded only from
@@ -126,6 +135,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `BeforeHookOutcome`. Documented in `docs/api.md`.
 
 ### Fixed
+
+- **An interrupted run hung its consumer forever.** `run.interrupted` is the
+  last event an interrupted run emits — the loop has already saved the
+  transcript, marked the run and session interrupted, and there is nothing after
+  it — but the bridge mapped it to a plain `notice` and only treated
+  `agent:complete` / `error` as terminal. A host looping over
+  `bridge.events()` waited on a stream that could never produce again, with no
+  error logged. The bridge now ends the iteration on `run.interrupted` too.
+
+- **Interrupting a run looked like a failure.** The harness's reason is the
+  string `user_interrupt`, which matches nothing in `toChatError`'s patterns, so
+  the bare string was classified as a retryable `run` error. A deliberately
+  stopped run rendered a red banner on a transcript that was fine. It is now an
+  `info`-severity notice with the code `run_interrupted`; the work is saved and
+  the session is still replyable.
+
+- **The third pause deadlocked the run.** `mcp.approval_required` suspends a
+  run until `agent.resolveMcpDecision()` is called, and the bridge had no case
+  for it, so the event was dropped: no prompt on screen and no way to answer.
+  Only the path that recommends an MCP server ever hit this.
+  - New `mcp_approval` prompt kind (`ChatPromptKind`, `prompt:mcp_approval`,
+    `ChatMcpApproval`), an `mcp.resolved` mapping, and a `resolve_mcp_approval`
+    command in `WebSocketTransport`.
+  - `ChatPromptResponse.mcpDecision` carries `{ action, names }` — the answer is
+    a configuration decision, not text to read. It is optional: omitted, the
+    bridge falls back to the ids the prompt already showed, so a host that
+    forwards `answer` alone cannot enable nothing by accident.
+  - `ChatPromptCard` renders the recommended servers and enable/add/skip.
+
+- **Structured errors were thrown away at the UI boundary.** `run.failed`,
+  `run.warning` and `tool.failed` all carry `errorInfo` next to a flat `error`
+  string, and the bridge read only the string — so `code`, `layer`, `severity`
+  and `retryable` never arrived, and the UI fell back to guessing them from the
+  wording. The bridge now passes the structured error through, and synthesizes a
+  complete one when the producer sent only a string or a half-filled object.
+
+- **One decision produced two `prompt:resolved` events.** The bridge closes a
+  prompt locally in `answer()`, and the harness then echoes `ask_user.response`
+  (and `mcp.resolved`) for the same call. The reducer is idempotent, so state
+  survived, but each answer put a second event on the wire. The echo is now
+  dropped, while still allowing the echo to close a prompt the bridge did not
+  answer itself (a bridge attached mid-run).
 
 - **Live streaming produced an empty message.** `ChatRuntime` adopted the
   transport's `message:start` into the optimistic placeholder, but only that one

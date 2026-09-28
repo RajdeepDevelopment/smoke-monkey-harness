@@ -31,6 +31,11 @@
 - `agent.respond(toolCallId, text)` — answer `ask_user.required`
 - `agent.resolvePermission(toolCallId, 'allow'|'deny')` — answer `permission.required`
 - `agent.resolveMcpDecision(toolCallId, { action, names })` — answer `mcp.approval_required`
+  (`action: 'enable'|'add'|'skip'`, `names: string[]`)
+
+All three answers may arrive before the run is waiting — a `toolCallId` with no
+waiter yet is buffered and consumed when the pause registers. Aborting resolves
+each pending pause to no: `''` / `'deny'` / `{ action: 'skip', names: [] }`.
 - `agent.addMcpServer(cfg)` / `removeMcpServer(id)` / `listMcpServers()`
 - `agent.skills.all()` / `.get(id)` / `.count` — live skill registry
 - `agent.getToolPresentations()` → `Record<string, {label, icon, tone, group}>`
@@ -53,6 +58,26 @@ on start and on every completion, so a failed card never loses its icon. A call
 denied by a `beforeToolCall` hook reaches `afterToolCall` with `blocked: true`
 and an `error` carrying the reason — a policy refusal, distinguishable from a
 crash by an audit, though the UI itself just renders it as a tool error.
+
+## Errors & tool input
+- `AgentErrorInfo` — `code` · `layer` · `severity` · `message` · `retryable` ·
+  `hint` · `details`. Match on `code`, render `message`, gate retries on
+  `retryable`. `run.failed`, `run.warning` and `tool.failed` carry it as
+  `errorInfo` beside a flat `error` string.
+- `toAgentErrorInfo(input, fallback)` — normalise a bare string/`Error` into the
+  model, inferring missing fields conservatively.
+- Terminal events are `run.completed`, `run.failed` and `run.interrupted`.
+  `run.warning` and `tool.failed` are recoverable. An interrupted run emits
+  nothing after `run.interrupted`, so a consumer must end there — and must not
+  treat it as a failure, since the transcript is saved and the session stays
+  replyable.
+- Tool input is guarded in three layers: `validateToolCalls` drops a call with
+  no name or unparseable JSON arguments *before the loop sees it* (so it emits no
+  event), `safeParseObject` never throws (so `execute` can get `{}`), and
+  `inputSchema` is advertised rather than enforced. Validate inside `execute`
+  and return `isError: true` with an actionable message; throw only for genuine
+  faults. A `PermissionPolicy` function receives `args: {}`, so
+  argument-dependent rules go in a `beforeToolCall` hook, which sees real input.
 
 ## Built-in tools by group
 - filesystem: read_file write_file edit_file line_edit replace_lines apply_patch delete_file list_directory inspect

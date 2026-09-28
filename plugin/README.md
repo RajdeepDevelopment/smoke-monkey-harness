@@ -185,7 +185,7 @@ plugin/                          # plugin package (plugin root)
     SKILL.md
     references/{api,features,mcp-tools}.md
   mcp/
-    server.mjs                   # dependency-free stdio MCP server (21 tools)
+    server.mjs                   # dependency-free stdio MCP server (22 tools)
     guide.md                     # master instructions (the mouth of the plugin)
     reference.md                 # authoritative API reference (harness_api)
     features/                    # deep per-feature guides (harness_guide_<feature>)

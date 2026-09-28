@@ -155,8 +155,17 @@ socket.on('message', (raw) => {
   const { type, data } = JSON.parse(raw);
   if (type === 'resolve_ask_user') bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
   if (type === 'resolve_permission') bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+  if (type === 'resolve_mcp_approval') bridge.answer({
+    toolCallId: data.toolCallId, kind: 'mcp_approval', answer: data.action,
+    mcpDecision: { action: data.action, names: data.names ?? [] },
+  });
 });
 ```
+
+All three pauses must be routed. The third is the one people miss, because it
+only fires when the agent happens to recommend an MCP server. The error model,
+tool-input validation, and what each pause does on abort are in
+`harness_guide_errors()`.
 
 ### Step 7 — Ship
 - Persist memory: pass a `store` (implement the small `Storage` interface) +
@@ -166,7 +175,10 @@ socket.on('message', (raw) => {
   `phase.changed`, `context.updated`, `permission.required`, `ask_user.required`,
   `mcp.approval_required`, `mcp.resolved`, `compaction.started/completed`,
   `todo.updated`. With `@smoke-monkey/ui`, `createHarnessBridge()` maps all of
-  these for you — see `harness_guide_ui()`.
+  these for you — see `harness_guide_ui()`. One detail worth getting right if
+  you bind the events yourself: `run.interrupted` is the *last* event an
+  interrupted run emits, so end your stream there, but render it as an
+  informational notice rather than a failure.
 - The loop guards (no-progress, repeated-failure, same-output, empty-response,
   runaway `MAX_STEPS`) and auto-compaction keep long runs healthy.
 

@@ -136,18 +136,40 @@ import { createHarnessBridge } from '@smoke-monkey/ui';
 const bridge = createHarnessBridge({ agent, messageId });
 for await (const event of bridge.events()) socket.send(JSON.stringify(event));
 
-// and back, for the two pauses:
+// and back, for all three pauses:
 socket.on('message', (raw) => {
   const { type, data } = JSON.parse(raw);
   if (type === 'resolve_ask_user') bridge.answer({ toolCallId: data.toolCallId, kind: 'ask', answer: data.response });
   if (type === 'resolve_permission') bridge.answer({ toolCallId: data.toolCallId, kind: 'permission', answer: data.decision });
+  if (type === 'resolve_mcp_approval') bridge.answer({
+    toolCallId: data.toolCallId, kind: 'mcp_approval', answer: data.action,
+    mcpDecision: { action: data.action, names: data.names ?? [] },
+  });
 });
 ```
 
-**The pause is the whole trap.** `permission.required` and `ask_user.required`
-suspend the run; nothing resolves them by themselves. Render them *and* route
-the answer back, or the run deadlocks with no error logged anywhere — it looks
-like a hung request, not a bug.
+**The pause is the whole trap.** All three of `permission.required`,
+`ask_user.required` and `mcp.approval_required` suspend the run; nothing
+resolves them by themselves. Render them *and* route the answer back, or the run
+deadlocks with no error logged anywhere — it looks like a hung request, not a
+bug. The MCP one is the easiest to forget, because it only fires when the agent
+happens to recommend a server.
+
+Two things around the pauses that are easy to get wrong:
+
+- **`run.interrupted` ends the stream.** It is the last event an interrupted run
+  emits, so a consumer still waiting for events waits forever. End the iteration
+  on it — but do not render it as a failure; the work is saved and the session
+  is still replyable. The bridge emits an `info` notice and closes.
+- **Validate tool input yourself.** A call with an empty name or unparseable
+  JSON arguments is dropped before the loop sees it, so it produces *no* event
+  at all; anything that gets through is parsed defensively, so your `execute`
+  can receive `{}`. Return `isError: true` with an actionable message rather
+  than throwing.
+
+`harness_guide_errors` has the full model: `AgentErrorInfo` fields, the
+recoverable-vs-terminal table, the three input-validation layers, and the
+buffering/abort/denial rules for each pause.
 
 Where it fits: `ChatPanel` for a help chat in an existing app,
 `SmokeMonkeyChat` in an iframe for a widget on a site you do not own,
@@ -158,3 +180,43 @@ transport-agnostic, so all four use the same code.
 `mapHarnessEvent(event, { messageId })` is the one-shot mapping if you want the
 events without the subscription. `message:start` comes from the transport, not
 the bridge — emit it first or nothing attaches to a message.
+
+## 11. Errors & tool input — the two silent failures
+
+Every failure is an `AgentErrorInfo`: `code` (stable, match on this) · `layer`
+(`provider|tool|run|hook|permission|transport`) · `severity`
+(`info|warning|error|fatal`) · `message` (renderable, never a stack trace) ·
+`retryable` · `hint` (actionable next step) · `details` (debug only). Surface
+`message`, never `details`, and let `retryable` decide whether a retry button
+appears. `toAgentErrorInfo(err, fallback)` normalises bare strings.
+
+**Recoverable vs terminal** is the distinction that decides whether a
+conversation survives:
+
+| event | terminal? | render as |
+|---|---|---|
+| `run.warning` (rate limit, retrying) | no | notice, keep going |
+| `run.interrupted` (someone hit stop) | **yes** | `info` notice — *not* an error |
+| `tool.failed` (one call) | no | that card only |
+| `run.failed` | yes | error, end the run |
+
+**Tool input fails in three layers.** (1) `validateToolCalls` drops a call with
+an empty name or unparseable JSON arguments *before the loop sees it*, so it
+emits no event at all — "the tool never ran" and "the tool did nothing" look
+identical. (2) `safeParseObject` never throws, so `execute` can receive `{}`.
+(3) Your `inputSchema` is advertised, not enforced. Validate in `execute` and
+return `isError: true` with a message the model can act on; reserve throws for
+real faults. Note `isError: true` also emits `tool.failed`, so the card goes red
+even though the run recovers.
+
+**Pause lifecycle.** An answer that arrives before the waiter registers is
+buffered, so you never coordinate "is it paused yet". Abort resolves each
+pending pause to no: `''` for `ask_user`, `'deny'` for permission, and
+`{ action: 'skip' }` for MCP. A denied permission is a policy decision, not a
+crash: `afterToolCall` gets `blocked: true` and the model receives the reason as
+the tool result, so it can work around it.
+
+`readOnlyHint` does *not* auto-allow — the default policy checks the
+`READ_ONLY_TOOLS` name set. And a `PermissionPolicy` function receives
+`args: {}`, so anything argument-dependent belongs in a `beforeToolCall` hook,
+which does see the real input.

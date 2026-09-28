@@ -7,7 +7,8 @@
  *     - harness_plan({ goal })             → build a concrete plan for a product goal
  *     - harness_api({ area? })             → authoritative API reference (reference.md)
  *     - harness_guide_<feature>()          → deep per-feature guides: subcontexts,
- *       skills, mcp, providers, tools, loop, permissions, storage, events, ui
+ *       skills, mcp, providers, tools, loop, permissions, storage, events, ui,
+ *       errors
  *     - harness_events()                   → the event catalog (UI wiring)
  *     - harness_status()                   → installed library + scaffold facts
  *     - harness_scaffold({ targetDir, name? }) → generate a starter agent project
@@ -69,6 +70,7 @@ const FEATURES = {
   storage: 'storage.md',
   events: 'events.md',
   ui: 'ui.md',
+  errors: 'errors.md',
 };
 
 const featureCache = new Map();
@@ -169,9 +171,12 @@ function plan(goal) {
         `5) Verify (do not skip)\n   - harness_verify({ targetDir }) — runs npm run typecheck; then run a SMALL task:\n     PROVIDER=${provider} MODEL="${model}" ${apiKeyEnv}=npx tsx src/index.ts "a small first task"\n   - Gate: result.status === "completed" and the output in result.messages.\n\n` +
         `6) Ship\n   - For ANY chat surface, use the published @smoke-monkey/ui package rather than hand-rolling one.\n` +
         `     Server: createHarnessBridge({ agent, messageId }) then forward bridge.events() to the client.\n` +
-        `     Client: route resolve_ask_user -> bridge.answer({ kind: 'ask' }) and resolve_permission ->\n` +
-        `             bridge.answer({ kind: 'permission' }) — those two pauses BLOCK the run until answered.\n` +
+        `     Client: route resolve_ask_user -> bridge.answer({ kind: 'ask' }), resolve_permission ->\n` +
+        `             bridge.answer({ kind: 'permission' }) and resolve_mcp_approval ->\n` +
+        `             bridge.answer({ kind: 'mcp_approval', mcpDecision }) — all three BLOCK the run until\n` +
+        `             answered, so an unrouted one deadlocks it silently.\n` +
         `     Full mapping and component choice: harness_guide_ui().\n` +
+        `     Error handling, tool-input validation and the three pauses: harness_guide_errors().\n` +
         `   - Pass a store + sessionId to resume sessions; guard budget via resolveTokenBudget; keep loop guards on.\n\n` +
         `Dig deeper anytime with harness_api({ area }) or harness_guide({ topic: "..." }).`,
     }],
@@ -441,6 +446,7 @@ const FEATURE_TOOL_DEFS = Object.entries(FEATURES).map(([key, file]) => ({
       storage: 'Storage interface, MemoryStore, sessions/runs/messages, resume with sessionId + store.',
       events: 'event catalog with payloads and reference UI wiring (streaming chat, tool cards, pause dialogs).',
       ui: 'connecting @smoke-monkey/ui to a run — createHarnessBridge, the event mapping, routing answers to paused runs, tool presentation, composing the components yourself.',
+      errors: 'the AgentErrorInfo model, recoverable vs terminal events, tool-input validation layers (validateToolCalls / safeParseObject / your schema), and the three pauses with their buffering, abort and denial semantics.',
     }[key] +
     ' WHEN TO CALL: when your current task touches this feature and you need the exact API details. ' +
     'Start with harness_guide, then drill into the feature you are implementing.',

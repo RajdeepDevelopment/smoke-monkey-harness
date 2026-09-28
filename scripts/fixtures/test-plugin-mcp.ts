@@ -121,14 +121,25 @@ try {
   console.log('  harness_api ok (slice + unknown-area handling)');
 
   // harness_guide_<feature> deep dives
-  for (const f of ['subcontexts', 'skills', 'mcp', 'providers', 'tools', 'loop', 'permissions', 'storage', 'events']) {
+  // Every file in features/ must be reachable and non-empty, so a guide cannot
+  // ship unregistered. The list is explicit rather than read off the server so
+  // that adding a file without wiring it up fails here instead of at runtime.
+  const FEATURES = ['subcontexts', 'skills', 'mcp', 'providers', 'tools', 'loop', 'permissions', 'storage', 'events', 'ui', 'errors'];
+  for (const f of FEATURES) {
     const res = await call('tools/call', { name: `harness_guide_${f}`, arguments: {} });
     const text = res.result?.content?.[0]?.text ?? '';
     if (res.result?.isError || text.length < 200 || !text.startsWith('# Feature guide')) {
       throw new Error(`feature guide ${f} failed or empty`);
     }
   }
-  console.log('  harness_guide_<feature> ok (9 deep dives)');
+  const listed = await call('tools/list', {});
+  const toolNames = (listed.result?.tools ?? []).map((t: { name: string }) => t.name);
+  for (const f of FEATURES) {
+    if (!toolNames.includes(`harness_guide_${f}`)) {
+      throw new Error(`harness_guide_${f} missing from tools/list`);
+    }
+  }
+  console.log(`  harness_guide_<feature> ok (${FEATURES.length} deep dives, all listed)`);
 
   // harness_events — catalog for UI wiring
   const events = await call('tools/call', { name: 'harness_events', arguments: {} });
