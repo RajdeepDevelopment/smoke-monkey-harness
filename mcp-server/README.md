@@ -19,7 +19,7 @@ from any MCP client.
 MCP server for [Smoke Monkey Harness](https://github.com/RajdeepDevelopment/smoke-monkey-harness) — an embeddable,
 framework-agnostic TypeScript agent runtime.
 
-> 🌐 **Interactive Documentation:** [https://smoke-monkey-harness.vercel.app/#mcp](https://smoke-monkey-harness.vercel.app/#mcp) — see the interactive MCP server guide, 20 tools reference, and live agent simulator.
+> 🌐 **Interactive Documentation:** [https://smoke-monkey-harness.vercel.app/#mcp](https://smoke-monkey-harness.vercel.app/#mcp) — see the interactive MCP server guide, 22 tools reference, and live agent simulator.
 
 ![Build an agentic looping workflow in seconds](https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/development/mcp-server/smoke-monkey-harness-mcp.gif)
 
