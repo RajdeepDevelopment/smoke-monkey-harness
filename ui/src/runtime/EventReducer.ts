@@ -241,7 +241,8 @@ export function applyChatEvent(
     }
 
     case 'prompt:ask':
-    case 'prompt:permission': {
+    case 'prompt:permission':
+    case 'prompt:mcp_approval': {
       const target = resolve(messages, event.messageId, fallbackId);
       if (!target) return messages;
       const p = event.prompt;

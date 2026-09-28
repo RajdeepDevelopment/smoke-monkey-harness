@@ -177,7 +177,11 @@ export type ChatStreamEvent =
    * The run is blocked on the user. Non-terminal: the stream stays open and
    * resumes when the answer comes back.
    */
-  | { type: 'prompt:ask' | 'prompt:permission'; messageId?: string; prompt: ChatPromptEvent }
+  | {
+      type: 'prompt:ask' | 'prompt:permission' | 'prompt:mcp_approval';
+      messageId?: string;
+      prompt: ChatPromptEvent;
+    }
   /** The user answered (or the prompt was cancelled). Closes the prompt. */
   | { type: 'prompt:resolved'; messageId?: string; prompt: Partial<ChatPrompt> & { toolCallId: string } }
   | { type: 'artifact'; messageId?: string; artifact: ChatArtifact }

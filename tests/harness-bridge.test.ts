@@ -8,7 +8,7 @@ import {
 } from '../ui/src/runtime/harnessBridge.js';
 import { ChatRuntime } from '../ui/src/runtime/ChatRuntime.js';
 import { applyChatEvent } from '../ui/src/runtime/EventReducer.js';
-import type { ChatStreamEvent } from '../ui/src/types/stream.js';
+import type { ChatErrorInfo, ChatStreamEvent } from '../ui/src/types/stream.js';
 
 /**
  * Cross-package on purpose, like `chat-prompts.test.ts`: `ui/` has no test
@@ -23,7 +23,7 @@ import type { ChatStreamEvent } from '../ui/src/types/stream.js';
 /** A stand-in for AgentHarness: records subscriptions, replays events on demand. */
 function fakeAgent(presentations?: Record<string, { icon: string }>) {
   const listeners: Array<(e: HarnessEvent) => void> = [];
-  const calls: Array<{ kind: string; toolCallId: string; value: string }> = [];
+  const calls: Array<{ kind: string; toolCallId: string; value: string; names?: string[] }> = [];
   const agent: BridgeAgent & { fire(e: HarnessEvent): void } = {
     on: (_type, cb) => listeners.push(cb),
     onAny: (cb) => listeners.push(cb),
@@ -31,6 +31,8 @@ function fakeAgent(presentations?: Record<string, { icon: string }>) {
     respond: (toolCallId, text) => void calls.push({ kind: 'respond', toolCallId, value: text }),
     resolvePermission: (toolCallId, decision) =>
       void calls.push({ kind: 'permission', toolCallId, value: decision }),
+    resolveMcpDecision: (toolCallId, decision) =>
+      void calls.push({ kind: 'mcp', toolCallId, value: decision.action, names: decision.names }),
     fire: (e) => listeners.forEach((cb) => cb(e)),
   };
   return { agent, calls };
@@ -116,7 +118,7 @@ describe('mapping a harness run onto UI events', () => {
 
   it('ignores events with no UI surface instead of throwing', () => {
     assert.deepEqual(mapHarnessEvent({ type: 'context.updated', data: { a: 1 } }), []);
-    assert.deepEqual(mapHarnessEvent({ type: 'mcp.resolved', data: {} }), []);
+    assert.deepEqual(mapHarnessEvent({ type: 'compaction.completed', data: {} }), []);
   });
 
   it('attaches the message id to every event it maps', () => {
@@ -126,7 +128,7 @@ describe('mapping a harness run onto UI events', () => {
 });
 
 describe('paused runs', () => {
-  it('renders both pauses as prompts and remembers them', async () => {
+  it('renders all three pauses as prompts and remembers them', async () => {
     const { agent } = fakeAgent();
     const bridge = createHarnessBridge({ agent, messageId: 'm1' });
 
@@ -135,8 +137,15 @@ describe('paused runs', () => {
       type: 'permission.required',
       data: { toolCallId: 'p1', toolName: 'run_command', args: { cmd: 'rm -rf /' } },
     });
+    agent.fire({
+      type: 'mcp.approval_required',
+      data: {
+        toolCallId: 'm1a',
+        payload: { task: 'Check the deploy logs', recommendedToEnableIds: ['logs'], recommendedToAddIds: [] },
+      },
+    });
 
-    assert.deepEqual([...bridge.pending.keys()], ['a1', 'p1']);
+    assert.deepEqual([...bridge.pending.keys()], ['a1', 'p1', 'm1a']);
     bridge.dispose();
   });
 
@@ -223,6 +232,246 @@ describe('paused runs', () => {
     // Drive the prompt through map()/the listener to register it.
     b.map({ type: 'ask_user.required', data: { toolCallId: 'a1', question: 'q' } });
     assert.equal(b.pending.size, 0, 'map() is pure and registers nothing');
+  });
+});
+
+describe('the three pauses, and the run endings around them', () => {
+  it('ends the stream on an interrupt instead of waiting forever', async () => {
+    // The bug this pins: `finalizeInterrupted` is the last thing an interrupted
+    // run does, and it emits `run.interrupted` — a `notice`, not an `error`. A
+    // bridge that only ended on `agent:complete`/`error` left `for await` parked
+    // on a stream that could never produce again, and the host waiting on it.
+    const { agent } = fakeAgent();
+    const bridge = createHarnessBridge({ agent, messageId: 'm1' });
+    const seen: ChatStreamEvent[] = [];
+    const drained = (async () => {
+      for await (const event of bridge.events()) seen.push(event);
+    })();
+
+    agent.fire({ type: 'run.started', data: { agentId: 'a' } });
+    agent.fire({ type: 'text.delta', data: { delta: 'working' } });
+    agent.fire({ type: 'run.interrupted', data: { reason: 'user_interrupt' } });
+    await drained;
+
+    assert.deepEqual(typesOf(seen), ['agent:start', 'text:delta', 'notice']);
+    const notice = seen.at(-1) as { error: { code: string; severity?: string } };
+    assert.equal(notice.error.code, 'run_interrupted');
+    // An interrupt is a user action, not a failure: the transcript is saved and
+    // the session stays replyable, so it must not be dressed up as fatal.
+    assert.equal(notice.error.severity, 'info');
+  });
+
+  it('does not end the stream on a warning, because the run is still going', async () => {
+    const { agent } = fakeAgent();
+    const bridge = createHarnessBridge({ agent, messageId: 'm1' });
+    const seen: ChatStreamEvent[] = [];
+    let ended = false;
+    const drained = (async () => {
+      for await (const event of bridge.events()) seen.push(event);
+      ended = true;
+    })();
+
+    agent.fire({ type: 'run.warning', data: { error: '429 rate limited' } });
+    agent.fire({ type: 'text.delta', data: { delta: 'recovered' } });
+    agent.fire({ type: 'run.completed' });
+    await drained;
+
+    assert.equal(ended, true);
+    assert.deepEqual(typesOf(seen), ['notice', 'text:delta', 'agent:complete', 'message:complete']);
+  });
+
+  it('carries the structured error through instead of only its message', () => {
+    // `errorInfo` is the whole reason the UI can tell a retryable rate limit
+    // from a fatal auth failure. Reading `data.error` alone throws that away
+    // and leaves one red banner for every distinct problem.
+    const [failed] = mapHarnessEvent({
+      type: 'run.failed',
+      data: {
+        error: '401 unauthorized',
+        errorInfo: {
+          code: 'provider_auth',
+          layer: 'provider',
+          severity: 'fatal',
+          message: '401 unauthorized',
+          retryable: false,
+          hint: 'Check the provider API key.',
+        },
+      },
+    });
+    assert.equal(failed?.type, 'error');
+    assert.deepEqual((failed as { error: unknown }).error, {
+      code: 'provider_auth',
+      layer: 'provider',
+      severity: 'fatal',
+      message: '401 unauthorized',
+      retryable: false,
+      hint: 'Check the provider API key.',
+    });
+
+    const [toolErr] = mapHarnessEvent({
+      type: 'tool.failed',
+      data: {
+        toolCallId: 'c1',
+        error: 'exit 1',
+        errorInfo: { code: 'tool_exit_nonzero', layer: 'tool', message: 'exit 1', retryable: true },
+      },
+    });
+    assert.equal((toolErr as { error: { layer?: string } }).error.layer, 'tool');
+  });
+
+  it('builds a complete error from a flat string, instead of handing the UI one', () => {
+    // A pre-structured server, or a proxy that relays only text. The string is
+    // still the message — but it arrives with a code, a layer and a severity,
+    // so the UI does not have to guess them from the wording.
+    const [failed] = mapHarnessEvent({ type: 'run.failed', data: { error: 'it broke' } });
+    assert.deepEqual((failed as { error: unknown }).error, {
+      code: 'run_failed',
+      message: 'it broke',
+      layer: 'run',
+      severity: 'fatal',
+      retryable: true,
+    });
+  });
+
+  it('recovers the message from an errorInfo that is missing its code', () => {
+    // Half a structured error is worse than none if it is trusted: `code` is
+    // what `notice` de-duplicates on and what the retry affordance keys off.
+    const [failed] = mapHarnessEvent({
+      type: 'run.failed',
+      data: { errorInfo: { message: 'no code here' } },
+    });
+    const error = (failed as { error: ChatErrorInfo }).error;
+    assert.equal(error.code, 'run_failed');
+    assert.equal(error.message, 'no code here');
+  });
+
+  it('does not let a bare interrupt reason look like a failure', () => {
+    // `user_interrupt` matches nothing in `toChatError`, which would classify
+    // it as a retryable run error. A deliberate stop must not raise a red
+    // banner on a transcript that is fine.
+    const [notice] = mapHarnessEvent({ type: 'run.interrupted', data: { reason: 'user_interrupt' } });
+    const error = (notice as { error: ChatErrorInfo }).error;
+    assert.equal(error.code, 'run_interrupted');
+    assert.equal(error.severity, 'info');
+    assert.equal(error.retryable, true);
+  });
+
+  it('routes an MCP approval to resolveMcpDecision with the recommended servers', () => {
+    // Same deadlock as the other two, so it has to reach the agent the same way.
+    const { agent, calls } = fakeAgent();
+    const bridge = createHarnessBridge({ agent });
+
+    const fire = (toolCallId: string): void => {
+      agent.fire({
+        type: 'mcp.approval_required',
+        data: {
+          toolCallId,
+          payload: {
+            task: 'Read the deploy log',
+            recommendedToEnableIds: ['logs'],
+            recommendedToAddIds: ['sentry'],
+          },
+        },
+      });
+    };
+    fire('m1');
+    fire('m2');
+    bridge.answer({ toolCallId: 'm1', kind: 'mcp_approval', answer: 'enable' });
+    bridge.answer({ toolCallId: 'm2', kind: 'mcp_approval', answer: 'add' });
+
+    assert.deepEqual(calls, [
+      // `answer` alone is enough: the ids come from the same recommendation the
+      // card showed, so a host forwarding the action cannot enable nothing.
+      { kind: 'mcp', toolCallId: 'm1', value: 'enable', names: ['logs'] },
+      { kind: 'mcp', toolCallId: 'm2', value: 'add', names: ['sentry'] },
+    ]);
+  });
+
+  it('lets an explicit MCP decision override the recommendation', () => {
+    // A card that unticks a server has to be able to send the shorter list.
+    const { agent, calls } = fakeAgent();
+    const bridge = createHarnessBridge({ agent });
+    agent.fire({
+      type: 'mcp.approval_required',
+      data: { toolCallId: 'm1', payload: { recommendedToEnableIds: ['a', 'b'] } },
+    });
+    bridge.answer({
+      toolCallId: 'm1',
+      kind: 'mcp_approval',
+      answer: 'enable',
+      mcpDecision: { action: 'enable', names: ['a'] },
+    });
+    assert.deepEqual(calls, [{ kind: 'mcp', toolCallId: 'm1', value: 'enable', names: ['a'] }]);
+  });
+
+  it('treats a skipped MCP approval as no servers, not as the recommendation', () => {
+    const { agent, calls } = fakeAgent();
+    const bridge = createHarnessBridge({ agent });
+    agent.fire({
+      type: 'mcp.approval_required',
+      data: { toolCallId: 'm1', payload: { recommendedToEnableIds: ['a'] } },
+    });
+    bridge.answer({ toolCallId: 'm1', kind: 'mcp_approval', answer: 'skip' });
+    assert.deepEqual(calls, [{ kind: 'mcp', toolCallId: 'm1', value: 'skip', names: [] }]);
+  });
+
+  it('names a task in the question when the harness sends no task text', () => {
+    const { agent } = fakeAgent();
+    const bridge = createHarnessBridge({ agent });
+    agent.fire({
+      type: 'mcp.approval_required',
+      data: { toolCallId: 'm1', payload: { recommendedToEnableIds: ['logs', 'sentry'] } },
+    });
+    const prompt = bridge.pending.get('m1')!;
+    assert.equal(prompt.kind, 'mcp_approval');
+    assert.match(prompt.question, /logs, sentry/);
+    assert.deepEqual(prompt.mcp?.recommendedToAddIds, []);
+  });
+
+  it('ignores the harness echo of a decision it already closed', async () => {
+    // `answer()` closes the card locally, and the harness then echoes
+    // `ask_user.response` / `mcp.resolved` for the same call. The reducer is
+    // idempotent so state survives it, but one decision must not put two
+    // `prompt:resolved` events on the wire.
+    const { agent } = fakeAgent();
+    const bridge = createHarnessBridge({ agent, messageId: 'm1' });
+    const seen: ChatStreamEvent[] = [];
+    const drained = (async () => {
+      for await (const event of bridge.events()) seen.push(event);
+    })();
+
+    agent.fire({ type: 'ask_user.required', data: { toolCallId: 'a1', question: 'Which?' } });
+    agent.fire({ type: 'mcp.approval_required', data: { toolCallId: 'm1', payload: {} } });
+    bridge.answer({ toolCallId: 'a1', kind: 'ask', answer: 'main' });
+    bridge.answer({ toolCallId: 'm1', kind: 'mcp_approval', answer: 'skip' });
+
+    // The echoes the real harness sends after each answer.
+    agent.fire({ type: 'ask_user.response', data: { toolCallId: 'a1', response: 'main' } });
+    agent.fire({ type: 'mcp.resolved', data: { toolCallId: 'm1', action: 'skip', names: [] } });
+    agent.fire({ type: 'run.completed' });
+    await drained;
+
+    assert.equal(seen.filter((e) => e.type === 'prompt:resolved').length, 2);
+    assert.equal(bridge.pending.size, 0);
+  });
+
+  it('still closes a prompt it never saw raised, rather than dropping the answer', async () => {
+    // A bridge attached mid-run (a reconnect) hears the resolution for a
+    // prompt raised before it existed. Dropping it would leave a card stuck.
+    const { agent } = fakeAgent();
+    const bridge = createHarnessBridge({ agent, messageId: 'm1' });
+    const seen: ChatStreamEvent[] = [];
+    const drained = (async () => {
+      for await (const event of bridge.events()) seen.push(event);
+    })();
+
+    agent.fire({ type: 'ask_user.required', data: { toolCallId: 'a1', question: 'Which?' } });
+    agent.fire({ type: 'ask_user.response', data: { toolCallId: 'a1', response: 'main' } });
+    agent.fire({ type: 'run.completed' });
+    await drained;
+
+    const resolved = seen.filter((e) => e.type === 'prompt:resolved');
+    assert.equal(resolved.length, 1, 'the echo is what closes a prompt the bridge did not answer');
   });
 });
 
