@@ -27,16 +27,6 @@ recovering from failures, and resuming work**.
 
 > 🌐 **Interactive Documentation & Live Simulator:** Visit **[https://smoke-monkey-harness.vercel.app/](https://smoke-monkey-harness.vercel.app/)** to explore interactive quickstarts, test the agent loop live in your browser, view the 6-phase state machine architecture, and try the drop-in React chat UI.
 
-> **Package names.** New installs should use the scoped names below. The older
-> unscoped `smoke-monkey-harness` and `smoke-monkey-harness-mcp` still work and
-> are still published — they are kept for existing installs, not deprecated.
->
-> | Package | Use this | Replaces | Docs |
-> |---|---|---|---|
-> | Agent runtime | [`@smoke-monkey/harness`](https://www.npmjs.com/package/@smoke-monkey/harness) | `smoke-monkey-harness` | [Docs & Live Simulator](https://smoke-monkey-harness.vercel.app/) |
-> | MCP server | [`@smoke-monkey/mcp`](https://www.npmjs.com/package/@smoke-monkey/mcp) | `smoke-monkey-harness-mcp` | [MCP Server Guide](https://smoke-monkey-harness.vercel.app/#mcp) |
-> | Chat UI | [`@smoke-monkey/ui`](https://www.npmjs.com/package/@smoke-monkey/ui) | — | [Chat UI Showcase](https://smoke-monkey-harness.vercel.app/#pillars) |
-
 </div>
 
 ---
@@ -107,6 +97,20 @@ locally with Ollama:
 ```ts
 const agent = createAgent({ provider: 'ollama', model: 'qwen3:8b', workspacePath: process.cwd() });
 ```
+
+---
+
+## Package names
+
+New installs should use the scoped names below. The older unscoped
+`smoke-monkey-harness` and `smoke-monkey-harness-mcp` still work and are still
+published — they are kept for existing installs, not deprecated.
+
+| Package | Use this | Replaces | Docs |
+|---|---|---|---|
+| Agent runtime | [`@smoke-monkey/harness`](https://www.npmjs.com/package/@smoke-monkey/harness) | `smoke-monkey-harness` | [Docs & Live Simulator](https://smoke-monkey-harness.vercel.app/) |
+| MCP server | [`@smoke-monkey/mcp`](https://www.npmjs.com/package/@smoke-monkey/mcp) | `smoke-monkey-harness-mcp` | [MCP Server Guide](https://smoke-monkey-harness.vercel.app/#mcp) |
+| Chat UI | [`@smoke-monkey/ui`](https://www.npmjs.com/package/@smoke-monkey/ui) | — | [Chat UI Showcase](https://smoke-monkey-harness.vercel.app/#pillars) |
 
 ---
 
