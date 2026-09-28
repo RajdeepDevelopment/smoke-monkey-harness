@@ -13,6 +13,32 @@ launcher that resolves `plugin/mcp/server.mjs` out of the harness package
 (`smoke-monkey-harness@^1.2.0`), so `harness_guide_errors` reaches
 `npx -y smoke-monkey-harness-mcp` with the harness release.
 
+### Changed
+
+- **`inspect_mcp_stock` is opt-in and no longer hijacks runs.** The MCP stock
+  search is now gated behind `mcpStockSearch: true` (default **off**). Two
+  related problems are fixed:
+
+  - **A read-only listing could stop the run.** The tool used to auto-pause with
+    a `mcp.approval_required` popup whenever it surfaced a recommendation, so
+    a routine "what servers do I have?" probe could block every run before any
+    work happened — and it fired on the tool's own data rather than on a
+    decision. `inspect_mcp_stock` no longer pauses, changes run status, or asks
+    the user anything. It returns a compact, ranked inventory (bounded to 20
+    rows) and the **model decides** what it needs. `request_mcp_approval` is now
+    the single, deliberate consent path and stays available by default.
+  - **The prompt no longer teaches a tool that may not exist.** Every
+    stock-search instruction (the "run this at task start and at every phase
+    boundary" doctrine) is rendered only when the tool is actually exposed.
+    Telling a model to call an unregistered tool produces hallucinated calls and
+    stall loops. Guidance about activating and using **already-configured**
+    servers is not gated and works either way.
+
+  `mcpStockSearch` is threaded from one option through `Agent` →
+  `BuildSystemPromptOptions.mcpStockSearch` and
+  `RunOperatingRulesOpts.mcpStockSearch`, so the registry and the prompt can
+  never disagree.
+
 ### Added
 
 - **The `@smoke-monkey` scope.** The library, the MCP server, and the chat UI

@@ -148,6 +148,22 @@ export interface AgentOptions {
    */
   mcp?: McpServerConfig[];
   /**
+   * Expose the `inspect_mcp_stock` discovery tool (default: FALSE).
+   *
+   * It is off by default because it is only useful while you are deciding WHAT
+   * to link. Once your servers are added, the agent already knows them and the
+   * tool only adds catalog noise, so an unrequested search loop is a tax.
+   *
+   * When enabled, the tool is read-only and NEVER pauses the run or opens a
+   * popup: it returns a compact ranked list and the model decides for itself.
+   * Asking the user is a separate, explicit call (`request_mcp_approval`),
+   * which stays available either way.
+   *
+   * This flag also controls the matching prompt guidance — the model is never
+   * told to search for servers when the tool is not exposed to it.
+   */
+  mcpStockSearch?: boolean;
+  /**
    * Register skills as `Skill` objects (use `loadSkillsFromDirs` to build them
    * from SKILL.md files). Combined with `skillsDir`. Loaded JUST-IN-TIME via
    * the list_skills / use_skill tools.
@@ -326,7 +342,12 @@ export class AgentHarness {
 
     const toolRegistry = buildToolRegistry(options.tools);
     if (this.mcp) {
-      toolRegistry.register(getInspectMcpStockTool(this.mcp));
+      // The stock search is opt-in (see AgentOptions.mcpStockSearch). The
+      // approval tool is NOT — it is how the model asks the user to link a
+      // server, and that has to stay reachable at all times.
+      if (options.mcpStockSearch === true) {
+        toolRegistry.register(getInspectMcpStockTool(this.mcp));
+      }
       toolRegistry.register(getRequestMcpApprovalTool(this.mcp));
     }
     if (this.skills.count > 0) {
@@ -626,7 +647,7 @@ export class AgentHarness {
     const projectDir = resolveProjectDir(task, workspacePath);
     const basePrompt = this.opts.systemPrompt
       ? this.opts.systemPrompt
-      : await buildSystemPrompt(agentId, workspacePath, projectDir, {}, {
+      : await buildSystemPrompt(agentId, workspacePath, projectDir, { mcpStockSearch: this.opts.mcpStockSearch === true }, {
           loadProjectConfig: this.opts.loadProjectConfig ?? (async () => null),
         });
     const subPrompt = this.opts.subSystemPrompt
@@ -635,6 +656,7 @@ export class AgentHarness {
     const runRules = renderRunOperatingRules({
       subContextCount: this.opts.subContexts?.length ?? 0,
       mcpEnabled: !!this.mcp && this.mcp.configs.length > 0,
+      mcpStockSearch: this.opts.mcpStockSearch === true,
       provider: provider ?? this.opts.provider,
       skills: {
         count: this.skills.count,

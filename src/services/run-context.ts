@@ -119,9 +119,8 @@ export interface RunContext {
   finishSignal: { summary: string } | null;
 
   /** Server ids the user has already decided about (enable/add/skip) in this
-   *  run. inspect_mcp_stock pauses the loop for user-actionable
-   *  recommendations, but servers in this set are never re-asked — otherwise
-   *  every phase-boundary inspect would reopen the same popup. */
+   *  run. Tracked so a repeated request_mcp_approval never re-opens the same
+   *  popup for a server the user already answered. */
   mcpAskedServerIds: Set<string>;
 
   /** Durable cross-run summary state; merged on every compaction. */

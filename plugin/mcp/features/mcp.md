@@ -26,6 +26,35 @@ Field | purpose
 `url` / `headers` | streamable-HTTP endpoint
 `enabled` | start connected (default true)
 
+## Discovery: `mcpStockSearch` (opt-in, default off)
+
+```ts
+new Agent({ mcp: [/* … */], mcpStockSearch: true })
+```
+
+`inspect_mcp_stock` is **not exposed by default**. It only helps while you are
+deciding *what to link*; once your servers are added the agent already knows
+them, so an unrequested search loop is pure context cost. Turn it on explicitly
+when you want the model to be able to survey its inventory.
+
+Two consequences of the flag, both deliberate:
+
+1. **It registers the tool.** With it off, `inspect_mcp_stock` is not in the
+   registry and the model cannot call it.
+2. **It gates the prompt.** The stock-search doctrine ("run this at task start
+   and every phase boundary") is only rendered when the tool is actually
+   exposed. The prompt can never instruct a tool the model does not have — that
+   mismatch is what produces hallucinated calls and stall loops. Guidance about
+   activating and using **already-configured** servers is not gated and works
+   either way.
+
+`inspect_mcp_stock` is **read-only and never pauses the run** — no popup, no
+status change. It returns a compact, ranked inventory (bounded to 20 rows) plus
+`recommendedToEnableIds` candidates, and the model decides what to do with them.
+Asking the user is a separate, explicit `request_mcp_approval` call, which is
+the *only* tool that stops the run to ask (and it is always available,
+regardless of this flag).
+
 ## Lifecycle
 
 - **Lazy connect** — a server connects on first activation of `mcp_<id>`; no
@@ -33,7 +62,8 @@ Field | purpose
 - **Activation** — the model opens `mcp_<id>` with `context_manage`, then calls
   `<id>__<tool>`.
 - **Approval** — unknown/disabled servers pause `request_mcp_approval`
-  (`mcp.approval_required`). Resolve with:
+  (`mcp.approval_required`). This is the ONLY MCP tool that stops the run to ask
+  the user, and it fires only because the model called it. Resolve with:
   `agent.resolveMcpDecision(toolCallId, { action: 'enable', names: [...] })`
   (or `'leave'` / `'deny'`). With `autoApprove: true`, recommended servers
   enable automatically.

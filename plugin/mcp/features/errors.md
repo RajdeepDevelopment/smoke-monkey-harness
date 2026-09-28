@@ -218,13 +218,20 @@ All three **suspend the run**, and none of them resolves on its own. This is
 the single most common way a hosted agent is wired wrong, and the symptom is a
 request that hangs with nothing in the logs. There are three, not two —
 forgetting `mcp.approval_required` is the newest way to hit it, because it only
-fires when the agent happens to recommend an MCP server.
+fires when the agent explicitly asks.
 
 | pause | raised when | run status | answered by | fed to the model as |
 |---|---|---|---|---|
 | `ask_user.required` | the model calls `ask_user` | `waiting_user` | `agent.respond(toolCallId, text)` | the answer, as the tool's result |
 | `permission.required` | policy returns `ask` | `waiting_permission` | `agent.resolvePermission(id, 'allow' \| 'deny')` | the decision, as the tool's result |
-| `mcp.approval_required` | the agent recommends an MCP server | `waiting_mcp_approval` | `agent.resolveMcpDecision(id, { action, names })` | a note of what was enabled, added or skipped |
+| `mcp.approval_required` | the model calls `request_mcp_approval` | `waiting_mcp_approval` | `agent.resolveMcpDecision(id, { action, names })` | a note of what was enabled, added or skipped |
+
+Every pause is **raised by one deliberate call**. No pause is a side effect of
+a read-only tool returning data: `inspect_mcp_stock` reports candidate servers
+in its result and the run keeps going — it never stops to ask the user. Consent
+follows the model's decision to need a server, never the mere presence of a
+recommendation. (`inspect_mcp_stock` is also opt-in — set
+`mcpStockSearch: true` — and is the only MCP tool the prompt is taught to call.)
 
 In `@smoke-monkey/ui` the three are `prompt:ask`, `prompt:permission` and
 `prompt:mcp_approval` (`ChatPromptKind`), over the wire

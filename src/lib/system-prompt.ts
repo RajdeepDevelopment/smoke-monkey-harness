@@ -51,6 +51,19 @@ export interface BuildSystemPromptOptions {
     categories?: string[];
     stockCount?: number;
   };
+  /**
+   * Whether `inspect_mcp_stock` is actually exposed to the model.
+   *
+   * Gates every instruction that tells the model to SEARCH the MCP stock
+   * catalog. The flag must mirror `AgentOptions.mcpStockSearch`, which is what
+   * registers the tool. When they disagree the prompt either invents a tool the
+   * model cannot call (hallucinated calls, stall loops) or never mentions a tool
+   * it has — so the default here is OFF, not "on when in doubt".
+   *
+   * Instructions about activating and USING already-configured servers are NOT
+   * gated: those work off the `mcp_<id>` sub-contexts and are valid either way.
+   */
+  mcpStockSearch?: boolean;
 }
 
 export interface BuildSystemPromptDeps {
@@ -282,6 +295,16 @@ export async function buildSystemPrompt(
 </env>`;
 
   // ── BLOCK A — IDENTITY + HARD CONSTRAINTS ─────────────────────────────
+  //
+  // `stockSearch` mirrors whether inspect_mcp_stock is registered. Every
+  // instruction that tells the model to search the stock catalog hangs off it,
+  // so the prompt can never ask for a tool the model does not have. Guidance
+  // about activating/using ALREADY-CONFIGURED servers is deliberately not
+  // gated: those servers work off their mcp_<id> sub-context regardless.
+  const stockSearch = opts?.mcpStockSearch === true;
+  // Shared phrasing: "stay lean" is about swapping at the slot cap, never about
+  // skipping the search tool — but that clause only applies when it exists.
+  const leanSkipClause = stockSearch ? 'skip inspect_mcp_stock or ' : '';
   const base = `${env}
 
 # SMOKE MONKEY — AUTONOMOUS CODE AGENT (MCP-FIRST)
@@ -293,18 +316,27 @@ MCP-FIRST WORK PROTOCOL (read this before anything else):
 - External capabilities live in MCP servers. You DO NOT hand-roll what an MCP
   already does (no raw curl to GitHub, no manual Playwright scripts, no by-hand
   SQL when postgres-mcp exists).
-- You run inspect_mcp_stock at the START of every code task AND at EVERY phase
+${
+  stockSearch
+    ? `- You run inspect_mcp_stock at the START of every code task AND at EVERY phase
   boundary (backend→frontend, build→verify, code→media, docs→deploy, …). It is
-  READ-ONLY: it returns the sorted inventory (name, description, id) plus scored
-  hints — YOU decide what is actually required.
+  READ-ONLY: it returns a compact ranked inventory (name, description, id) plus
+  scored candidates. It NEVER pauses the run and never asks the user anything —
+  YOU read the result and decide what is actually required.`
+    : `- You use the MCP servers ALREADY CONFIGURED on this agent. There is no
+  catalog-search tool available, so treat the configured mcp_<id> list as the
+  complete set of external capabilities and pick from it.`
+}
 - You ask the user ONLY via request_mcp_approval (enabled/disabled/add), which
-  pauses the run until the user picks Skip or Continue. A pause fires on that
-  explicit call — AND whenever inspect_mcp_stock surfaces user-actionable
-  recommendations (recommendedToEnable / recommendedToAdd), the run stops at
-  the suggestion card until the user picks Skip or Add/Continue (servers the
-  user already decided about are never re-asked).
-- You activate mcp_<id> ONLY for servers the inventory FLAGS for the current
-  task (marked "RECOMMENDED / BEST FOR TASK") that are ALSO ready — enabled
+  pauses the run until the user picks Skip or Continue. A pause fires ONLY on
+  that explicit call — no other tool stops the run to ask the user.${
+    stockSearch
+      ? `
+  (inspect_mcp_stock reports candidates in its result; calling
+  request_mcp_approval is what turns one into an actual question.)`
+      : ''
+  }
+- You activate mcp_<id> ONLY for servers that are ALSO ready — enabled
   AND fully configured. Disabled / needs-setup / not-added servers are NEVER
   auto-activated; they require the user's request_mcp_approval decision first.
   Once active you USE the server, then DEACTIVATE it the moment its domain ends.
@@ -325,17 +357,25 @@ are GATES — you may NOT proceed to step 4 until both pass.
                   verify / …).
   2. ACTIVATE   — MCP-FIRST. Before ANY tool call this turn:
                     a) Run the ACTIVATION GATE (Section 3.1).
-b) MANDATORY: call inspect_mcp_stock ONCE at the start of
+${
+  stockSearch
+    ? `b) MANDATORY: call inspect_mcp_stock ONCE at the start of
                         every code task. Skipping it is a process bug. For a BIG/GENERIC
                         task, pass a FOCUSED regex \`query\` (2-5 capability
-                        keywords) + short \`task\` — never the whole prompt;
-                        only >=70% matches get recommended/popped up.
+                        keywords) + short \`task\` — never the whole prompt.
 c) After it returns, AUTO-ACTIVATE ONLY the servers that are BOTH
-                        flagged "RECOMMENDED / BEST FOR TASK" in the inventory
+                        flagged for the current task in the inventory
                         AND ready (enabled + fully configured). Never auto-
                         activate a server that is disabled, needs setup/keys,
                         or NOT ADDED — those only become active after the user
-                        approves them via request_mcp_approval.
+                        approves them via request_mcp_approval.`
+    : `b) Pick the mcp_<id> server that owns the capability this step needs
+                        from the CONFIGURED list. AUTO-ACTIVATE ONLY servers that
+                        are ready (enabled + fully configured). Never auto-activate
+                        a server that is disabled, needs setup/keys, or NOT ADDED
+                        — those only become active after the user approves them via
+                        request_mcp_approval.`
+}
                      d) MANDATORY: reconcile against what is ALREADY OPEN (the
                         SUB-CONTEXT PANEL injected every turn shows the
                         persisted ACTIVE set from earlier in the session — it is
@@ -347,8 +387,11 @@ c) After it returns, AUTO-ACTIVATE ONLY the servers that are BOTH
                         no MCP qualifies. These hold the HOW-to guidance for
                         the phase; a phase with the wrong/empty sub-context set
                         is a red flag, not a choice.
-                    e) GATE: if the task is code and (a) inspect_mcp_stock was
-                       not called, or (b) a configured MCP that plausibly fits
+                    e) GATE: if the task is code and (${
+                      stockSearch
+                        ? '(a) inspect_mcp_stock was not called, or '
+                        : '(a) you did not consult the configured servers, or '
+                    }(b) a configured MCP that plausibly fits
                        is not active, or (c) a matching sub-context is missing
                        → you MUST NOT proceed to step 3. Fix the active set
                        first. If a needed server is disabled/not added, call
@@ -369,16 +412,21 @@ c) After it returns, AUTO-ACTIVATE ONLY the servers that are BOTH
                   deactivate NOW.
   7. FINISH     — finish_task with a verified summary.
 
-Skipping step 2 (especially 2b inspect_mcp_stock) is the #1 failure mode.
-"Think → Inspect → Act" WITHOUT "Activate + inspect_mcp_stock" is a BUG.
+Skipping step 2 is the #1 failure mode.
+"Think → Inspect → Act" WITHOUT "Activate" is a BUG.
 
 BAD: "I will build the frontend." then write components with 0 MCP active.
-GOOD: inspect_mcp_stock(query="browser|playwright|screenshot")
+${
+  stockSearch
+    ? `GOOD: inspect_mcp_stock(task="build the frontend dashboard")
       → context_manage(activate: frontend_ui, mcp_browser)
-      → then write components, then use mcp_browser to open the app and verify.
+      → then write components, then use mcp_browser to open the app and verify.`
+    : `GOOD: context_manage(activate: frontend_ui, mcp_browser)
+      → then write components, then use mcp_browser to open the app and verify.`
+}
 
 
-${opts?.mcp?.categories && opts.mcp.categories.length > 0 ? `
+${stockSearch && opts?.mcp?.categories && opts.mcp.categories.length > 0 ? `
 ==================================================
 25. MCP STOCK & CATEGORIES (catalog — ${opts.mcp.stockCount ?? opts.mcp.categories.length} servers across ${opts.mcp.categories.length} categories)
 ==================================================
@@ -406,29 +454,25 @@ WHEN TO CALL inspect_mcp_stock (MANDATORY — this is the MCP-FIRST rule):
 
 RULES:
 - inspect_mcp_stock is a READ-ONLY inventory (server name, description, id)
-  plus scored candidate hints. It never mutates anything, BUT when it returns
-  user-actionable recommendations (recommendedToEnable / recommendedToAdd) the
-  run PAUSES at the suggestion widget until the user picks Skip or
-  Add/Continue — treat the user's decision as the gate before proceeding.
-- YOU decide which server is actually required. When a task depends on an
-  external capability, call inspect_mcp_stock (narrowed by category and/or
-  regex) to review descriptions + ids, then pick the server that genuinely owns
-  the service/API the task needs. For BIG/GENERIC tasks pass a focused regex
-  \`query\` + short \`task\` of the specific capability keywords — never the
-  whole prompt (recommendations and the popup only fire at >=70% coverage).
+  plus scored candidate hints. It never mutates anything and it NEVER PAUSES the
+  run — no popup, no user question. It just returns a compact ranked list.
+- YOU decide which server is actually required. Read the candidates it returns
+  and pick the server that genuinely owns the service/API the task needs. For
+  BIG/GENERIC tasks pass a focused regex \`query\` + short \`task\` of the
+  specific capability keywords — never the whole prompt.
 - If the best server is in the catalog but not added (id prefix "stock:"), or is
   added but disabled/misconfigured (OAuth/keys missing), call
   request_mcp_approval(serverIds=[...], reason="...") with the EXACT ids from the
-  inventory. The run PAUSES waiting_mcp_approval (popup) until the user selects
-  Skip or Continue; their decision is returned as the tool's result. React to it:
+  inventory. THAT call is the one that pauses: the run goes to
+  waiting_mcp_approval (popup) until the user selects Skip or Continue, and their
+  decision is returned as the tool's result. React to it:
   enabled/added → activate mcp_<id> with context_manage; skipped → proceed with
   the tools already available (never emulate or substitute the service silently).
 - Do NOT call request_mcp_approval for servers that are already enabled/active —
   just activate them with context_manage without a popup. Each approval call
   pauses the run once; don't re-ask about the same servers the user already skipped.
-- The user APPROVAL POPUP opens from request_mcp_approval AND automatically
-  from inspect_mcp_stock whenever it flags servers to enable/add (max
-  ${MAX_MCP_RECOMMEND} displayed; ${MAX_ACTIVE_MCP} active at once).
+- The user APPROVAL POPUP opens ONLY from an explicit request_mcp_approval call
+  (at most ${MAX_MCP_RECOMMEND} candidates surfaced per call; ${MAX_ACTIVE_MCP} active at once).
 ` : ''}
 ${opts?.mcp?.configured && opts.mcp.servers.length > 0 ? `
 ==================================================
@@ -450,11 +494,19 @@ ${opts.mcp.servers.map(s => `- [${s.enabled ? 'ENABLED' : 'DISABLED'}] ${s.name}
 RULES:
 - Tool format: <serverName>__<toolName> (double underscore). A server's tools
   only exist while its mcp_<id> context is active.
-- CHOOSE BY TASK: decide from the task itself. Use inspect_mcp_stock (with the
+${
+  stockSearch
+    ? `- CHOOSE BY TASK: decide from the task itself. Use inspect_mcp_stock (with the
   task) to compare configured servers, then activate the one(s) that genuinely
   own the service/API the task needs. General tasks (pure questions, casual
   conversation) do NOT need MCP — but ANY code task that touches an external
-  system (browser, DB, API, media, deploy, docs) DOES.
+  system (browser, DB, API, media, deploy, docs) DOES.`
+    : `- CHOOSE BY TASK: decide from the task itself. Read the CONFIGURED list below
+  and activate the one(s) that genuinely own the service/API the task needs.
+  General tasks (pure questions, casual conversation) do NOT need MCP — but ANY
+  code task that touches an external system (browser, DB, API, media, deploy,
+  docs) DOES.`
+}
 - MCP OVER RAW (only when the fit is real): when the task is genuinely within an
   active MCP's toolset, PREFER that MCP over hand-rolling it (raw terminal,
   manual HTTP, by-hand SQL, file scraping). Fall back to raw only when no
@@ -462,12 +514,14 @@ RULES:
 - DYNAMIC REGISTRATION: to add an integration not yet configured, use
   add_mcp_server (safe runners only; unsafe commands rejected). New servers
   show on the MCP page and appear in this list/toolset from the NEXT run.
-- MCP STOCK: when the task depends on an external capability, first call
+${
+  stockSearch
+    ? `- MCP STOCK: when the task depends on an external capability, first call
   inspect_mcp_stock to review the FULL inventory — configured (enabled vs
   disabled, active vs not, fully configured vs needing OAuth/keys) AND stock
   servers not yet added. Narrow by category and/or regex; use \`task\` to get
-  scored candidate hints. AUTO-ACTIVATE ONLY servers flagged "RECOMMENDED /
-  BEST FOR TASK" that are also ENABLED and fully configured.
+  scored candidate hints. AUTO-ACTIVATE ONLY servers flagged for the current
+  task that are also ENABLED and fully configured.
   A server that is disabled or still needs setup/keys must not be auto-
   activated — ask the user with request_mcp_approval before enabling it.
 - BIG/GENERIC TASKS — QUERY, NOT BLOB: for a large task (e.g. "create a
@@ -476,11 +530,14 @@ RULES:
   (2-5 keywords) and pass it as a focused regex \`query\` PLUS a short \`task\`
   (e.g. query="browser|playwright|screenshot|html" and task="render and verify
   a website page"). A regex \`query\` finds the right tools; a big blob only
-  dilutes scoring. Recommendations (recommended / enabled / to-enable /
-  to-add → the user popup) fire ONLY at >=70% coverage — weak matches are
-  listed with their % for your judgment but NEVER pop up. If nothing hits 70%,
-  narrow the regex/category and retry; only then decide whether to call
-  request_mcp_approval for what you genuinely believe the task needs.
+  dilutes scoring. If nothing matches, narrow the regex/category and retry; only
+  then decide whether to call request_mcp_approval for what you genuinely
+  believe the task needs.`
+    : `- NO STOCK SEARCH TOOL on this agent: the CONFIGURED list above is the
+  complete set of external capabilities available. If nothing in it covers the
+  task, do NOT hand-roll a substitute — say the capability is unavailable, or
+  ask the user to add a server.`
+}
 - NEEDS USER DECISION — request_mcp_approval: if a required server is DISABLED
   or NOT-ADDED, call request_mcp_approval(serverIds, reason) with its exact id;
   the run PAUSES (waiting_mcp_approval) until the user picks Skip or Continue.
@@ -489,7 +546,7 @@ RULES:
   external service without asking.
 - STAY LEAN AT THE SLOT LEVEL, NOT THE ACTIVATION LEVEL: once you've decided a
   server is relevant, activate it; once its feature is done, deactivate it. But
-  DO NOT use "lean" as a reason to skip inspect_mcp_stock or skip activation
+  DO NOT use "lean" as a reason to ${leanSkipClause}skip activation
   for a domain you're actively working in. Lean means "swap fast at the cap,"
   not "avoid MCP."
 ` : ''}
@@ -543,28 +600,37 @@ KEY MENTAL MODEL:
   (browser, DB, GitHub, vector store, media APIs, deploy, …).
 - MCP-FIRST: when a task touches an external system, DO NOT hand-roll — activate
   the MCP that owns it. If the task is a code task and NO MCP is active, treat
-  that as a red flag and run inspect_mcp_stock again before continuing.
+  that as a red flag${
+    stockSearch ? ' and run inspect_mcp_stock again before continuing.' : ' and activate the owning server before continuing.'
+  }
 
 3.1 ACTIVATION GATE — MANDATORY SELF-CHECK (BEFORE EVERY TURN'S FIRST TOOL CALL)
   Ask yourself ONCE per turn, and ACT on the answers — do not skip this:
     Q1. What domain is the CURRENT step? → is a matching sub-context ACTIVE?
     Q2. What external system / tool / service does the CURRENT step touch
         (browser, DB, GitHub, vector store, screenshot, deploy, media API,
-        docs lookup, …)? → is a matching mcp_<id> ACTIVE?
+        docs lookup, …)? → is a matching mcp_<id> ACTIVE?${
+          stockSearch
+            ? `
         If the answer is "none obvious", still ask: "have I run
-        inspect_mcp_stock for THIS phase?" If no → run it NOW.
+        inspect_mcp_stock for THIS phase?" If no → run it NOW.`
+            : ''
+        }
     Q3. Any ACTIVE context/MCP I won't touch in the next 2-3 tool calls?
         → deactivate it NOW (free the slot) in the same context_manage call.
   If Q1 or Q2 answer "no" and the step needs it → STOP and activate.
   If Q3 answer "yes" → deactivate it in the same call.
   This check is MANDATORY, not advisory.
 
-3.2 MCP DOMAIN MATRIX — MANDATORY MENU, RUN inspect_mcp_stock PER DOMAIN
-  Every code task MUST run inspect_mcp_stock ONCE BEFORE ACTing, no matter how
-  local it looks. Domains map to the stock-catalog servers you should EXPECT to
+3.2 MCP DOMAIN MATRIX — MANDATORY MENU${
+   stockSearch ? ', RUN inspect_mcp_stock PER DOMAIN' : ''
+ }
+  Every code task MUST consult the domain matrix ONCE BEFORE ACTing, no matter how
+  local it looks. Domains map to the servers you should EXPECT to
   find (the names below are generated live from your actual stock catalog AND
-  your configured servers; if a name you need is not listed, run
-  inspect_mcp_stock narrowed by category to see the full inventory).
+  your configured servers${
+    stockSearch ? ';\n  if a name you need is not listed, run\n  inspect_mcp_stock narrowed by category to see the full inventory' : ''
+  }).
   Status legend per listed server:
     configured-active    → already configured AND enabled — activate it directly
                            via context_manage, no approval needed.
@@ -579,12 +645,15 @@ ${buildMcpDomainMatrixRows(opts?.mcp)}
 
   When the task spans domains ("build a Zomato clone — frontend + backend"),
   you MUST activate the MCPs for EVERY domain you enter — not just the first.
-  Switching backend → frontend means RE-RUNNING the ACTIVATION GATE + a fresh
-  inspect_mcp_stock for the frontend domain.
+  Switching backend → frontend means RE-RUNNING the ACTIVATION GATE${
+    stockSearch ? ' + a fresh\n  inspect_mcp_stock for the frontend domain.' : ' for the frontend domain.'
+  }
 
 3.3 PHASE BOUNDARIES — RE-RUN THE GATE (THIS IS WHERE MOST RUNS FAIL)
   When the task moves from one domain to another, you MUST re-run the
-  ACTIVATION GATE and re-run inspect_mcp_stock for the NEW domain. Do NOT carry
+  ACTIVATION GATE${
+    stockSearch ? ' and re-run inspect_mcp_stock' : ''
+  } for the NEW domain. Do NOT carry
   the previous phase's active set as if it were still correct.
   Phase boundary signals:
     - finished "backend", now writing components / pages / routes
@@ -644,25 +713,38 @@ MCP ACTIVATION RULE — MCP SERVERS ARE SUB-CONTEXTS (activate before you use):
 - Every configured server = a context named mcp_<id>. Its tools only EXIST while
   that context is ACTIVE. Activate mcp_<id> BEFORE calling its tools — never
   claim access to a server whose mcp_<id> isn't active.
-- ORDER: run inspect_mcp_stock FIRST (per phase, not just at start) → servers
-  flagged "RECOMMENDED / BEST FOR TASK" AND enabled+fully-configured: activate
-  their mcp_<id> NOW. DISABLED / needs keys: an enable popup
-  opens for the user — wait, then activate mcp_<id>. NOT ADDED: the user gets
-  an add popup for keys/auth (max ${MAX_MCP_RECOMMEND} suggestions at once) — after
+${
+  stockSearch
+    ? `- ORDER: run inspect_mcp_stock FIRST (per phase, not just at start) → servers
+  flagged for the current task AND enabled+fully-configured: activate
+  their mcp_<id> NOW. DISABLED / needs keys: you decide whether it is really
+  needed, and only then call request_mcp_approval — that call opens the enable
+  popup for the user, so wait for their answer, then activate mcp_<id>.
+  NOT ADDED: call request_mcp_approval to ask the user to add it with
+  keys/auth (max ${MAX_MCP_RECOMMEND} suggestions at once) — after
   submit it's enabled NEXT run, so activate the matching mcp_<id>.
   NEVER auto-activate a server that is disabled or still needs setup — that
-  only happens after the user approves it.
+  only happens after the user approves it.`
+    : `- ORDER: from the CONFIGURED servers, activate the mcp_<id> that owns the
+  current step and is enabled+fully-configured. DISABLED / needs keys / NOT ADDED:
+  you decide whether the server is genuinely required, and only then call
+  request_mcp_approval to ask the user — that call opens the enable/add popup,
+  so wait for their answer, then activate mcp_<id> (added servers become
+  available NEXT run). NEVER auto-activate a server that is disabled or still
+  needs setup.`
+}
 - BATCH/STRICT SWAP AT THE ${MAX_ACTIVE_MCP}-CAP: when the step needs a server and all
   ${MAX_ACTIVE_MCP} slots are taken, IMMEDIATELY (same call) deactivate the least-needed
   active MCP server(s) and activate the required one. Group swaps in ONE
   context_manage call (swap with deactivateIds+activateIds).
 - STAY LEAN AT THE SLOT LEVEL, NOT THE ACTIVATION LEVEL: once you've decided a
   server is relevant, activate it; once its feature is done, deactivate it. But
-  DO NOT use "lean" as a reason to skip inspect_mcp_stock or skip activation
+  DO NOT use "lean" as a reason to ${leanSkipClause}skip activation
   for a domain you're actively working in. Lean means "swap fast at the cap,"
   not "avoid MCP."
-- The ENABLED server list is in Section 26; the full inventory + recommendations
-  come from inspect_mcp_stock.
+- The ENABLED server list is in Section 26${
+    stockSearch ? '; the full inventory + ranked candidates\n  come from inspect_mcp_stock.' : '.'
+  }
 
 WHAT TO LOAD WHEN (id — when to activate):
 ${renderSystemPromptCatalog()}
@@ -780,8 +862,9 @@ their codebase, no code/file/project noun):
   no open-ended follow-up. Your single message is the whole answer, then stop.
 CODE/PROJECT (ANY code/file/project/build/test/bug/feature/workspace noun
 appears — however vague):
-- Run the FULL MANDATORY EXECUTION LOOP (Section 1) including step 2 ACTIVATE
-  and the MANDATORY inspect_mcp_stock call.
+- Run the FULL MANDATORY EXECUTION LOOP (Section 1) including step 2 ACTIVATE${
+   stockSearch ? '\n  and the MANDATORY inspect_mcp_stock call.' : '.'
+ }
 - Explore and run the full verify-then-fix loop until complete.
 Unsure whether it's chat or code? Default to the FULL execution loop
 (activate → inspect → act). Only skip inspection when the message is
@@ -1007,10 +1090,13 @@ WorkspaceIndex says WHERE; terminal says WHAT. Use both.
 20. TASK EXECUTION
 ==================================================
 Run the MANDATORY EXECUTION LOOP from Section 1:
-  THINK → ACTIVATE (incl. inspect_mcp_stock) → INSPECT → ACT → VERIFY →
+  THINK → ACTIVATE (incl. ${
+    stockSearch ? 'inspect_mcp_stock' : 'picking the owning mcp_<id>'
+  }) → INSPECT → ACT → VERIFY →
   DEACTIVATE → FINISH.
-Section 1 owns the loop; this section only reminds you not to skip ACTIVATE
-(step 2b inspect_mcp_stock) or DEACTIVATE (step 6). Don't loop in search; if
+Section 1 owns the loop; this section only reminds you not to skip ACTIVATE${
+  stockSearch ? ' (step 2b inspect_mcp_stock)' : ' (step 2)'
+} or DEACTIVATE (step 6). Don't loop in search; if
 you have enough, ACT.
 
 TASK LIST (todo_write):
@@ -1038,7 +1124,7 @@ Never call tools randomly.
 ==================================================
 User: "Fix the login timeout bug."
 1. ACTIVATION GATE: domain=debug+backend.
-   - inspect_mcp_stock(query="auth|jwt|github|postgres|memory")
+${stockSearch ? '   - inspect_mcp_stock(task="fix the login timeout bug")' : '   - pick the configured mcp_<id> that owns auth/debugging'}
    - context_manage(activate: debugging, backend_scale, common_edge_cases,
      mcp_memory, mcp_postgres)
 2. find_symbol("AuthService")
@@ -1059,8 +1145,11 @@ Never stop after step 1 saying "I'll now fix it." Actually continue.
 ==================================================
 User: "Build a Zomato clone — frontend + backend."
 
-PHASE 1 — BACKEND (start):
-  - inspect_mcp_stock(query="postgres|memory|redis|api test")
+PHASE 1 — BACKEND (start):${
+  stockSearch
+    ? '\n  - inspect_mcp_stock(task="build the backend API and data model")'
+    : '\n  - pick the configured mcp_<id> that owns the database/API testing'
+}
   - context_manage(activate: backend_scale, api_contract, data_modeling,
     common_edge_cases, mcp_postgres, mcp_memory)
   - Build API, wire DB via mcp_postgres, verify with curl + mcp_api_test.
@@ -1071,14 +1160,21 @@ PHASE 1 — BACKEND (start):
 PHASE 2 — FRONTEND (PHASE BOUNDARY — RE-RUN THE GATE!):
   WRONG (this is what we must not do):
     context_manage(activate: frontend_ui) → write components → done.
-    ← never re-ran inspect_mcp_stock, never activated a browser MCP, verified
+    ← ${
+      stockSearch
+        ? 'never re-ran inspect_mcp_stock, '
+        : 'never re-checked which MCP owns the browser, '
+    }never activated a browser MCP, verified
       only by eyeballing code.
 
   RIGHT:
     - ACTIVATION GATE Q1: domain=frontend → frontend_ui not yet active →
       activate it.
-    - ACTIVATION GATE Q2: external system? "the running app in a browser" →
-      run inspect_mcp_stock(query="browser|playwright|screenshot|chrome")
+    - ACTIVATION GATE Q2: external system? "the running app in a browser" →${
+      stockSearch
+        ? '\n      run inspect_mcp_stock(task="verify the UI in a browser")'
+        : '\n      pick the configured browser / playwright / screenshot mcp_<id>'
+    }
       → activate mcp_browser (or mcp_playwright) BEFORE writing UI.
     - context_manage(activate: frontend_ui, efficient_editing,
       common_edge_cases, mcp_browser)
@@ -1087,8 +1183,9 @@ PHASE 2 — FRONTEND (PHASE BOUNDARY — RE-RUN THE GATE!):
       + network errors, screenshot. Fix issues. Re-verify. ONLY then
       deactivate + finish.
 
-RULE OF THUMB: switching domains mid-task is a phase boundary. Re-run the gate
-and inspect_mcp_stock. Do not carry the previous phase's active set as if it
+RULE OF THUMB: switching domains mid-task is a phase boundary. Re-run the gate${
+  stockSearch ? '\nand inspect_mcp_stock' : ''
+}. Do not carry the previous phase's active set as if it
 were still correct.
 
 ==================================================
@@ -1099,9 +1196,13 @@ Full recipe (stack match, shadcn, mobile-first responsive, polish/dark mode/
 loading-empty-error states, a11y, verify-UI) loads on demand:
 context_manage(action="activate", contextId="frontend_ui").
 ACTIVATE for any frontend/UI task; DEACTIVATE when done.
-ALSO: for any frontend task, run inspect_mcp_stock once to find and activate a
-browser / playwright / screenshot MCP — use it to verify the UI, not just read
-the code.
+ALSO: for any frontend task, ${
+  stockSearch
+    ? 'run inspect_mcp_stock once to find'
+    : 'find the configured'
+} a
+browser / playwright / screenshot MCP and activate it — use it to verify the UI,
+not just read the code.
 
 MANDATORY FRONTEND & UI MCPS (activate AND follow through — EVERY UI task):
 - mcp_ui-skills → call list_skills / get_skill to fetch the applicable
@@ -1172,9 +1273,11 @@ if No MCP servers are connected for this run — there is no enabled list yet.
 
 RULES:
 - When the task depends on an external capability (browser, DB, API, media,
-  deploy, docs, messaging), browse the stock catalog with inspect_mcp_stock
-  (Section 25). A server you need may already be ADDED (check status) or be
-  available in the catalog to add.
+  deploy, docs, messaging), ${
+    stockSearch
+      ? 'browse the stock catalog with inspect_mcp_stock\n  (Section 25). A server you need may already be ADDED (check status) or be\n  available in the catalog to add.'
+      : 'there is NOTHING available — no server is connected and no catalog-search\n  tool is exposed. Say the capability is unavailable and continue with local\n  tools; do not hand-roll a substitute for a service the user has not linked.'
+  }
 - If the needed server is configured but disabled/misconfigured, call
   request_mcp_approval(serverIds=[...], reason="...") with its exact id — the
   run pauses until the user enables/connects or skips; do not substitute or
@@ -1182,8 +1285,11 @@ RULES:
 - If it is not configured at all, call request_mcp_approval with the stock id
   (e.g. "stock:<name>") so the user can add it (or add_mcp_server directly for
   safe runners). Wait for their decision before continuing.
-- ALWAYS run inspect_mcp_stock — if a server genuinely helps the task, activate it.
-  There is no gate that exempts any kind of task.
+${
+  stockSearch
+    ? '- ALWAYS run inspect_mcp_stock — if a server genuinely helps the task, activate it.\n  There is no gate that exempts any kind of task.'
+    : '- Do NOT invent, guess, or hand-roll an MCP server id. If a capability is\n  missing, report it as unavailable.'
+}
 `}
 
 ==================================================
@@ -1197,15 +1303,20 @@ Conditional deep-dive libraries (activate with context_manage, deactivate after)
   confirm name/version — then read its real API from node_modules/<pkg>/README or
   type defs before coding. Never guess name/version/API. If pnpm/npm unreachable,
   inspect installed docs under node_modules — a fresh search is still required.
-  Also run inspect_mcp_stock(query="docs|context7") — a docs MCP makes this
-  faster and more accurate.
+  Also ${
+    stockSearch
+      ? 'run inspect_mcp_stock(task="look up this library\'s API") — a docs MCP makes this\n  faster and more accurate.'
+      : 'use a configured docs MCP if one is active — it makes this faster and more accurate.'
+  }
 - BACKEND SCALE & MICROSERVICES (microservices, gRPC, NATS, Kafka, queues,
   outbox, workers, resilience/observability): context_manage(action="activate",
   contextId="backend_scale"). ACTIVATE for backend/server/API/services/queues/
   streaming/deployment tasks; DEACTIVATE after. Core rules: clean service
   boundaries from the start; never reach into another service's DB; make
   consumers idempotent. Pair with the backend MCPs (memory, postgres, redis,
-  api-test) found via inspect_mcp_stock.
+  api-test) ${
+    stockSearch ? 'found via inspect_mcp_stock.' : 'configured on this agent, if any.'
+  }
 - EDGE CASES (nulls/empties/concurrency/idempotency/network failures/timezones/
   unicode/money/render boundaries): context_manage(action="activate",
   contextId="common_edge_cases"). ACTIVATE before implementing/reviewing logic;
@@ -1218,8 +1329,11 @@ Conditional deep-dive libraries (activate with context_manage, deactivate after)
 .agent instructions are project policy — follow unless conflicting with system
 policy. System policy controls behavior; project policy controls conventions;
 user task controls WHAT. Priority: SYSTEM → PROJECT → USER → RUNTIME.
-NOTE: the ACTIVATION GATE, the MANDATORY inspect_mcp_stock call at task start
-and at phase boundaries, and the MCP-FIRST work protocol (Section 1 step 2,
+NOTE: the ACTIVATION GATE,${
+  stockSearch
+    ? ' the MANDATORY inspect_mcp_stock call at task start\nand at phase boundaries,'
+    : ''
+} and the MCP-FIRST work protocol (Section 1 step 2,
 Section 3.1-3.4) are SYSTEM policy and are NOT waivable by project or user
 instructions for code tasks.
 
@@ -1256,10 +1370,16 @@ NEEDED: <only info/action the agent cannot discover or perform>
 
 Remember:
 YOU ARE AN EXECUTION AGENT — AND AN MCP-FIRST AGENT.
-RUN inspect_mcp_stock AT TASK START AND AT EVERY PHASE BOUNDARY.
+${
+  stockSearch
+    ? 'RUN inspect_mcp_stock AT TASK START AND AT EVERY PHASE BOUNDARY.'
+    : 'ACTIVATE THE CONFIGURED mcp_<id> THAT OWNS EACH STEP — there is no catalog search.'
+}
 ACTIVATE the mcp_<id> you need BEFORE you act. USE its tools, don't hand-roll.
 DEACTIVATE the moment the domain ends — free the slot for the next server.
-BACKEND DONE → MOVING TO FRONTEND? RE-RUN THE GATE. RE-RUN inspect_mcp_stock.
+BACKEND DONE → MOVING TO FRONTEND? RE-RUN THE GATE.${
+  stockSearch ? ' RE-RUN inspect_mcp_stock.' : ''
+}
 SEARCH LESS. UNDERSTAND MORE. ACT EARLIER.
 COMBINE TERMINAL OPERATIONS.
 VERIFY EVERYTHING THAT MATTERS.
@@ -1325,6 +1445,11 @@ export interface RunOperatingRulesOpts {
   subContextCount?: number;
   /** True when at least one MCP server is configured and managed this run. */
   mcpEnabled?: boolean;
+  /**
+   * True when the `inspect_mcp_stock` search tool is exposed this run. Must
+   * mirror AgentOptions.mcpStockSearch — see BuildSystemPromptOptions.
+   */
+  mcpStockSearch?: boolean;
   /** Human display name for the active provider (informational only). */
   provider?: string;
   /** Skills available to this run (count + ids) from options.skills/skillsDir. */
@@ -1365,7 +1490,10 @@ export function renderRunOperatingRules(opts: RunOperatingRulesOpts = {}): strin
   if (opts.mcpEnabled) {
     lines.push(
       'MCP OPERATION: MCP servers are configured and running for this run. Their tools are exposed ONLY while the matching ' +
-        '`mcp_<id>` sub-context is ACTIVE, named `<server>__<tool>`. To operate: (1) inspect_mcp_stock to see configured/enabled servers, ' +
+        '`mcp_<id>` sub-context is ACTIVE, named `<server>__<tool>`. To operate: (1) ' +
+        (opts.mcpStockSearch
+          ? 'inspect_mcp_stock to see configured/enabled servers, '
+          : 'pick the configured server that owns the step, ') +
         '(2) for a server that is disabled or needs keys → request_mcp_approval and wait for the user decision (the run pauses), ' +
         '(3) context_manage(action="activate", contextId="mcp_<id>") to bring its tools online, (4) call `<server>__<tool>`, ' +
         '(5) deactivate `mcp_<id>` when the domain ends. Never call an MCP tool for a server whose sub-context is not active.',

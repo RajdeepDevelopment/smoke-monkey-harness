@@ -1195,24 +1195,21 @@ export class AgentLoop {
     const storedOutput = await this.deps.compactToolOutput(ctx.workspacePath, runId, toolCallId, result.output ?? "");
     await this.deps.appendToolResult(ctx, assistantMsg.id, toolCallId, storedOutput);
 
-    // ── MCP approval pause (USER-ACTIONABLE RECOMMENDATIONS) ───────────────
+    // ── MCP approval pause (EXPLICIT USER CONSENT) ──────────────────────────
     // The run PAUSES (status waiting_mcp_approval) until the user enables,
-    // adds, or skips via the resolve endpoint — exactly like ask_user. Two
-    // triggers:
-    //   1. request_mcp_approval — the agent explicitly decided a server is
-    //      required and asks the user (always pauses when there is something to
-    //      enable/add).
-    //   2. inspect_mcp_stock — the suggestion widget surfaces user-actionable
-    //      candidates (recommendedToEnable / recommendedToAdd). Previously this
-    //      raced ahead while the card sat in the chat asking the user; now the
-    //      loop STOPS until the user picks Skip or Add/Continue. Servers the
-    //      user already decided about this run (ctx.mcpAskedServerIds) are
-    //      filtered out first, so a resolved/skipped server is never re-asked
-    //      and this cannot turn into a popup loop across phase boundaries.
-    if (
-      (toolName === 'request_mcp_approval' || toolName === 'inspect_mcp_stock') &&
-      !ctx.abortController.signal.aborted
-    ) {
+    // adds, or skips via the resolve endpoint — exactly like ask_user.
+    //
+    // There is exactly ONE trigger: request_mcp_approval, the call the model
+    // makes when IT has decided a server is genuinely required.
+    //
+    // inspect_mcp_stock used to be a second trigger. That was wrong: it is a
+    // READ-ONLY listing, so a routine "what servers do I have?" probe could
+    // stop the whole run behind a popup before any work happened, and it fired
+    // on the tool's own recommendations rather than on a decision. Now the
+    // stock tool only RETURNS its ranked candidates in the tool result; the
+    // model reads them and calls request_mcp_approval if — and only if — it
+    // decides one is needed. Consent follows intent, not data.
+    if (toolName === 'request_mcp_approval' && !ctx.abortController.signal.aborted) {
       const stockData = (result.data ?? {}) as {
         task?: string | null;
         servers?: unknown[];
@@ -1220,12 +1217,8 @@ export class AgentLoop {
         recommendedToEnableIds?: string[];
         recommendedToAddIds?: string[];
       };
-      let toEnable = stockData.recommendedToEnableIds ?? [];
-      let toAdd = stockData.recommendedToAddIds ?? [];
-      if (toolName === 'inspect_mcp_stock') {
-        toEnable = toEnable.filter((id) => !ctx.mcpAskedServerIds.has(id));
-        toAdd = toAdd.filter((id) => !ctx.mcpAskedServerIds.has(id));
-      }
+      const toEnable = stockData.recommendedToEnableIds ?? [];
+      const toAdd = stockData.recommendedToAddIds ?? [];
       const needsDecision = toEnable.length > 0 || toAdd.length > 0;
       if (needsDecision && !result.isError) {
         this.logger.log(

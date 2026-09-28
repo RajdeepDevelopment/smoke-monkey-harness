@@ -219,8 +219,10 @@ Disable groups with `tools` or register your own.
 Connect local stdio or remote Streamable HTTP MCP servers
 (`<server>__<tool>` tool names, lazy connect, close at run end). A curated
 stock catalog (`flattenStock` / `stockToMcpConfig`) provisions well-known
-servers, and `inspect_mcp_stock` / `request_mcp_approval` recommend + gate
-disabled servers behind a user approval pause.
+servers. Discovery is opt-in (`mcpStockSearch: true`): `inspect_mcp_stock` then
+returns a compact ranked inventory and **never** stops the run — the model
+decides for itself, and only `request_mcp_approval` pauses for the user. The
+stock-search guidance is omitted from the system prompt when the tool is off.
 
 **🧠 Skills**
 Claude Code / Codex / AniGravity / opencode-style `SKILL.md` folders, loaded
