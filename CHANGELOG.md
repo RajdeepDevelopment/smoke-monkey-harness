@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Ships as `smoke-monkey-harness@1.2.1` and `@smoke-monkey/ui@0.1.2`. The
+`smoke-monkey-harness-mcp` package needs no bump of its own: it is a thin
+launcher that resolves `plugin/mcp/server.mjs` out of the harness package
+(`smoke-monkey-harness@^1.2.0`), so `harness_guide_errors` reaches
+`npx -y smoke-monkey-harness-mcp` with the harness release.
+
 ### Added
 
 - **The `@smoke-monkey` scope.** The library, the MCP server, and the chat UI
