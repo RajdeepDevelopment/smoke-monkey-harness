@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-09-28
+
+Docs-only patch. `smoke-monkey-harness@1.3.1`, `@smoke-monkey/ui@0.1.3`, and
+both MCP wrappers at `1.1.1` republish purely to refresh the npm READMEs:
+
+- The main README hero no longer carries the package-names callout; it is its
+  own `## Package names` section after Quickstart, with Install/Quickstart at
+  the top.
+- The `@smoke-monkey/mcp` README leads with the demo video, moves the
+  "Two names, one server" note down into `## Run with npx`, and corrects the
+  tool count heading to `Tools (22)`.
+- The `@smoke-monkey/ui` README hoists Install + Quick start above the Why
+  blurb.
+
+No runtime, manifest, or API changes.
+
 ## [1.3.0] - 2026-09-28
 
 Ships as `smoke-monkey-harness@1.3.0`, `@smoke-monkey/ui@0.1.2`, and the MCP
