@@ -1,5 +1,11 @@
 # Providers
 
+> ⭐️ **Love Smoke Monkey Harness?** Please support the project with a star on [GitHub](https://github.com/RajdeepDevelopment/smoke-monkey-harness)!
+> 🌐 **Interactive Simulator:** Test the agent loop and stream live at [smoke-monkey-harness.vercel.app](https://smoke-monkey-harness.vercel.app/)
+
+---
+
+
 Providers are small OpenAI-compatible adapters. Set `provider` and pass the key
 via `apiKey` (string) or a resolver `(provider, userId?) => key` so secrets never
 live in code. Constructor is `sk-...` / `nvapi-...` style keys held in env vars.

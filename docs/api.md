@@ -1,5 +1,11 @@
 # API reference
 
+> ⭐️ **Love Smoke Monkey Harness?** Please support the project with a star on [GitHub](https://github.com/RajdeepDevelopment/smoke-monkey-harness)!
+> 🌐 **Interactive Simulator:** Test the agent loop and stream live at [smoke-monkey-harness.vercel.app](https://smoke-monkey-harness.vercel.app/)
+
+---
+
+
 The package's public surface is exported from `src/index.ts`. Sliced by area:
 **options** · **surface** · **events** · **tools** · **providers** ·
 **subcontexts** · **skills** · **mcp** · **loop** · **permissions** · **hooks**.

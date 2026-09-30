@@ -1,5 +1,11 @@
 # Tools
 
+> ⭐️ **Love Smoke Monkey Harness?** Please support the project with a star on [GitHub](https://github.com/RajdeepDevelopment/smoke-monkey-harness)!
+> 🌐 **Interactive Simulator:** Test the agent loop and stream live at [smoke-monkey-harness.vercel.app](https://smoke-monkey-harness.vercel.app/)
+
+---
+
+
 Every tool is a `ToolDefinition`:
 
 ```ts
