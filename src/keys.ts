@@ -22,6 +22,28 @@ export function envKey(provider: string): string | undefined {
       return process.env.GEMINI_API_KEY;
     case 'opencode':
       return process.env.OPENCODE_API_KEY ?? process.env.LLM_API_KEY;
+    case 'huggingface':
+      return process.env.HUGGINGFACE_API_KEY ?? process.env.LLM_API_KEY;
+    case 'deepseek':
+      return process.env.DEEPSEEK_API_KEY ?? process.env.LLM_API_KEY;
+    case 'qwen':
+      return process.env.QWEN_API_KEY ?? process.env.DASHSCOPE_API_KEY ?? process.env.LLM_API_KEY;
+    case 'zai':
+      return process.env.ZAI_API_KEY ?? process.env.LLM_API_KEY;
+    case 'moonshot':
+      return process.env.MOONSHOT_API_KEY ?? process.env.LLM_API_KEY;
+    case 'mistral':
+      return process.env.MISTRAL_API_KEY ?? process.env.LLM_API_KEY;
+    case 'cohere':
+      return process.env.COHERE_API_KEY ?? process.env.LLM_API_KEY;
+    case 'groq':
+      return process.env.GROQ_API_KEY ?? process.env.LLM_API_KEY;
+    case 'together':
+      return process.env.TOGETHER_API_KEY ?? process.env.LLM_API_KEY;
+    case 'fireworks':
+      return process.env.FIREWORKS_API_KEY ?? process.env.LLM_API_KEY;
+    case 'cerebras':
+      return process.env.CEREBRAS_API_KEY ?? process.env.LLM_API_KEY;
     case 'omniroute':
       return process.env.OMNIROUTE_API_KEY || 'omniroute';
     default:

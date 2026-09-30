@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **New direct cloud providers (OpenAI-compatible, native endpoints + per-provider API keys):**
+  `huggingface` (router.huggingface.co), `deepseek`, `qwen` (DashScope),
+  `zai` (Z.ai GLM), `moonshot` (Kimi), `mistral`, `cohere`, `groq`, `together`,
+  `fireworks`, and `cerebras`. All stream by default (now 18 `STREAMING_PROVIDERS`);
+  key env vars resolve via `envKey` (`HUGGINGFACE_API_KEY`, `DEEPSEEK_API_KEY`,
+  `QWEN_API_KEY`/`DASHSCOPE_API_KEY`, `ZAI_API_KEY`, `MOONSHOT_API_KEY`,
+  `MISTRAL_API_KEY`, `COHERE_API_KEY`, `GROQ_API_KEY`, `TOGETHER_API_KEY`,
+  `FIREWORKS_API_KEY`, `CEREBRAS_API_KEY`, last resort `LLM_API_KEY`).
+- Shared provider registry (`provider-apis.ts`) keeps the loop LLM client and the
+  compaction summarizer on the same endpoint/key map.
+- `PROVIDER_CAPS` defaults for every new provider + ~210 `MODEL_CAPS` entries
+  for the OpenRouter/OpenAI/xAI/NVIDIA/reasoning catalogs (OpenAI ChatGPT,
+  OpenRouter cloud, xAI Grok, NVIDIA NIM free, OpenCode Zen free, Hugging Face
+  cloud). Unknown models fall back to provider-level caps via basename matching.
+- Provider guide + reference updated everywhere: README, `docs/providers.md`,
+  `docs/api.md`, MCP `guide.md`/`reference.md`/`providers.md` feature guide, the
+  plugin SKILL (SKILL.md + references/api.md + references/features.md), and the
+  four mirrored skill copies.
+
 ## [1.3.1] - 2026-09-28
 
 Docs-only patch. `smoke-monkey-harness@1.3.1`, `@smoke-monkey/ui@0.1.3`, and

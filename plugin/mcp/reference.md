@@ -11,7 +11,7 @@ Authoritative reference for writing agents on the library. Sliced by area with
 
 ```ts
 createAgent({
-  provider,            // 'openai' | 'openrouter' | 'nvidia' | 'xai' | 'gemini' | 'opencode' | 'omniroute' | 'ollama'
+  provider,            // 'openai' | 'openrouter' | 'nvidia' | 'xai' | 'gemini' | 'opencode' | 'omniroute' | 'huggingface' | 'deepseek' | 'qwen' | 'zai' | 'moonshot' | 'mistral' | 'cohere' | 'groq' | 'together' | 'fireworks' | 'cerebras' | 'ollama'
   model,               // e.g. 'nvidia/nemotron-3-super-120b-a12b', 'gpt-5', 'anthropic/claude-3.7-sonnet'
   apiKey,              // string | (provider, userId?) => string   (omit for local ollama)
   baseUrl,             // optional OpenAI-compatible override
@@ -96,8 +96,12 @@ or `{ content: [...], isError: true }`.
 openai (OPENAI_API_KEY) · openrouter (OPENROUTER_API_KEY) · nvidia (NVIDIA_API_KEY,
 base `https://integrate.api.nvidia.com`) · xai (XAI_API_KEY) · gemini (GEMINI_API_KEY) ·
 opencode (OPENCODE_API_KEY) · omniroute (OMNIROUTE_API_KEY at
-`https://api.getomni.app/openai/v1`) · ollama (default, no key,
-`http://localhost:11434`).
+`https://api.getomni.app/openai/v1`) · huggingface (HUGGINGFACE_API_KEY,
+`https://router.huggingface.co/v1`) · deepseek (DEEPSEEK_API_KEY) · qwen
+(QWEN_API_KEY/DASHSCOPE_API_KEY) · zai (ZAI_API_KEY) · moonshot (MOONSHOT_API_KEY) ·
+mistral (MISTRAL_API_KEY) · cohere (COHERE_API_KEY) · groq (GROQ_API_KEY) · together
+(TOGETHER_API_KEY) · fireworks (FIREWORKS_API_KEY) · cerebras (CEREBRAS_API_KEY) ·
+ollama (default, no key, `http://localhost:11434`).
 
 Pass the key via `apiKey` or a resolver `(provider, userId?) => key` so keys never
 live in code. Pick a tool-capable model — NVIDIA `nemotron-3-super-120b-a12b`

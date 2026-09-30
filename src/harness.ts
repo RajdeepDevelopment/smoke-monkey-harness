@@ -105,7 +105,7 @@ export type PermissionPolicy =
   | ((req: PermissionRequest) => PermissionDecision | Promise<PermissionDecision>);
 
 export interface AgentOptions {
-  /** Model provider: openai | openrouter | nvidia | xai | gemini | opencode | omniroute | ollama (default). */
+  /** Model provider: openai | openrouter | nvidia | xai | gemini | opencode | omniroute | huggingface | deepseek | qwen | zai | moonshot | mistral | cohere | groq | together | fireworks | cerebras | ollama (default). */
   provider?: string;
   /** Model identifier (e.g. anthropic/claude-3.7-sonnet, gpt-5, qwen3:8b). */
   model?: string;

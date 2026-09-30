@@ -5,8 +5,10 @@
  *   export NVIDIA_API_KEY=nvapi-...
  *   npm run dev -- "write a README for this repo"
  *
- * Swap the provider/model for any tool-capable LLM (openai, openrouter, xai,
- * gemini, ollama, ...). This file is your entry point — wire UI events,
+ * Swap the provider/model for any tool-capable LLM (openai, openrouter, nvidia,
+ * xai, gemini, huggingface, deepseek, qwen, zai, moonshot, mistral, cohere,
+ * groq, together, fireworks, cerebras, omniroute, opencode, or local ollama).
+ * This file is your entry point — wire UI events,
  * load mcp servers, register skills/sub-contexts, then run().
  */
 import { createAgent } from '@smoke-monkey/harness';

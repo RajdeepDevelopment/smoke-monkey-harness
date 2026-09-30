@@ -83,7 +83,7 @@ or keep `autoApprove: true` for a local/demo agent:
 import { createAgent } from '@smoke-monkey/harness'
 
 const agent = createAgent({
-  provider: process.env.PROVIDER ?? 'nvidia',            // openai | openrouter | nvidia | xai | gemini | opencode | omniroute | ollama
+  provider: process.env.PROVIDER ?? 'nvidia',            // openai | openrouter | nvidia | xai | gemini | opencode | omniroute | huggingface | deepseek | qwen | zai | moonshot | mistral | cohere | groq | together | fireworks | cerebras | ollama
   model: process.env.MODEL ?? 'nvidia/nemotron-3-super-120b-a12b',
   apiKey: process.env.NVIDIA_API_KEY,                    // string or resolver (provider, userId?) => key
   workspacePath: process.cwd(),                          // REQUIRED — the agent's operating dir

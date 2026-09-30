@@ -56,6 +56,17 @@ Curated stock: `listStockCategories()`, `findStockEntry(name)`,
 | `gemini` | `GEMINI_API_KEY` | Gemini |
 | `opencode` | `OPENCODE_API_KEY` | opencode gateway |
 | `omniroute` | `OMNIROUTE_API_KEY` | `https://api.getomni.app/openai/v1` |
+| `huggingface` | `HUGGINGFACE_API_KEY` | Hugging Face Inference Providers router, `https://router.huggingface.co/v1` |
+| `deepseek` | `DEEPSEEK_API_KEY` | `https://api.deepseek.com/v1` |
+| `qwen` | `QWEN_API_KEY` (or `DASHSCOPE_API_KEY`) | DashScope compatible-mode |
+| `zai` | `ZAI_API_KEY` | Z.ai GLM |
+| `moonshot` | `MOONSHOT_API_KEY` | Moonshot Kimi |
+| `mistral` | `MISTRAL_API_KEY` | `https://api.mistral.ai/v1` |
+| `cohere` | `COHERE_API_KEY` | `https://api.cohere.com/v1` |
+| `groq` | `GROQ_API_KEY` | `https://api.groq.com/openai/v1` (free tier) |
+| `together` | `TOGETHER_API_KEY` | `https://api.together.xyz/v1` (free tier) |
+| `fireworks` | `FIREWORKS_API_KEY` | `https://api.fireworks.ai/inference/v1` (free tier) |
+| `cerebras` | `CEREBRAS_API_KEY` | `https://api.cerebras.ai/v1` (fast, free tier) |
 | `ollama` | none | default, `http://localhost:11434` |
 
 Keys via `apiKey` string or resolver `(provider, userId?) => key`. The loop

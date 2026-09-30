@@ -1,6 +1,7 @@
 import { Logger } from '../logger.js';
 import { KeyResolver } from '../keys.js';
 import { LLMMessage, ContextSnapshot, estimateTokens, resolveTokenBudget } from './run-context.js';
+import { PROVIDER_ENDPOINTS, providerEnvKey } from './provider-apis.js';
 
 export interface CompactRunContextResult {
   summary: string;
@@ -152,6 +153,14 @@ SUMMARY:`;
         const ocKey = userKey || process.env.OPENCODE_API_KEY || process.env.LLM_API_KEY || '';
         if (ocKey) headers['Authorization'] = `Bearer ${ocKey}`;
         url = `https://opencode.ai/zen/v1/chat/completions`;
+      } else if (provider === 'huggingface') {
+        const hfKey = userKey || process.env.HUGGINGFACE_API_KEY || process.env.LLM_API_KEY || '';
+        if (hfKey) headers['Authorization'] = `Bearer ${hfKey}`;
+        url = `https://router.huggingface.co/v1/chat/completions`;
+      } else if (provider !== undefined && PROVIDER_ENDPOINTS[provider] !== undefined) {
+        const apiKey = userKey || providerEnvKey(provider) || '';
+        if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+        url = PROVIDER_ENDPOINTS[provider];
       } else if (provider === 'ollama' || !provider) {
         url = `${baseUrl}/api/chat`;
         const apiKey = userKey || process.env.LLM_API_KEY || '';

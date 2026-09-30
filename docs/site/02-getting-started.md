@@ -50,11 +50,17 @@ export NVIDIA_API_KEY="nvapi-..."
 | Provider | `provider` string | Default Model | Environment Variable | Notes |
 | :--- | :--- | :--- | :--- | :--- |
 | **NVIDIA** *(Default)* | `'nvidia'` | `nvidia/nemotron-3-super-120b-a12b` | `NVIDIA_API_KEY` | High reasoning & fast tool calling. |
-| **OpenAI** | `'openai'` | `gpt-4o` | `OPENAI_API_KEY` | Standard OpenAI endpoints. |
+| **OpenAI** | `'openai'` | `gpt-5` | `OPENAI_API_KEY` | Standard OpenAI endpoints. |
 | **OpenRouter** | `'openrouter'` | `anthropic/claude-3.7-sonnet` | `OPENROUTER_API_KEY` | Access to 200+ models via one key. |
-| **xAI** | `'xai'` | `grok-beta` | `XAI_API_KEY` | Fast reasoning support. |
-| **Google Gemini** | `'gemini'` | `gemini-1.5-pro` | `GEMINI_API_KEY` | Native Google AI Studio key. |
+| **xAI** | `'xai'` | `grok-4.6` | `XAI_API_KEY` | Fast reasoning support. |
+| **Google Gemini** | `'gemini'` | `gemini-3-flash` | `GEMINI_API_KEY` | Native Google AI Studio key. |
+| **Hugging Face** | `'huggingface'` | `Qwen/Qwen2.5-Coder-32B-Instruct` | `HUGGINGFACE_API_KEY` | Inference Providers router. |
 | **Ollama (Local)** | `'ollama'` | `llama3.1:8b` | None required | 100% offline, privacy-first execution. |
+
+> 18+ OpenAI-compatible providers stream out of the box — including **DeepSeek**
+> (`deepseek`), **Qwen**/DashScope (`qwen`), **Z.ai GLM** (`zai`), **Moonshot Kimi**
+> (`moonshot`), **Mistral**, **Cohere**, **Groq**, **Together**, **Fireworks**, and
+> **Cerebras**. See [`docs/providers.md`](../providers.md) for the full matrix.
 
 ---
 

@@ -9,7 +9,7 @@
 
 | option | type / values | notes |
 | --- | --- | --- |
-| `provider` | `openai` `openrouter` `nvidia` `xai` `gemini` `opencode` `omniroute` `ollama` | default `ollama` |
+| `provider` | `openai` `openrouter` `nvidia` `xai` `gemini` `opencode` `omniroute` `huggingface` `deepseek` `qwen` `zai` `moonshot` `mistral` `cohere` `groq` `together` `fireworks` `cerebras` `ollama` | default `ollama` |
 | `model` | string | needs tool-call support |
 | `apiKey` | string \| `(provider, userId?) => key` | default: env keys |
 | `baseUrl` | string | OpenAI-compatible override |

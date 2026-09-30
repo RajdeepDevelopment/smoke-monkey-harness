@@ -261,7 +261,9 @@ const agent = createAgent({ /* ... */, sessionId: 'project-123' })
 
 **🌐 Multi-provider LLMs**
 `openai`, `openrouter`, `nvidia`, `xai`, `gemini`, `opencode`, `omniroute`,
-`ollama` (REST + SSE streaming), or any OpenAI-compatible endpoint via
+`huggingface`, `deepseek`, `qwen`, `zai`, `moonshot`, `mistral`, `cohere`,
+`groq`, `together`, `fireworks`, `cerebras`, `ollama` (REST + SSE streaming),
+or any OpenAI-compatible endpoint via
 `baseUrl` override.
 
 ---

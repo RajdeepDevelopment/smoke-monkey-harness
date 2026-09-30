@@ -3,7 +3,8 @@
  *
  * Owns every network/polling concern of calling a chat model:
  *  - provider endpoint + API-key resolution (OpenAI, OpenRouter, NVIDIA, xAI,
- *    Gemini, opencode, OmniRoute, Ollama, custom base URLs)
+ *    Gemini, opencode, OmniRoute, Hugging Face, DeepSeek, Qwen, Z.ai, Moonshot,
+ *    Mistral, Cohere, Groq, Together, Fireworks, Cerebras, Ollama, custom base URLs)
  *  - OpenAI-compatible streaming (SSE) with real-time text/thought deltas
  *  - an IDLE-BASED deadline watchdog instead of a fixed wall-clock timeout
  *  - transient error retry policy (429/5xx/network blips)
@@ -22,6 +23,7 @@ import {
   type LLMToolDef,
 } from './tool-library.js';
 import { toProviderMessages, type LLMMessage } from './run-context.js';
+import { PROVIDER_ENDPOINTS, providerEnvKey } from './provider-apis.js';
 
 // Transient LLM/provider failures worth an automatic retry.
 const MAX_LLM_RETRIES = 3;
@@ -47,7 +49,7 @@ export function isOmniRouteFreeTierModel(model: string): boolean {
 }
 
 /** Providers that stream deltas through parseStreamingResponse (text already emitted live). */
-export const STREAMING_PROVIDERS = new Set(['openai', 'openrouter', 'nvidia', 'xai', 'gemini', 'opencode', 'omniroute']);
+export const STREAMING_PROVIDERS = new Set(['openai', 'openrouter', 'nvidia', 'xai', 'gemini', 'opencode', 'omniroute', 'huggingface', 'deepseek', 'qwen', 'zai', 'moonshot', 'mistral', 'cohere', 'groq', 'together', 'fireworks', 'cerebras']);
 
 export interface LLMResponse {
   content: string | null;
@@ -203,6 +205,18 @@ export class LLMClient {
       const apiKey = userKey || process.env.OPENCODE_API_KEY || process.env.LLM_API_KEY || '';
       if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
       url = `https://opencode.ai/zen/v1/chat/completions`;
+    } else if (provider === 'huggingface') {
+      // Hugging Face Inference Provider router: OpenAI-compatible, consumes
+      // model ids like `Qwen/Qwen2.5-Coder-32B-Instruct` or `HuggingFaceTB/SmolLM2-1.7B-Instruct`.
+      const hfKey = userKey || process.env.HUGGINGFACE_API_KEY || process.env.LLM_API_KEY || '';
+      if (hfKey) headers['Authorization'] = `Bearer ${hfKey}`;
+      url = `https://router.huggingface.co/v1/chat/completions`;
+    } else if (provider !== undefined && PROVIDER_ENDPOINTS[provider] !== undefined) {
+      // Direct cloud APIs: each provider posts to its native OpenAI-compatible
+      // endpoint with a Bearer key from conventional env vars (see provider-apis.ts).
+      const apiKey = userKey || providerEnvKey(provider) || '';
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+      url = PROVIDER_ENDPOINTS[provider];
     } else if (provider === 'omniroute') {
       // OmniRoute: local OpenAI-compatible gateway (github.com/diegosouzapw/OmniRoute).
       // Keyless by default; use the user's saved key, else the env/placeholder.

@@ -14,6 +14,17 @@ tool-capable `model`, and hand over an API key — no other wiring.
 | `gemini` | `GEMINI_API_KEY` | Gemini tool models |
 | `opencode` | `OPENCODE_API_KEY` | opencode's gateway |
 | `omniroute` | `OMNIROUTE_API_KEY` | `https://api.getomni.app/openai/v1` (free tier possible) |
+| `huggingface` | `HUGGINGFACE_API_KEY` | Hugging Face Inference Providers router, `https://router.huggingface.co/v1` (e.g. `Qwen/Qwen2.5-Coder-32B-Instruct`, `meta-llama/Llama-3.3-70B-Instruct`) |
+| `deepseek` | `DEEPSEEK_API_KEY` | `https://api.deepseek.com/v1`, e.g. `deepseek-chat`, `deepseek-reasoner` |
+| `qwen` | `QWEN_API_KEY` (or `DASHSCOPE_API_KEY`) | Alibaba DashScope compatible-mode, `https://dashscope.aliyuncs.com/compatible-mode/v1`, e.g. `qwen-plus`, `qwen3.8-max` |
+| `zai` | `ZAI_API_KEY` | Z.ai GLM, `https://api.z.ai/api/paas/v4`, e.g. `glm-5`, `glm-5.2` |
+| `moonshot` | `MOONSHOT_API_KEY` | Moonshot Kimi, `https://api.moonshot.ai/v1` |
+| `mistral` | `MISTRAL_API_KEY` | `https://api.mistral.ai/v1`, e.g. `mistral-large-latest`, `codestral-latest` |
+| `cohere` | `COHERE_API_KEY` | `https://api.cohere.com/v1`, e.g. `command-a`, `command-r-plus` |
+| `groq` | `GROQ_API_KEY` | `https://api.groq.com/openai/v1` (free tier) |
+| `together` | `TOGETHER_API_KEY` | `https://api.together.xyz/v1` (free tier) |
+| `fireworks` | `FIREWORKS_API_KEY` | `https://api.fireworks.ai/inference/v1` (free tier) |
+| `cerebras` | `CEREBRAS_API_KEY` | `https://api.cerebras.ai/v1` (fast, free tier) |
 | `ollama` | none | default, `http://localhost:11434`, e.g. `qwen3:8b` |
 
 `baseUrl` overrides the endpoint for anything OpenAI-compatible (vLLM, LM

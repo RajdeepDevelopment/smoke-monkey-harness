@@ -71,7 +71,12 @@ const result = await agent.run(task)
 - `provider`: `nvidia` (NVIDIA_API_KEY) · `openai` (OPENAI_API_KEY) ·
   `openrouter` (OPENROUTER_API_KEY) · `xai` (XAI_API_KEY) · `gemini`
   (GEMINI_API_KEY) · `opencode` (OPENCODE_API_KEY) · `omniroute`
-  (OMNIROUTE_API_KEY) · `ollama` (local, default).
+  (OMNIROUTE_API_KEY) · `huggingface` (HUGGINGFACE_API_KEY) · `deepseek`
+  (DEEPSEEK_API_KEY) · `qwen` (QWEN_API_KEY) · `zai` (ZAI_API_KEY) ·
+  `moonshot` (MOONSHOT_API_KEY) · `mistral` (MISTRAL_API_KEY) · `cohere`
+  (COHERE_API_KEY) · `groq` (GROQ_API_KEY) · `together` (TOGETHER_API_KEY) ·
+  `fireworks` (FIREWORKS_API_KEY) · `cerebras` (CEREBRAS_API_KEY) · `ollama`
+  (local, default).
 - Model must support tool-calls. Known-good: `nvidia/nemotron-3-super-120b-a12b`,
   `gpt-5`, `anthropic/claude-3.7-sonnet`, `qwen3:8b` (ollama).
 - Defaults: the scaffold sets nvidia + nemotron-3-super-120b-a12b.
