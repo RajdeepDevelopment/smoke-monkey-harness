@@ -10,7 +10,10 @@ applications** — with **zero runtime dependencies**.
 
 <p align="center">
   <a href="https://smoke-monkey-harness.vercel.app/"><img src="https://img.shields.io/badge/Docs%20%26%20Demo-smoke--monkey--harness.vercel.app-00f5d4?style=for-the-badge&logo=vercel&logoColor=white" alt="Docs & Live Demo" /></a>
-  <a href="https://www.npmjs.com/package/@smoke-monkey/harness"><img src="https://img.shields.io/npm/v/@smoke-monkey/harness.svg?style=for-the-badge&color=007acc" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/smoke-monkey-harness"><img src="https://img.shields.io/npm/dt/smoke-monkey-harness.svg?style=for-the-badge&color=2ea44f&label=Downloads&logo=npm" alt="NPM Downloads" /></a>
+  <a href="https://www.npmjs.com/package/@smoke-monkey/harness"><img src="https://img.shields.io/npm/v/@smoke-monkey/harness.svg?style=for-the-badge&color=007acc&logo=npm" alt="npm version" /></a>
+  <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness"><img src="https://img.shields.io/github/stars/RajdeepDevelopment/smoke-monkey-harness?style=for-the-badge&logo=github&color=00f5d4" alt="GitHub Stars" /></a>
+  <a href="https://github.com/modelcontextprotocol"><img src="https://img.shields.io/badge/MCP-Model%20Context%20Protocol-8a2be2.svg?style=for-the-badge&logo=anthropic" alt="MCP Ready" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="license" /></a>
 </p>
 
@@ -170,32 +173,31 @@ const agent = createAgent({
 
 ---
 
-## Why Smoke Monkey?
+## Why an AI Agent Harness? (Harness Engineering)
 
-Building an agent from scratch means implementing the loop, tool execution,
-permissions, context management, MCP integration, recovery, sessions, and
-provider abstraction yourself. Smoke Monkey provides those primitives out of
-the box.
+> *"Harness engineering is the discipline of creating deterministic, observable, and safely bounded runtimes around non-deterministic LLMs."* — Martin Fowler, Software Architecture
 
-<div align="center">
+Raw prompt chaining and naive while loops fail when building production autonomous agents: they hallucinate tool calls, exhaust token budgets, get trapped in infinite loops, and execute destructive operations without guardrails.
 
-| Capability                    | Smoke Monkey |
-| :---------------------------- | :----------: |
-| Agent loop                    |      ✅      |
-| Tool calling                  |      ✅      |
-| 24 built-in tools             |      ✅      |
-| MCP                           |      ✅      |
-| Skills / `SKILL.md`           |      ✅      |
-| Human-in-the-loop permissions |      ✅      |
-| Automatic context compaction  |      ✅      |
-| Resumable sessions            |      ✅      |
-| Multiple LLM providers        |      ✅      |
-| Custom tools                  |      ✅      |
-| Custom storage                |      ✅      |
-| Framework independent         |      ✅      |
-| Database required             |      ❌      |
+**Smoke Monkey Harness** is an enterprise-grade agent harness that bridges unstructured LLM outputs with deterministic execution guarantees:
 
-</div>
+1. **Deterministic 6-Phase State Machine**: Replaces fragile ReAct loops with structured phases (`Plan` → `Tool Call` → `Execute` → `Verify` → `Compact` → `Recover`).
+2. **Zero-Dependency Runtime**: Completely standalone TypeScript with 0 external dependencies. Runs seamlessly in Node.js, Electron desktop apps, CLI tools, VS Code/Cursor extensions, or serverless workers.
+3. **First-Class Human-in-the-Loop**: Asynchronous pause-and-resume mechanisms for command approval, interactive questions, and token compaction thresholds.
+4. **Native MCP (Model Context Protocol)**: Expose tools and connect to existing MCP ecosystem tools without protocol wrappers.
+
+### Framework Benchmark Comparison
+
+| Feature / Architecture | **Smoke Monkey Harness** | LangChain / LangGraph | CrewAI | Mastra | From Scratch |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Runtime Dependencies** | **0 (Zero)** | 50+ packages | 30+ packages | 20+ packages | 0 |
+| **Agent Execution Loop** | **Deterministic 6-Phase Machine** | Graph / StateGraph | Role Agents | Workflow Graph | Fragile `while(true)` |
+| **Human-in-the-Loop Pauses** | **Native Async Event Bus** | Complex Checkpointers | Limited | Partial | Custom implementation |
+| **Model Context Protocol (MCP)** | **Built-in Client + Server** | Plugin / External | No native support | Wrapper | Manual JSON-RPC |
+| **Context Window Compaction** | **Automatic Token Budgeting** | Manual message trims | Context window errors | KV / Vector sync | Unhandled context overflow |
+| **Engineering Skills System** | **25+ Universal `SKILL.md`** | Prompt templates | Role definitions | Action tools | Raw system prompts |
+| **Embeddability** | **CLI, Desktop, Extension, Web** | Node / Python heavy | Python runtime | Node.js backend | Custom |
+| **Database Requirement** | **None (In-Memory or File)** | Vector / SQL DB | SQLite / ChromaDB | PostgreSQL | Any |
 
 ---
 
@@ -306,6 +308,21 @@ and charts. Drop-in (`ChatPanel`, `SmokeMonkeyChat`) or headless
 Providers   + Custom Tools
 ```
 
+
+### Visual Architecture Overviews
+
+<div align="center">
+
+#### 1. Trio Architecture: Core Runtime, MCP Protocol, and React UI Bridge
+<img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke_monkey_trio_architecture.jpg" alt="Smoke Monkey Trio Architecture: Core Runtime, Model Context Protocol, and UI Bridge" width="850" />
+
+#### 2. The 6-Phase Deterministic Execution Loop
+<img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke_monkey_phase_loop.jpg" alt="Smoke Monkey 6-Phase Agent Loop: Plan, Tool Call, Execute, Verify, Compact, Recover" width="850" />
+
+#### 3. Interactive Pauses & Human-in-the-Loop Permissions
+<img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke_monkey_interactive_pauses.jpg" alt="Interactive Pauses and Human-in-the-Loop Permissions" width="850" />
+
+</div>
 ---
 
 ## Connect the chat UI
@@ -621,6 +638,28 @@ NVIDIA_API_KEY=nvapi-... pnpm run demo:skills # examples/skills-demo.ts (SKILL.m
 
 Deeper material lives in [docs/](./docs/); see
 [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.
+
+## Star History
+
+If Smoke Monkey Harness helps you build more reliable AI agents and agentic developer tools, please consider starring the repository! 🌟
+
+<div align="center">
+
+[![Star History Chart](https://api.star-history.com/svg?repos=RajdeepDevelopment/smoke-monkey-harness&type=Date)](https://star-history.com/#RajdeepDevelopment/smoke-monkey-harness&Date)
+
+</div>
+
+---
+
+## Community & Ecosystem
+
+- **Documentation & Live Agent Simulator**: [smoke-monkey-harness.vercel.app](https://smoke-monkey-harness.vercel.app/)
+- **NPM Package**: [@smoke-monkey/harness](https://www.npmjs.com/package/@smoke-monkey/harness)
+- **MCP Server Package**: [@smoke-monkey/mcp](https://www.npmjs.com/package/@smoke-monkey/mcp)
+- **Drop-in Chat UI**: [@smoke-monkey/ui](https://www.npmjs.com/package/@smoke-monkey/ui)
+- **Report Bugs & Suggest Features**: [GitHub Issues](https://github.com/RajdeepDevelopment/smoke-monkey-harness/issues)
+
+---
 
 ## License
 

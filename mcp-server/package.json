@@ -35,6 +35,12 @@
     "smoke-monkey-harness": "^1.3.0"
   },
   "keywords": [
+    "coding-agent",
+    "agentic-ai",
+    "agent-apis",
+    "ai-harness",
+    "cursor-mcp",
+    "claude-code-mcp",
     "mcp",
     "mcp-server",
     "model-context-protocol",
