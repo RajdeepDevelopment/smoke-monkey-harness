@@ -86,6 +86,8 @@ export interface SmokeMonkeyChatFeatures {
   prompts?: boolean;
   /** Model picker in the header. Default true when `models` is provided. */
   modelSelector?: boolean;
+  /** Route / routing tiers selector in the header. Default true. */
+  routes?: boolean;
   /** Workspace picker in the header. Default true when `workspaces` is provided. */
   workspaceSelector?: boolean;
   // ── Message rendering ───────────────────────────────────────────────

@@ -27,6 +27,7 @@ import { ChatPromptCard } from './ChatPromptCard';
 import type { ChatMcpApprovalDecision, ChatPrompt } from '../../types/prompt';
 import type { ToolPresentationMap } from '../../types/tools';
 import { withPresentation } from '../../lib/toolRuns';
+import { extractFinishText, isFinishTool } from '../../runtime/EventReducer';
 
 export interface MessageBubbleFeatures {
   markdown?: boolean;
@@ -114,11 +115,16 @@ function formatTime(iso: string): string {
 
 function textFromParts(parts: MessagePart[]): string {
   return parts
-    .filter(
-      (part): part is Extract<MessagePart, { content: string }> =>
-        part.type === 'markdown' || part.type === 'text' || part.type === 'thinking'
-    )
-    .map((part) => part.content)
+    .map((part) => {
+      if (part.type === 'markdown' || part.type === 'text' || part.type === 'thinking') {
+        return part.content;
+      }
+      if (part.type === 'tool' && isFinishTool(part.toolCall)) {
+        return extractFinishText(part.toolCall);
+      }
+      return '';
+    })
+    .filter(Boolean)
     .join('\n\n');
 }
 
@@ -257,6 +263,11 @@ function renderPart(
       return <ThinkingBlock key={key} content={part.content} streaming={streaming} />;
     case 'tool': {
       if (features.tools === false) return null;
+      if (isFinishTool(part.toolCall)) {
+        const finishText = extractFinishText(part.toolCall);
+        if (!finishText) return null;
+        return <PlainProse key={key} content={finishText} streaming={streaming} />;
+      }
       const call = withPresentation(part.toolCall, toolPresentations);
       if (slots.toolCall) {
         const Tool = slots.toolCall;
@@ -416,6 +427,14 @@ function MessageBubbleView({
     const part = message.parts[i];
     if (part.type === 'markdown' || part.type === 'text') {
       prose.push(part.content);
+      i += 1;
+      continue;
+    }
+    if (part.type === 'tool' && isFinishTool(part.toolCall)) {
+      const finishText = extractFinishText(part.toolCall);
+      if (finishText) {
+        prose.push(finishText);
+      }
       i += 1;
       continue;
     }

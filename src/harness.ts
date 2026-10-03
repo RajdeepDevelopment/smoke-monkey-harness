@@ -121,6 +121,8 @@ export interface AgentOptions {
   agentId?: AgentId;
   /** Tool groups to load (default: all five) or a custom list of ToolDefinition. */
   tools?: (ToolGroupName | 'all')[] | ToolDefinition[];
+  /** Specific tool names to disable/omit for this agent (e.g. ['delete_file', 'run_command']). */
+  disabledTools?: string[];
   /** Replace the built-in system prompt. */
   systemPrompt?: string;
   /** Extra guidance appended to the system prompt (or string[]). */
@@ -204,8 +206,15 @@ export interface RunResult {
   agentState: AgentState | null;
 }
 
-export function buildToolRegistry(tools?: AgentOptions['tools']): ToolRegistry {
+export function buildToolRegistry(tools?: AgentOptions['tools'], disabledTools?: string[]): ToolRegistry {
   const registry = new ToolRegistry();
+  const disabled = new Set(disabledTools ?? []);
+  const safeRegister = (tool: ToolDefinition) => {
+    if (!disabled.has(tool.name)) {
+      registry.register(tool);
+    }
+  };
+
   const want = (group: ToolGroupName): boolean => {
     if (!tools) return true;
     if (Array.isArray(tools) && tools.length === 0) return true;
@@ -220,31 +229,31 @@ export function buildToolRegistry(tools?: AgentOptions['tools']): ToolRegistry {
       getReadFileTool, getWriteFileTool, getEditFileTool, getLineEditTool,
       getReplaceLinesTool, getApplyPatchTool, getDeleteFileTool,
       getListDirectoryTool, getInspectTool,
-    ]) registry.register(getter());
+    ]) safeRegister(getter());
   }
   if (want('terminal')) {
-    registry.register(getRunCommandTool());
-    registry.register(getRunTestTool());
+    safeRegister(getRunCommandTool());
+    safeRegister(getRunTestTool());
   }
   if (want('search')) {
-    registry.register(getGlobTool());
-    registry.register(getGrepTool());
+    safeRegister(getGlobTool());
+    safeRegister(getGrepTool());
   }
   if (want('git')) {
-    registry.register(getGitStatusTool());
-    registry.register(getGitDiffTool());
-    registry.register(getGitLogTool());
+    safeRegister(getGitStatusTool());
+    safeRegister(getGitDiffTool());
+    safeRegister(getGitLogTool());
   }
   if (want('agent')) {
-    registry.register(getAskUserTool());
-    registry.register(getContextManageTool());
-    registry.register(getFinishTaskTool());
-    registry.register(getTodoWriteTool());
+    safeRegister(getAskUserTool());
+    safeRegister(getContextManageTool());
+    safeRegister(getFinishTaskTool());
+    safeRegister(getTodoWriteTool());
   }
 
   if (Array.isArray(tools)) {
     for (const t of tools) {
-      if (typeof t !== 'string') registry.register(t);
+      if (typeof t !== 'string') safeRegister(t);
     }
   }
   return registry;
@@ -340,7 +349,7 @@ export class AgentHarness {
       },
     });
 
-    const toolRegistry = buildToolRegistry(options.tools);
+    const toolRegistry = buildToolRegistry(options.tools, options.disabledTools);
     if (this.mcp) {
       // The stock search is opt-in (see AgentOptions.mcpStockSearch). The
       // approval tool is NOT — it is how the model asks the user to link a

@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-site-verification" content="gRGKEZZ_0nkrYsTEe0P3cigC6JrEGQtBpVix3hNMPDY" />
+
+  <title>Chapter 6: Model Context Protocol (MCP) Integration — Smoke Monkey Harness Docs</title>
+  <meta name="title" content="Chapter 6: Model Context Protocol (MCP) Integration — Smoke Monkey Harness Docs" />
+  <meta name="description" content="Seamless Model Context Protocol (MCP) client and server integration. Connect local and remote MCP servers, tools, and prompts dynamically." />
+  <meta name="keywords" content="model context protocol, MCP integration, MCP client, MCP server, Anthropic MCP typescript" />
+  <meta name="author" content="Rajdeep Sadhu (RajdeepDevelopment)" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <link rel="canonical" href="https://rajdeepdevelopment.github.io/smoke-monkey-harness/mcp.html" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://rajdeepdevelopment.github.io/smoke-monkey-harness/mcp.html" />
+  <meta property="og:title" content="Chapter 6: Model Context Protocol (MCP) Integration — Smoke Monkey Harness Docs" />
+  <meta property="og:description" content="Seamless Model Context Protocol (MCP) client and server integration. Connect local and remote MCP servers, tools, and prompts dynamically." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" />
+  <meta property="og:site_name" content="Smoke Monkey Documentation" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://rajdeepdevelopment.github.io/smoke-monkey-harness/mcp.html" />
+  <meta name="twitter:title" content="Chapter 6: Model Context Protocol (MCP) Integration — Smoke Monkey Harness Docs" />
+  <meta name="twitter:description" content="Seamless Model Context Protocol (MCP) client and server integration. Connect local and remote MCP servers, tools, and prompts dynamically." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "TechArticle",
+        "@id": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/mcp.html#article",
+        "headline": "Chapter 6: Model Context Protocol (MCP) Integration — Smoke Monkey Harness Docs",
+        "description": "Seamless Model Context Protocol (MCP) client and server integration. Connect local and remote MCP servers, tools, and prompts dynamically.",
+        "url": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/mcp.html",
+        "datePublished": "2026-09-30T00:00:00Z",
+        "dateModified": "2026-10-03T00:00:00Z",
+        "inLanguage": "en-US",
+        "author": {
+          "@type": "Person",
+          "name": "Rajdeep Sadhu",
+          "url": "https://github.com/RajdeepDevelopment"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "RajdeepDevelopment",
+          "url": "https://github.com/RajdeepDevelopment"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/mcp.html#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Docs Hub",
+            "item": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Core Systems",
+            "item": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/mcp.html"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "06. Model Context Protocol (MCP)",
+            "item": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/mcp.html"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+
+    :root {
+      --bg: #090a0f;
+      --bg-surface: #10121a;
+      --bg-card: #151824;
+      --bg-card-hover: #1c2030;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(0, 245, 212, 0.3);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --primary: #00f5d4;
+      --primary-glow: rgba(0, 245, 212, 0.15);
+      --purple: #8a2be2;
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .top-banner {
+      background: linear-gradient(90deg, rgba(138, 43, 226, 0.25), rgba(0, 245, 212, 0.25));
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      text-align: center;
+      font-size: 0.875rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .top-banner a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .top-banner a:hover { text-decoration: underline; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(9, 10, 15, 0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+    .brand span.badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      background: var(--primary-glow);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      border-radius: 9999px;
+    }
+    .search-bar {
+      flex: 1;
+      max-width: 450px;
+      position: relative;
+    }
+    .search-bar input {
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-bar input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .header-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .header-link:hover { color: var(--primary); }
+    .btn-github {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-github:hover {
+      border-color: var(--primary);
+      background: var(--bg-card-hover);
+    }
+
+    .container {
+      display: flex;
+      max-width: 1440px;
+      margin: 0 auto;
+      min-height: calc(100vh - 120px);
+    }
+
+    aside.sidebar {
+      width: 320px;
+      position: sticky;
+      top: 57px;
+      height: calc(100vh - 57px);
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      flex-shrink: 0;
+    }
+    .sidebar-section {
+      margin-bottom: 1.5rem;
+    }
+    .sidebar-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+    }
+    .sidebar-nav {
+      list-style: none;
+      padding: 0;
+    }
+    .sidebar-nav li a {
+      display: block;
+      padding: 0.45rem 0.65rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .sidebar-nav li a:hover {
+      color: #fff;
+      background: var(--bg-card);
+    }
+    .sidebar-nav li a.active {
+      color: var(--primary);
+      background: rgba(0, 245, 212, 0.08);
+      border-left: 3px solid var(--primary);
+      font-weight: 600;
+    }
+
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 1.5rem;
+    }
+    .breadcrumbs a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .breadcrumbs a:hover {
+      color: var(--primary);
+    }
+
+    main.content {
+      flex: 1;
+      padding: 2.5rem 3.5rem;
+      max-width: 1080px;
+      overflow-x: hidden;
+    }
+
+    main.content h1 {
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #fff 40%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+    main.content h2 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+    main.content h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    main.content h4 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    main.content p {
+      margin-bottom: 1.15rem;
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+    main.content a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    main.content a:hover {
+      text-decoration: underline;
+    }
+    main.content ul, main.content ol {
+      margin-bottom: 1.25rem;
+      padding-left: 1.75rem;
+      color: var(--text-muted);
+    }
+    main.content li { margin-bottom: 0.45rem; line-height: 1.6; }
+    main.content hr {
+      border: 0;
+      height: 1px;
+      background: var(--border);
+      margin: 2.5rem 0;
+    }
+    main.content blockquote {
+      background: rgba(0, 245, 212, 0.05);
+      border-left: 3px solid var(--primary);
+      padding: 0.85rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.5rem 0;
+      color: #d1d5db;
+    }
+    main.content blockquote p {
+      margin-bottom: 0;
+    }
+
+    .code-container {
+      position: relative;
+      background: #0d0f17;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1.25rem 0 1.75rem;
+      overflow: hidden;
+    }
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+    .code-copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      transition: all 0.2s;
+    }
+    .code-copy-btn:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    pre {
+      padding: 1.15rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: #e5e7eb;
+      background: #0d0f17;
+    }
+    code {
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.875em;
+      color: var(--primary);
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    .diagram-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.75rem 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+    .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0 2rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    th {
+      background: var(--bg-surface);
+      color: #fff;
+      font-weight: 600;
+    }
+    tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
+
+    .chapter-nav-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 3.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .chapter-nav-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .chapter-nav-card:hover {
+      border-color: var(--primary);
+      background: var(--bg-card);
+      transform: translateY(-2px);
+    }
+    .chapter-nav-card.next {
+      text-align: right;
+      grid-column: 2;
+    }
+    .chapter-nav-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+    }
+    .chapter-nav-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface);
+      padding: 2.5rem 1.5rem;
+      margin-top: 4rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-dim);
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+
+    @media (max-width: 900px) {
+      aside.sidebar { display: none; }
+      main.content { padding: 1.5rem 1rem; }
+      main.content h1 { font-size: 1.85rem; }
+      .chapter-nav-grid { grid-template-columns: 1fr; }
+      .chapter-nav-card.next { grid-column: 1; text-align: left; }
+    }
+
+  </style>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      securityLevel: 'loose',
+      logLevel: 'error'
+    });
+  </script>
+</head>
+<body>
+
+  <div class="top-banner">
+    <span>⭐️ <strong>Love Smoke Monkey Harness?</strong> Support our open source project!</span>
+    <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness" target="_blank" rel="noopener">Star on GitHub ⭐</a>
+    <span>•</span>
+    <span>🌐 Interactive Agent Simulator:</span>
+    <a href="https://smoke-monkey-harness.vercel.app/" target="_blank" rel="noopener">smoke-monkey-harness.vercel.app ↗</a>
+  </div>
+
+  <header>
+    <a href="index.html" class="brand">
+      <span>🐒 Smoke Monkey Harness</span>
+      <span class="badge">v0.1.3</span>
+    </a>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search documentation, tools, APIs... (Press '/' to focus)" aria-label="Search documentation" />
+    </div>
+    <div class="header-links">
+      <a href="getting-started.html" class="header-link">Quickstart</a>
+      <a href="api.html" class="header-link">API Reference</a>
+      <a href="https://www.npmjs.com/package/smoke-monkey-harness" target="_blank" rel="noopener" class="header-link">npm</a>
+      <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness" target="_blank" rel="noopener" class="btn-github">
+        <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar" id="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-title">Portal</div>
+    <ul class="sidebar-nav">
+      <li><a href="index.html">🐒 Documentation Hub</a></li>
+    </ul>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Getting Started</div>
+    <ul class="sidebar-nav">
+      <li><a href="overview.html">01. Architecture & Overview</a></li>
+      <li><a href="getting-started.html">02. Quickstart & Installation</a></li>
+      <li><a href="agent-loop.html">03. The 6-Phase Agent Loop</a></li>
+    </ul>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Core Systems</div>
+    <ul class="sidebar-nav">
+      <li><a href="tools.html">04. Tool Registry & Custom Tools</a></li>
+      <li><a href="permissions.html">05. Permissions & 3 Pauses</a></li>
+      <li><a href="mcp.html" class="active">06. Model Context Protocol (MCP)</a></li>
+      <li><a href="skills.html">07. Just-in-Time Skills</a></li>
+      <li><a href="subcontexts.html">08. Sub-Contexts & Memory</a></li>
+      <li><a href="hooks-and-errors.html">09. Hooks, Diagnostics & Errors</a></li>
+      <li><a href="ui-components.html">10. Drop-In React Chat UI</a></li>
+    </ul>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Reference</div>
+    <ul class="sidebar-nav">
+      <li><a href="api.html">11. TypeScript API Reference</a></li>
+      <li><a href="architecture.html">12. System Architecture Internals</a></li>
+      <li><a href="providers.html">13. 18 Supported LLM Matrix</a></li>
+      <li><a href="contributing.html">14. Contributing & Verification</a></li>
+    </ul>
+  </div>
+</aside>
+
+    <main class="content">
+      <div class="breadcrumbs">
+        <a href="index.html">Docs Hub</a>
+        <span>/</span>
+        <span>Core Systems</span>
+        <span>/</span>
+        <span style="color: var(--primary);">06. Model Context Protocol (MCP)</span>
+      </div>
+
+      <h1>06. Model Context Protocol (MCP) Integration</h1>
+<blockquote>
+<p>⭐️ <strong>Love Smoke Monkey Harness?</strong> Please support the project with a star on <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness">GitHub</a>!
+🌐 <strong>Interactive Simulator:</strong> Test the agent loop and stream live at <a href="https://smoke-monkey-harness.vercel.app/">smoke-monkey-harness.vercel.app</a></p>
+</blockquote>
+<hr>
+<p>The Model Context Protocol (MCP) is an open standard that allows AI agents to securely connect to external data sources, tools, and environments.</p>
+<p>Smoke Monkey provides a <strong>dual MCP integration</strong>:</p>
+<ol>
+<li><strong>The Native MCP Client</strong> inside <code>@smoke-monkey/harness</code> connects external tools (GitHub, databases, browsers) into your agent loop.</li>
+<li><strong>The <code>@smoke-monkey/mcp</code> Server</strong> exposes 22 development tools to external agents (Claude Code, Cursor, Codex, Windsurf) to scaffold and verify harness projects.</li>
+</ol>
+<hr>
+<h2>1. Using External MCP Tools in Your Agent</h2>
+<p>You can connect external MCP servers directly to your agent via <code>options.mcp</code>. Both <strong>stdio</strong> (local processes) and <strong>streamable-HTTP</strong> (SSE endpoints) transports are supported:</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">import { createAgent } from &#39;@smoke-monkey/harness&#39;;
+
+const agent = createAgent({
+  workspacePath: process.cwd(),
+  mcp: [
+    // 1. Local process via stdio
+    {
+      id: &#39;github&#39;,
+      command: &#39;npx&#39;,
+      args: [&#39;-y&#39;, &#39;@modelcontextprotocol/server-github&#39;],
+      env: { GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_TOKEN },
+    },
+    // 2. Local database inspector
+    {
+      id: &#39;db&#39;,
+      command: &#39;npx&#39;,
+      args: [&#39;-y&#39;, &#39;@modelcontextprotocol/server-postgres&#39;, &#39;postgresql://user:pass@localhost:5432/mydb&#39;],
+    },
+    // 3. Remote cloud service via streamable-HTTP (SSE)
+    {
+      id: &#39;cloud-metrics&#39;,
+      url: &#39;https://mcp.internal.company.com/sse&#39;,
+      headers: { Authorization: `Bearer ${process.env.CLOUD_TOKEN}` },
+    },
+  ],
+});
+</code></pre>
+    </div>
+<h3>Automatic Tool Namespacing</h3>
+<p>To avoid tool collisions, external MCP tools are automatically namespaced using the server ID:</p>
+<ul>
+<li>GitHub tool <code>create_issue</code> becomes: <strong><code>github__create_issue</code></strong></li>
+<li>Postgres tool <code>query</code> becomes: <strong><code>db__query</code></strong></li>
+</ul>
+<h3>Lazy Server Startup</h3>
+<p>MCP servers are connected <strong>lazily</strong>. The harness does not launch background processes until the agent&#39;s phase machine or user explicitly requests a tool from that server, saving memory and startup latency.</p>
+<hr>
+<h2>2. Managing MCP Servers at Runtime</h2>
+<p>You can dynamically add or remove MCP servers after your agent has started:</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">// Dynamically register an external server
+await agent.addMcpServer({
+  id: &#39;slack&#39;,
+  command: &#39;npx&#39;,
+  args: [&#39;-y&#39;, &#39;@modelcontextprotocol/server-slack&#39;],
+  env: { SLACK_BOT_TOKEN: process.env.SLACK_TOKEN },
+});
+
+// List all registered servers and their status
+const servers = agent.listMcpServers();
+console.log(&#39;Active MCP servers:&#39;, servers);
+
+// Remove a server
+await agent.removeMcpServer(&#39;slack&#39;);
+</code></pre>
+    </div>
+<hr>
+<h2>3. The <code>@smoke-monkey/mcp</code> Server</h2>
+<p>If you use external agent tools like <strong>Claude Code</strong>, <strong>Codex</strong>, <strong>Cursor</strong>, or <strong>Windsurf</strong>, you can give them native mastery over the Smoke Monkey Harness using <code>@smoke-monkey/mcp</code>.</p>
+<h3>Run via npx</h3>
+<div class="code-container">
+      <div class="code-header">
+        <span>bash</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-bash">npx -y @smoke-monkey/mcp
+</code></pre>
+    </div>
+<h3>Configure in Your Client (<code>mcpServers</code> JSON)</h3>
+<p>Add this to your client&#39;s configuration file (e.g., <code>~/.claude/claude_desktop_config.json</code>, <code>~/.cursor/mcp.json</code>):</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>json</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;smoke-monkey&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;@smoke-monkey/mcp&quot;]
+    }
+  }
+}
+</code></pre>
+    </div>
+<hr>
+<h2>The 22 Development Tools in <code>@smoke-monkey/mcp</code></h2>
+<p>The server provides 22 structured tools categorized into three primary areas:</p>
+<h3>1. Harness Workflow Tools</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Tool</th>
+<th align="left">Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>harness_guide</code></td>
+<td align="left">Master instructions and architecture guide for building a looping agent.</td>
+</tr>
+<tr>
+<td align="left"><code>harness_plan</code></td>
+<td align="left">Converts a developer&#39;s high-level product goal into a concrete build plan.</td>
+</tr>
+<tr>
+<td align="left"><code>harness_scaffold</code></td>
+<td align="left">Generates a complete, runnable agent starter project on disk.</td>
+</tr>
+<tr>
+<td align="left"><code>harness_verify</code></td>
+<td align="left">Typechecks and builds an agent project to verify correctness.</td>
+</tr>
+<tr>
+<td align="left"><code>harness_api</code></td>
+<td align="left">Authoritative API reference (options, events, tools, providers).</td>
+</tr>
+<tr>
+<td align="left"><code>harness_events</code></td>
+<td align="left">Complete event catalog and UI wiring specifications.</td>
+</tr>
+<tr>
+<td align="left"><code>harness_status</code></td>
+<td align="left">Returns library version, provider status, and capabilities.</td>
+</tr>
+<tr>
+<td align="left"><code>harness_examples</code></td>
+<td align="left">Lists bundled example agents for reference.</td>
+</tr>
+<tr>
+<td align="left"><code>harness_read_example</code></td>
+<td align="left">Reads an example agent file verbatim.</td>
+</tr>
+</tbody></table>
+<h3>2. Category-Wise Skill Tools</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Tool</th>
+<th align="left">Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>harness_skills_by_category</code></td>
+<td align="left">Browses 25 bundled engineering skills across backend, frontend, devops, and QA.</td>
+</tr>
+<tr>
+<td align="left"><code>harness_skill_content</code></td>
+<td align="left">Loads the complete <code>SKILL.md</code> instruction manual for a specific skill.</td>
+</tr>
+</tbody></table>
+<h3>3. Feature Deep-Dive Guides</h3>
+<p>Specialized guidance tools that require zero parameters:</p>
+<ul>
+<li><code>harness_guide_loop_phases_guards_and_compaction</code></li>
+<li><code>harness_guide_permissions_the_three_pauses</code></li>
+<li><code>harness_guide_tools_custom_tool_implementation</code></li>
+<li><code>harness_guide_subcontexts_activation_and_switching</code></li>
+<li><code>harness_guide_skills_skill_md_discovery</code></li>
+<li><code>harness_guide_mcp_servers_and_discovery</code></li>
+<li><code>harness_guide_providers_models_and_api_keys</code></li>
+<li><code>harness_guide_storage_sessions_runs_messages</code></li>
+<li><code>harness_guide_events_streaming_and_ui_wiring</code></li>
+<li><code>harness_guide_ui_bridge_and_components</code></li>
+<li><code>harness_guide_errors_validation_and_pauses</code></li>
+</ul>
+<hr>
+<h2>Next Steps</h2>
+<ul>
+<li>Inject domain-specific engineering playbooks with skills: <a href="07-skills.md">07. Just-in-Time Skills</a></li>
+<li>Dynamically alter system prompts: <a href="08-subcontexts.md">08. Sub-Contexts</a></li>
+<li>Render MCP tool cards in the chat UI: <a href="10-ui-components.md">10. React UI Components</a></li>
+</ul>
+<h1>MCP (Model Context Protocol)</h1>
+<blockquote>
+<p>⭐️ <strong>Love Smoke Monkey Harness?</strong> Please support the project with a star on <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness">GitHub</a>!
+🌐 <strong>Interactive Simulator:</strong> Test the agent loop and stream live at <a href="https://smoke-monkey-harness.vercel.app/">smoke-monkey-harness.vercel.app</a></p>
+</blockquote>
+<hr>
+<p>The harness can surface external tools through the Model Context Protocol —
+stdio servers (<code>command</code> / <code>args</code>) or streamable-HTTP servers (<code>url</code> / <code>headers</code>).</p>
+<h2>Config</h2>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">type McpServerConfig = {
+  id: string;          // stable id, becomes the tool namespace
+  name: string;
+  description: string;
+  icon?: string;
+  command?: string;    // stdio: binary to spawn (e.g. &#39;npx&#39;)
+  args?: string[];
+  cwd?: string;
+  env?: Record&lt;string, string&gt;;
+  url?: string;        // streamable-HTTP transport
+  headers?: Record&lt;string, string&gt;;
+  enabled?: boolean;
+};
+</code></pre>
+    </div>
+<h2>Connecting</h2>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">const agent = createAgent({
+  provider: &#39;nvidia&#39;,
+  model: &#39;nvidia/nemotron-3-super-120b-a12b&#39;,
+  workspacePath: process.cwd(),
+  mcp: [
+    { id: &#39;github&#39;, name: &#39;GitHub&#39;, description: &#39;GitHub API&#39;,
+      command: &#39;npx&#39;, args: [&#39;-y&#39;, &#39;@modelcontextprotocol/server-github&#39;],
+      env: { GITHUB_TOKEN: process.env.GITHUB_TOKEN! } },
+    { id: &#39;postgres&#39;, name: &#39;Postgres&#39;, description: &#39;Query a database&#39;,
+      url: &#39;https://mcp.example.com/pg&#39;, headers: { Authorization: &#39;Bearer …&#39; } },
+  ],
+});
+</code></pre>
+    </div>
+<p>Servers connect <strong>lazily</strong> when the matching <code>mcp_&lt;id&gt;</code> sub-context is
+activated. Their tools surface as <code>&lt;id&gt;__&lt;tool&gt;</code> — e.g. <code>github__search_repos</code>.</p>
+<h2>Approvals</h2>
+<p>MCP tools are read-only until approved. A disabled or unknown server raises a
+<code>request_mcp_approval</code> / <code>mcp.approval_required</code> pause:</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">agent.on(&#39;request_mcp_approval&#39;, async (e) =&gt; {
+  // e.data: { toolCallId, configs/info }
+  await agent.resolveMcpDecision(e.data.toolCallId, {
+    action: &#39;enable&#39;,           // &#39;enable&#39; | &#39;leave&#39; | &#39;deny&#39;
+    names: [&#39;github&#39;, &#39;postgres&#39;],
+  });
+});
+</code></pre>
+    </div>
+<p><code>autoApprove: true</code> enables servers without pausing.</p>
+<h2>Stock catalog</h2>
+<p>Curated server recipes ship with the library: <code>listStockCategories()</code>,
+<code>findStockEntry(name)</code>, <code>stockToMcpConfig(entry)</code>. Examples include GitHub,
+Postgres, Playwright, Sentry, database and browser entries. Recipes return a
+ready <code>McpServerConfig</code> you can hand straight back to <code>options.mcp</code>.</p>
+<h2>Runtime</h2>
+<p><code>agent.addMcpServer(cfg)</code> / <code>agent.removeMcpServer(id)</code> /
+<code>agent.listMcpServers()</code> manage servers between runs. <code>McpManager</code> exposes the
+underlying lifecycle.</p>
+<h2>The agent plugin</h2>
+<p><code>plugin/</code> ships an MCP server that brings this library&#39;s build-agent and
+deep-feature guide content into Claude Code, Codex, opencode, Antigravity, and
+GitHub Copilot. Install with <code>bash plugin/install.sh</code>. Host layout and the
+strict portable manifest are documented in
+<a href="../plugin/README.md"><code>plugin/README.md</code></a>. The offline fixture suite in
+<code>scripts/fixtures/test-plugin-mcp.ts</code> validates the manifests end-to-end.</p>
+
+
+
+      <div class="chapter-nav-grid">
+  <a href="permissions.html" class="chapter-nav-card prev">
+    <span class="chapter-nav-label">← Previous Chapter</span>
+    <span class="chapter-nav-title">05. Permissions & 3 Pauses</span>
+  </a>
+  <a href="skills.html" class="chapter-nav-card next">
+    <span class="chapter-nav-label">Next Chapter →</span>
+    <span class="chapter-nav-title">07. Just-in-Time Skills</span>
+  </a>
+</div>
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-links">
+      <a href="index.html">Docs Home</a>
+      <a href="https://smoke-monkey-harness.vercel.app/" target="_blank" rel="noopener">Interactive Simulator</a>
+      <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.npmjs.com/package/smoke-monkey-harness" target="_blank" rel="noopener">npm Registry</a>
+      <a href="contributing.html">Contributing</a>
+    </div>
+    <p>Released under the MIT License • Built with ❤️ by Rajdeep Sadhu</p>
+  </footer>
+
+  <script>
+    function copyCode(btn) {
+      const container = btn.closest('.code-container');
+      const code = container.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.color = '#00f5d4';
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.style.color = '';
+        }, 2000);
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+      }
+    });
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll('.sidebar-nav li').forEach(li => {
+        const text = li.textContent.toLowerCase();
+        li.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

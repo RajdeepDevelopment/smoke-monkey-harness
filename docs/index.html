@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-site-verification" content="gRGKEZZ_0nkrYsTEe0P3cigC6JrEGQtBpVix3hNMPDY" />
+
+  <!-- Primary Meta Tags -->
+  <title>Smoke Monkey Harness — Autonomous Looping AI Agent Runtime & Framework</title>
+  <meta name="title" content="Smoke Monkey Harness — Autonomous Looping AI Agent Runtime & Framework" />
+  <meta name="description" content="Embeddable, zero-runtime-dependency TypeScript engine for building autonomous looping AI agents, code editors, and developer tools. Multi-provider, MCP ready, 6-phase state machine with automatic recovery." />
+  <meta name="keywords" content="smoke monkey harness, smoke monkey, AI agent, agent loop, Model Context Protocol, MCP, TypeScript agent framework, LLM runtime, AI code editor, agentic coding, autonomous agents, state machine, zero dependencies" />
+  <meta name="author" content="Rajdeep Sadhu (RajdeepDevelopment)" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://rajdeepdevelopment.github.io/smoke-monkey-harness/" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://rajdeepdevelopment.github.io/smoke-monkey-harness/" />
+  <meta property="og:title" content="Smoke Monkey Harness — Autonomous Looping AI Agent Runtime" />
+  <meta property="og:description" content="Embeddable, zero-runtime-dependency TypeScript engine for building autonomous looping AI agents and code editors. 6-phase state machine, 18 LLM providers, and native MCP support." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" />
+  <meta property="og:site_name" content="Smoke Monkey Documentation" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://rajdeepdevelopment.github.io/smoke-monkey-harness/" />
+  <meta name="twitter:title" content="Smoke Monkey Harness — Autonomous Looping AI Agent Runtime" />
+  <meta name="twitter:description" content="Zero-runtime-dependency TypeScript engine for building autonomous looping AI agents, code editors, and developer tools." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareSourceCode",
+        "@id": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/#sourcecode",
+        "name": "Smoke Monkey Harness",
+        "description": "Zero-dependency TypeScript engine for autonomous looping AI agents, code editors, and dev tools.",
+        "programmingLanguage": "TypeScript",
+        "codeRepository": "https://github.com/RajdeepDevelopment/smoke-monkey-harness",
+        "runtimePlatform": "Node.js >= 18",
+        "license": "https://opensource.org/licenses/MIT",
+        "author": {
+          "@type": "Person",
+          "name": "Rajdeep Sadhu",
+          "url": "https://github.com/RajdeepDevelopment"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/#application",
+        "name": "smoke-monkey-harness",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform (macOS, Linux, Windows)",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/#website",
+        "url": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/",
+        "name": "Smoke Monkey Harness Documentation",
+        "publisher": {
+          "@type": "Organization",
+          "name": "RajdeepDevelopment",
+          "url": "https://github.com/RajdeepDevelopment"
+        }
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #090a0f;
+      --bg-surface: #10121a;
+      --bg-card: #151824;
+      --bg-card-hover: #1c2030;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(0, 245, 212, 0.3);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --primary: #00f5d4;
+      --primary-glow: rgba(0, 245, 212, 0.15);
+      --purple: #8a2be2;
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top banner */
+    .top-banner {
+      background: linear-gradient(90deg, rgba(138, 43, 226, 0.25), rgba(0, 245, 212, 0.25));
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      text-align: center;
+      font-size: 0.875rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .top-banner a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .top-banner a:hover { text-decoration: underline; }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(9, 10, 15, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+    .brand span.badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      background: var(--primary-glow);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      border-radius: 9999px;
+    }
+    .search-bar {
+      flex: 1;
+      max-width: 450px;
+      position: relative;
+    }
+    .search-bar input {
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-bar input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .header-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .header-link:hover { color: var(--primary); }
+    .btn-github {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-github:hover {
+      border-color: var(--primary);
+      background: var(--bg-card-hover);
+    }
+
+    /* Layout */
+    .container {
+      display: flex;
+      max-width: 1440px;
+      margin: 0 auto;
+      min-height: calc(100vh - 120px);
+    }
+
+    /* Sidebar */
+    aside.sidebar {
+      width: 300px;
+      position: sticky;
+      top: 57px;
+      height: calc(100vh - 57px);
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      flex-shrink: 0;
+    }
+    .sidebar-section {
+      margin-bottom: 1.5rem;
+    }
+    .sidebar-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+    }
+    .sidebar-nav {
+      list-style: none;
+    }
+    .sidebar-nav li a {
+      display: block;
+      padding: 0.4rem 0.65rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .sidebar-nav li a:hover, .sidebar-nav li a.active {
+      color: var(--primary);
+      background: var(--bg-card);
+    }
+
+    /* Main Content */
+    main.content {
+      flex: 1;
+      padding: 2.5rem 3.5rem;
+      max-width: 1100px;
+      overflow-x: hidden;
+    }
+
+    /* Hero */
+    .hero {
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3rem;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--primary-glow);
+      border: 1px solid var(--border-accent);
+      color: var(--primary);
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+    h1.hero-title {
+      font-size: 2.75rem;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #fff 40%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p.hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      margin-bottom: 1.75rem;
+      max-width: 800px;
+    }
+    .install-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 520px;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--primary);
+      margin-bottom: 2rem;
+    }
+    .install-box button {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.35rem 0.7rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .install-box button:hover {
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Chapter Content */
+    article.chapter-section {
+      margin-bottom: 4rem;
+      scroll-margin-top: 80px;
+    }
+    h2.chapter-heading {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+    h3.sub-heading {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin: 1.75rem 0 0.75rem;
+    }
+    p {
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+    }
+    ul, ol {
+      margin-bottom: 1.25rem;
+      padding-left: 1.5rem;
+      color: var(--text-muted);
+    }
+    li { margin-bottom: 0.35rem; }
+
+    /* Code Blocks */
+    .code-container {
+      position: relative;
+      background: #0d0f17;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1.25rem 0 1.75rem;
+      overflow: hidden;
+    }
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+    .code-copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      transition: all 0.2s;
+    }
+    .code-copy-btn:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    pre {
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: #e5e7eb;
+    }
+    code {
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.875em;
+      color: var(--primary);
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.25rem 0 1.75rem;
+      font-size: 0.875rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+    }
+    th {
+      background: var(--bg-surface);
+      color: #fff;
+      font-weight: 600;
+    }
+    tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
+
+    /* Callout */
+    .callout {
+      background: rgba(0, 245, 212, 0.05);
+      border-left: 3px solid var(--primary);
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.25rem 0;
+    }
+    .callout-title {
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    /* Diagram Card */
+    .diagram-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      text-align: center;
+    }
+    .diagram-card img {
+      max-width: 100%;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .diagram-caption {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 0.75rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      aside.sidebar { display: none; }
+      main.content { padding: 1.5rem; }
+      h1.hero-title { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Announcement Banner -->
+  <div class="top-banner">
+    <span>⭐️ <strong>Love Smoke Monkey Harness?</strong> Star the repository on GitHub!</span>
+    <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness" target="_blank" rel="noopener">Star on GitHub ⭐</a>
+    <span>•</span>
+    <span>🌐 Test in Live Browser Simulator:</span>
+    <a href="https://smoke-monkey-harness.vercel.app/" target="_blank" rel="noopener">smoke-monkey-harness.vercel.app ↗</a>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <a href="#" class="brand">
+      <span>🐒 Smoke Monkey Harness</span>
+      <span class="badge">v0.1.3</span>
+    </a>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search documentation, tools, APIs... (Press '/' to focus)" aria-label="Search documentation" />
+    </div>
+    <div class="header-links">
+      <a href="getting-started.html" class="header-link">Quickstart</a>
+      <a href="api.html" class="header-link">API Reference</a>
+      <a href="https://www.npmjs.com/package/smoke-monkey-harness" target="_blank" rel="noopener" class="header-link">npm</a>
+      <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness" target="_blank" rel="noopener" class="btn-github">
+        <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Getting Started</div>
+        <ul class="sidebar-nav">
+          <li><a href="overview.html">01. Architecture & Overview</a></li>
+          <li><a href="getting-started.html">02. Quickstart & Providers</a></li>
+          <li><a href="agent-loop.html">03. The 6-Phase Agent Loop</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Core Systems</div>
+        <ul class="sidebar-nav">
+          <li><a href="tools.html">04. Tool Registry & Custom Tools</a></li>
+          <li><a href="permissions.html">05. Permissions & 3 Pauses</a></li>
+          <li><a href="mcp.html">06. Model Context Protocol (MCP)</a></li>
+          <li><a href="skills.html">07. Just-in-Time Skills</a></li>
+          <li><a href="subcontexts.html">08. Sub-Contexts & Memory</a></li>
+          <li><a href="hooks-and-errors.html">09. Lifecycle Hooks & Errors</a></li>
+          <li><a href="ui-components.html">10. Drop-In React Chat UI</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Reference</div>
+        <ul class="sidebar-nav">
+          <li><a href="api.html">API Reference</a></li>
+          <li><a href="providers.html">Supported LLM Matrix (18)</a></li>
+          <li><a href="contributing.html">Contributing & Verification</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Content Area -->
+    <main class="content" id="mainContent">
+
+      <!-- Hero Section -->
+      <section class="hero">
+        <div class="hero-badge">⚡ Zero Runtime Dependencies • Multi-Provider • MCP Ready</div>
+        <h1 class="hero-title">Smoke Monkey Harness</h1>
+        <p class="hero-subtitle">
+          An embeddable, framework-agnostic TypeScript runtime for building autonomous looping AI agents, code editors, and developer tools with deterministic phase execution and human-in-the-loop safety.
+        </p>
+
+        <div class="install-box">
+          <code>pnpm add @smoke-monkey/harness</code>
+          <button onclick="navigator.clipboard.writeText('pnpm add @smoke-monkey/harness'); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy', 2000)">Copy</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number">6 Phases</div>
+            <div class="stat-label">Deterministic State Machine</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">18 Providers</div>
+            <div class="stat-label">Direct Cloud & Local LLMs</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">24 Tools</div>
+            <div class="stat-label">Filesystem, Shell, Git & MCP</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">0 Deps</div>
+            <div class="stat-label">Pure Vanilla TypeScript Core</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Chapter 01: Overview -->
+      <article class="chapter-section" id="overview">
+        <h2 class="chapter-heading">01. Architecture & The 3 Pillars</h2>
+        <p>
+          Unlike monolithic frameworks that bundle bloated abstractions and opaque prompts, Smoke Monkey separates the <strong>autonomous execution loop</strong>, the <strong>human-in-the-loop permission model</strong>, and the <strong>frontend presentation layer</strong> into three modular packages:
+        </p>
+        
+        <div class="diagram-card">
+          <img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke_monkey_trio_architecture.jpg" alt="Smoke Monkey 3-Pillar Architecture Diagram" />
+          <div class="diagram-caption">The Three Pillars of Smoke Monkey: UI Presentation, Autonomous Harness, and MCP Extensibility</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Pillar</th>
+              <th>Package</th>
+              <th>Role & Capabilities</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Frontend UI</strong></td>
+              <td><code>@smoke-monkey/ui</code></td>
+              <td>Drop-in React chat interface, streaming markdown, collapsible tool execution cards, 14 theme presets, and zero-backend synthetic simulation.</td>
+            </tr>
+            <tr>
+              <td><strong>2. Backend Engine</strong></td>
+              <td><code>@smoke-monkey/harness</code></td>
+              <td>Zero-dependency TypeScript agent loop, 6-phase state machine, runaway step guards, context compaction, and modular sub-context memory.</td>
+            </tr>
+            <tr>
+              <td><strong>3. Extensibility</strong></td>
+              <td><code>@smoke-monkey/mcp</code></td>
+              <td>22 built-in MCP development tools, stdio & HTTP SSE connectors, scaffolding engine, and IDE plugin bundles (Claude Code, Cursor, Copilot).</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <!-- Chapter 02: Quickstart -->
+      <article class="chapter-section" id="quickstart">
+        <h2 class="chapter-heading">02. Quickstart & First Agent</h2>
+        <p>
+          Create an autonomous coding agent with full file access, self-healing reflection, and terminal execution in under 20 lines of TypeScript:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span>agent.ts</span>
+            <button class="code-copy-btn" onclick="copySnippet(this)">Copy</button>
+          </div>
+          <pre><code>import { createAgent } from '@smoke-monkey/harness';
+
+// Initialize the agent with your choice of provider
+const agent = createAgent({
+  provider: 'nvidia', // 'openai' | 'anthropic' | 'groq' | 'deepseek' | 'ollama' | ...
+  model: 'nvidia/nemotron-3-super-120b-a12b',
+  workspacePath: process.cwd(),
+  autoApprove: true, // auto-approve read and mutation tools for non-interactive runs
+});
+
+// Stream real-time tokens and tool events
+agent.on('text.delta', (e) => process.stdout.write(e.data.delta));
+agent.on('tool.started', (e) => console.log('\n⚙️ Running tool:', e.data.toolName));
+agent.on('phase.changed', (e) => console.log(`\n🔄 Phase: ${e.data.from} ➔ ${e.data.to}`));
+
+// Execute task
+const result = await agent.run('Inspect this repository, locate package.json, and explain its scripts');
+console.log('\n✅ Task finished with status:', result.status);</code></pre>
+        </div>
+      </article>
+
+      <!-- Chapter 03: The 6-Phase Agent Loop -->
+      <article class="chapter-section" id="agent-loop">
+        <h2 class="chapter-heading">03. The 6-Phase Agent Loop & Self-Healing</h2>
+        <p>
+          Unconstrained AI agents often suffer from infinite loops, goal drift, and hallucinated successes. Smoke Monkey bounds agent execution inside a deterministic state machine:
+        </p>
+
+        <div class="diagram-card">
+          <img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke_monkey_phase_loop.jpg" alt="Smoke Monkey 6-Phase Execution Loop" />
+          <div class="diagram-caption">Deterministic 6-Phase State Machine: explore ➔ plan ➔ edit ➔ verify ➔ recover ➔ complete</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Phase</th>
+              <th>Description</th>
+              <th>Permitted Tools</th>
+              <th>Transition Criteria</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>explore</code></td>
+              <td>Surveying repository layout, reading source files, searching symbols.</td>
+              <td><code>read_file</code>, <code>glob</code>, <code>grep</code>, <code>git_status</code></td>
+              <td>Transitions to <code>plan</code> once requirements are mapped.</td>
+            </tr>
+            <tr>
+              <td><code>plan</code></td>
+              <td>Formulating execution strategy and subtask breakdown.</td>
+              <td><code>todo_write</code>, <code>context_manage</code></td>
+              <td>Transitions to <code>edit</code> when roadmap is registered.</td>
+            </tr>
+            <tr>
+              <td><code>edit</code></td>
+              <td>Writing code, modifying files, applying line-range replacements.</td>
+              <td><code>write_file</code>, <code>edit_file</code>, <code>apply_patch</code></td>
+              <td>Transitions to <code>verify</code> after code changes.</td>
+            </tr>
+            <tr>
+              <td><code>verify</code></td>
+              <td>Running compilers, linters, and automated test suites.</td>
+              <td><code>run_command</code>, <code>run_tests</code></td>
+              <td>Passes to <code>complete</code> if clean; <strong>auto-demotes to <code>recover</code></strong> if tests fail.</td>
+            </tr>
+            <tr>
+              <td><code>recover</code></td>
+              <td>Self-healing: analyzing error stacks and synthesizing corrective patches.</td>
+              <td><code>read_file</code>, <code>git_diff</code></td>
+              <td>Transitions back to <code>edit</code> to apply fixes.</td>
+            </tr>
+            <tr>
+              <td><code>complete</code></td>
+              <td>Final verification, summary synthesis, and returning RunResult.</td>
+              <td>Read-only</td>
+              <td>Loop terminates and returns <code>RunResult</code> to caller.</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <!-- Chapter 04: Tools -->
+      <article class="chapter-section" id="tools">
+        <h2 class="chapter-heading">04. Tool Registry & Custom Tool Implementation</h2>
+        <p>
+          Smoke Monkey ships with 24 built-in tools organized into five standard groups: <strong>filesystem</strong>, <strong>terminal</strong>, <strong>search</strong>, <strong>git</strong>, and <strong>agent</strong>.
+        </p>
+
+        <h3 class="sub-heading">Creating Custom Tools</h3>
+        <p>Define custom tools using standard TypeScript definitions and pass them into <code>createAgent</code>:</p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span>custom-tool.ts</span>
+            <button class="code-copy-btn" onclick="copySnippet(this)">Copy</button>
+          </div>
+          <pre><code>import { ToolDefinition } from '@smoke-monkey/harness';
+
+export const deployPreviewTool: ToolDefinition = {
+  name: 'deploy_preview',
+  description: 'Deploys a staging preview environment to cloud infrastructure',
+  parameters: {
+    type: 'object',
+    properties: {
+      branch: { type: 'string', description: 'Git branch to deploy' },
+      env: { type: 'string', enum: ['staging', 'preview'], default: 'preview' }
+    },
+    required: ['branch']
+  },
+  async execute({ branch, env }) {
+    // Your deployment logic here
+    return { success: true, url: `https://${branch}.preview.example.com` };
+  }
+};</code></pre>
+        </div>
+      </article>
+
+      <!-- Chapter 05: Permissions -->
+      <article class="chapter-section" id="permissions">
+        <h2 class="chapter-heading">05. Permissions & The Three Interactive Pauses</h2>
+        <p>
+          Destructive operations like modifying production files or executing shell commands are gated by safe Human-in-the-Loop suspension points:
+        </p>
+
+        <div class="diagram-card">
+          <img src="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke_monkey_interactive_pauses.jpg" alt="Smoke Monkey Interactive Pauses" />
+          <div class="diagram-caption">The Three Interactive Pauses: permission.required, ask_user.required, and mcp.approval_required</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Trigger Condition</th>
+              <th>Resolution API</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>permission.required</code></td>
+              <td>Mutating tool (file edit, terminal command) requests execution.</td>
+              <td><code>agent.resolvePermission(toolCallId, 'allow' | 'deny')</code></td>
+            </tr>
+            <tr>
+              <td><code>ask_user.required</code></td>
+              <td>Agent needs human input or clarification on ambiguous intent.</td>
+              <td><code>agent.respond(toolCallId, answerString)</code></td>
+            </tr>
+            <tr>
+              <td><code>mcp.approval_required</code></td>
+              <td>External MCP server requires authorization before connection.</td>
+              <td><code>agent.resolveMcpDecision(toolCallId, { action, names })</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <!-- Chapter 06: MCP -->
+      <article class="chapter-section" id="mcp">
+        <h2 class="chapter-heading">06. Model Context Protocol (MCP) Integration</h2>
+        <p>
+          Connect any external database, API, or developer service via the open <strong>Model Context Protocol</strong> using either <code>stdio</code> subprocesses or <code>streamable-HTTP (SSE)</code>:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span>mcp-config.ts</span>
+            <button class="code-copy-btn" onclick="copySnippet(this)">Copy</button>
+          </div>
+          <pre><code>const agent = createAgent({
+  workspacePath: process.cwd(),
+  mcp: [
+    // Local stdio MCP server
+    {
+      id: 'sqlite',
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-sqlite', '--db-path', './dev.db']
+    },
+    // Remote HTTP SSE MCP server
+    {
+      id: 'analytics',
+      url: 'https://mcp.internal.company.com/sse',
+      headers: { Authorization: `Bearer ${process.env.MCP_TOKEN}` }
+    }
+  ]
+});</code></pre>
+        </div>
+      </article>
+
+      <!-- Chapter 07: Skills -->
+      <article class="chapter-section" id="skills">
+        <h2 class="chapter-heading">07. Just-in-Time Skills (SKILL.md Discovery)</h2>
+        <p>
+          Instead of overloading the system prompt with dozens of long workflow instructions, Smoke Monkey implements a <strong>Two-Tier JIT Injection Pattern</strong> providing <strong>94% token savings</strong>:
+        </p>
+        <ul>
+          <li><strong>Tier 1 (Index Catalog):</strong> The model sees only skill names and a 1-line summary (~150 tokens total).</li>
+          <li><strong>Tier 2 (On-Demand Activation):</strong> When a skill is needed, the model calls <code>use_skill</code> and only the relevant instruction file is injected into the active turn.</li>
+        </ul>
+      </article>
+
+      <!-- Chapter 08: Sub-Contexts -->
+      <article class="chapter-section" id="subcontexts">
+        <h2 class="chapter-heading">08. Sub-Contexts & Modular Memory</h2>
+        <p>
+          Break down monolithic system prompts into modular blocks (e.g. <code>code-review</code>, <code>security-audit</code>, <code>database-expert</code>) that can be activated dynamically at runtime using <code>context_manage</code> without resetting the session memory.
+        </p>
+      </article>
+
+      <!-- Chapter 09: Lifecycle Hooks & Errors -->
+      <article class="chapter-section" id="hooks">
+        <h2 class="chapter-heading">09. Lifecycle Hooks & Error Hierarchy</h2>
+        <p>
+          Intercept model turns and tool executions with fail-closed security policies, PII redaction, and deterministic error handling:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span>hooks.ts</span>
+            <button class="code-copy-btn" onclick="copySnippet(this)">Copy</button>
+          </div>
+          <pre><code>const agent = createAgent({
+  workspacePath: process.cwd(),
+  hooks: {
+    async beforeToolCall(toolCall) {
+      if (toolCall.name === 'run_command' && toolCall.input.command.includes('rm -rf /')) {
+        throw new Error('Blocked unsafe destructive command!');
+      }
+    },
+    async beforeModelCall({ messages }) {
+      // Redact sensitive credentials or inject telemetry
+    }
+  }
+});</code></pre>
+        </div>
+      </article>
+
+      <!-- Chapter 10: UI Components -->
+      <article class="chapter-section" id="ui">
+        <h2 class="chapter-heading">10. Drop-In React Chat UI (@smoke-monkey/ui)</h2>
+        <p>
+          Mount a complete, enterprise-grade AI chat interface in any React, Next.js, or Vite application in seconds:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span>App.tsx</span>
+            <button class="code-copy-btn" onclick="copySnippet(this)">Copy</button>
+          </div>
+          <pre><code>import React from 'react';
+import { SmokeMonkeyChat, WebSocketTransport } from '@smoke-monkey/ui';
+import '@smoke-monkey/ui/ui.css';
+
+const transport = new WebSocketTransport({ url: 'ws://localhost:4000/agent' });
+
+export default function App() {
+  return (
+    &lt;div style={{ height: '100vh', width: '100vw' }}&gt;
+      &lt;SmokeMonkeyChat 
+        transport={transport}
+        theme="cyberpunk"
+        brand={{ name: 'Code Assistant', icon: &lt;span&gt;⚡&lt;/span&gt; }}
+      /&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+        </div>
+      </article>
+
+      <!-- Chapter 11: API Reference -->
+      <article class="chapter-section" id="api">
+        <h2 class="chapter-heading">API Reference — createAgent({ … })</h2>
+        <p>Complete configuration parameters for <code>createAgent</code>:</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>provider</code></td>
+              <td><code>string</code></td>
+              <td>LLM vendor ('nvidia', 'openai', 'anthropic', 'deepseek', 'groq', 'together', 'ollama', etc.).</td>
+            </tr>
+            <tr>
+              <td><code>model</code></td>
+              <td><code>string</code></td>
+              <td>Model identifier (e.g. 'nvidia/nemotron-3-super-120b-a12b', 'gpt-4o', 'claude-3-7-sonnet').</td>
+            </tr>
+            <tr>
+              <td><code>workspacePath</code></td>
+              <td><code>string (required)</code></td>
+              <td>Absolute path to the workspace root directory where tools execute.</td>
+            </tr>
+            <tr>
+              <td><code>autoApprove</code></td>
+              <td><code>boolean</code></td>
+              <td>If <code>true</code>, automatically approves tool mutations without pausing for human permission.</td>
+            </tr>
+            <tr>
+              <td><code>mcp</code></td>
+              <td><code>McpServerConfig[]</code></td>
+              <td>Array of external Model Context Protocol server configurations (stdio or HTTP SSE).</td>
+            </tr>
+            <tr>
+              <td><code>skillsDir</code></td>
+              <td><code>string | string[]</code></td>
+              <td>Custom directories containing <code>SKILL.md</code> manuals for just-in-time injection.</td>
+            </tr>
+            <tr>
+              <td><code>hooks</code></td>
+              <td><code>AgentHooks</code></td>
+              <td>Lifecycle intercepts (<code>beforeModelCall</code>, <code>beforeToolCall</code>, etc.).</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <!-- Providers Matrix -->
+      <article class="chapter-section" id="providers">
+        <h2 class="chapter-heading">Supported LLM Providers (18 Direct Cloud & Local)</h2>
+        <p>Smoke Monkey talks directly to vendor endpoints with native streaming and per-provider environment key resolution:</p>
+        <ul>
+          <li><strong>Cloud Providers:</strong> NVIDIA NIM, OpenAI, Anthropic, OpenRouter, xAI (Grok), Google Gemini, DeepSeek, Qwen (DashScope), Hugging Face, Mistral AI, Cohere, Groq, Together AI, Fireworks AI, Cerebras, Z.ai (GLM), Moonshot (Kimi), OpenCode Zen.</li>
+          <li><strong>Local Inference:</strong> Ollama (zero API key needed).</li>
+        </ul>
+      </article>
+
+      <!-- Contributing -->
+      <article class="chapter-section" id="contributing">
+        <h2 class="chapter-heading">Contributing & Community</h2>
+        <p>
+          Smoke Monkey Harness is an open-source project released under the MIT License. Contributions, issue reports, and pull requests are welcome on GitHub!
+        </p>
+        <p>
+          <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness" target="_blank" rel="noopener" class="btn-github" style="display:inline-flex;">
+            Explore the GitHub Repository ↗
+          </a>
+        </p>
+      </article>
+
+    </main>
+  </div>
+
+  <script>
+    // Copy snippet helper
+    function copySnippet(btn) {
+      const code = btn.closest('.code-container').querySelector('pre code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.innerText = 'Copied!';
+        setTimeout(() => btn.innerText = 'Copy', 2000);
+      });
+    }
+
+    // Keyboard shortcut for search ('/')
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+      }
+    });
+
+    // Real-time documentation filter
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const sections = document.querySelectorAll('article.chapter-section');
+      sections.forEach(sec => {
+        if (!q || sec.innerText.toLowerCase().includes(q)) {
+          sec.style.display = '';
+        } else {
+          sec.style.display = 'none';
+        }
+      });
+    });
+
+    // Sidebar active link tracker
+    window.addEventListener('scroll', () => {
+      const sections = document.querySelectorAll('article.chapter-section');
+      const links = document.querySelectorAll('.sidebar-nav a');
+      let currentId = '';
+      sections.forEach(sec => {
+        const top = sec.getBoundingClientRect().top;
+        if (top <= 120) {
+          currentId = sec.getAttribute('id');
+        }
+      });
+      links.forEach(link => {
+        if (link.getAttribute('href') === '#' + currentId) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

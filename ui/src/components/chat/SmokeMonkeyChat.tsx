@@ -123,6 +123,8 @@ export interface SmokeMonkeyChatProps {
   onWorkspaceChange?: (workspaceId: string) => void;
   onMCPChange?: (serverId: string, enabled: boolean) => void;
   onSourceClick?: (source: ChatSource) => void;
+  /** Callback fired when the user initiates a new session via the header + button. */
+  onNewSession?: () => void;
   placeholder?: string;
 
   // ── Keyboard ────────────────────────────────────────────────────────
@@ -143,6 +145,7 @@ const DEFAULT_FEATURES: Required<Omit<SmokeMonkeyChatFeatures, 'header'>> = {
   tokenUsage: true,
   prompts: true,
   modelSelector: true,
+  routes: false,
   workspaceSelector: true,
   citations: true,
   tools: true,
@@ -162,7 +165,8 @@ function featuresWithDefaults(
   hasModels: boolean,
   hasWorkspaces: boolean,
   hasApiKeys: boolean,
-  hasMcp: boolean
+  hasMcp: boolean,
+  hasRoutes: boolean
 ): Required<Omit<SmokeMonkeyChatFeatures, 'header'>> {
   const d = { ...DEFAULT_FEATURES };
   // A picker/pill turns itself on when you hand it options, and stays off when you
@@ -171,6 +175,7 @@ function featuresWithDefaults(
   if (f?.workspaceSelector === undefined) d.workspaceSelector = hasWorkspaces;
   if (f?.apiKeys === undefined) d.apiKeys = hasApiKeys;
   if (f?.mcp === undefined) d.mcp = hasMcp;
+  if (f?.routes === undefined) d.routes = hasRoutes;
   return { ...d, ...f };
 }
 
@@ -271,18 +276,13 @@ function DropdownItem({
   );
 }
 
-const DEFAULT_ROUTES: ChatRouteOption[] = [
-  { id: 'free', label: 'OmniRoute (free)' },
-  { id: 'pro', label: 'OmniRoute (pro)' },
-];
-
 function DefaultHeader({
   brandName,
   sessionTitle,
   brandIcon,
   currentModelLabel,
   models,
-  routes = DEFAULT_ROUTES,
+  routes,
   workspaces,
   mcpServers,
   selectedModel,
@@ -317,7 +317,7 @@ function DefaultHeader({
   onNewSession?: () => void;
   className?: string;
 }) {
-  const [route, setRoute] = useState(routes[0]?.id ?? 'free');
+  const [route, setRoute] = useState(routes && routes.length > 0 ? routes[0]?.id : undefined);
   const model = models?.find((m) => m.id === selectedModel);
   const workspace = workspaces?.find((w) => w.id === selectedWorkspace);
   const label = model?.label ?? currentModelLabel ?? selectedModel ?? 'model';
@@ -364,45 +364,54 @@ function DefaultHeader({
             </Dropdown>
           )}
 
-          <Dropdown
-            trigger={
-              <HeaderPill
-                icon={<Settings className="h-3 w-3" />}
-                label={routes.find((r) => r.id === route)?.label ?? routes[0]?.label ?? 'route'}
-              />
-            }
-          >
-            {(close) =>
-              routes.map((r) => (
-                <DropdownItem key={r.id} active={r.id === route} onClick={() => { setRoute(r.id); close(); }}>
-                  {r.label}
-                </DropdownItem>
-              ))
-            }
-          </Dropdown>
-
-          {models && models.length > 0 && onModelChange && (
-            <Dropdown trigger={<HeaderPill icon={<Sparkles className="h-3 w-3" />} label={`/ ${label}`} />}>
+          {routes && routes.length > 0 && (
+            <Dropdown
+              trigger={
+                <HeaderPill
+                  icon={<Settings className="h-3 w-3" />}
+                  label={routes.find((r) => r.id === route)?.label ?? routes[0]?.label ?? 'route'}
+                />
+              }
+            >
               {(close) =>
-                models.map((m) => (
-                  <DropdownItem
-                    key={m.id}
-                    active={m.id === selectedModel}
-                    onClick={() => {
-                      onModelChange(m.id);
-                      close();
-                    }}
-                  >
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate">{m.label}</span>
-                      {m.provider && (
-                        <span className="truncate text-[9.5px] text-ink-muted">{m.provider}</span>
-                      )}
-                    </span>
+                routes.map((r) => (
+                  <DropdownItem key={r.id} active={r.id === route} onClick={() => { setRoute(r.id); close(); }}>
+                    {r.label}
                   </DropdownItem>
                 ))
               }
             </Dropdown>
+          )}
+
+          {models && models.length > 0 && (
+            onModelChange ? (
+              <Dropdown trigger={<HeaderPill icon={<Sparkles className="h-3 w-3" />} label={`/ ${label}`} />}>
+                {(close) =>
+                  models.map((m) => (
+                    <DropdownItem
+                      key={m.id}
+                      active={m.id === selectedModel}
+                      onClick={() => {
+                        onModelChange(m.id);
+                        close();
+                      }}
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate">{m.label}</span>
+                        {m.provider && (
+                          <span className="truncate text-[9.5px] text-ink-muted">{m.provider}</span>
+                        )}
+                      </span>
+                    </DropdownItem>
+                  ))
+                }
+              </Dropdown>
+            ) : (
+              <HeaderPill
+                icon={<Sparkles className="h-3 w-3" />}
+                label={model?.provider ? `${label} (${model.provider})` : label}
+              />
+            )
           )}
         </div>
       </PillRow>
@@ -540,6 +549,7 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
     onWorkspaceChange,
     onMCPChange,
     onSourceClick,
+    onNewSession,
     placeholder,
     shortcuts,
   } = props;
@@ -551,9 +561,10 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
         !!models?.length,
         !!workspaces?.length,
         !!apiKeys?.length,
-        !!mcpServers?.length
+        !!mcpServers?.length,
+        !!routes?.length
       ),
-    [features, models, workspaces, apiKeys, mcpServers]
+    [features, models, workspaces, apiKeys, mcpServers, routes]
   );
 
   const [selectedModel, setSelectedModel] = useState(initialModel ?? models?.[0]?.id);
@@ -846,6 +857,10 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
     onWorkspaceChange?.(id);
   };
   const handleMCPChange = (id: string, enabled: boolean) => onMCPChange?.(id, enabled);
+  const handleNewSession = () => {
+    clear();
+    onNewSession?.();
+  };
 
   const defaultHeaderNode = headerHidden ? null : (
     <DefaultHeader
@@ -854,7 +869,7 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
       brandIcon={brand?.icon}
       currentModelLabel={initialModel}
       models={featuresResolved.modelSelector && !slots?.header ? models : undefined}
-      routes={routes}
+      routes={featuresResolved.routes && routes && routes.length > 0 ? routes : undefined}
       workspaces={slots?.header ? undefined : featuresResolved.workspaceSelector ? workspaces : undefined}
       mcpServers={slots?.header ? undefined : featuresResolved.mcp ? mcpServers : undefined}
       selectedModel={selectedModel}
@@ -865,7 +880,7 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
       onModelChange={handleModelChange}
       onWorkspaceChange={handleWorkspaceChange}
       onMCPChange={handleMCPChange}
-      onNewSession={clear}
+      onNewSession={handleNewSession}
       className={classNames?.header}
     />
   );

@@ -362,6 +362,43 @@ function appendOrMerge(
   return [...parts, next];
 }
 
+export function extractFinishText(call: ToolCall): string {
+  let text = '';
+  if (call.output !== undefined && call.output !== null) {
+    if (typeof call.output === 'string') {
+      text = call.output;
+    } else if (typeof call.output === 'object') {
+      const o = call.output as Record<string, unknown>;
+      if (typeof o.output === 'string') text = o.output;
+      else if (typeof o.summary === 'string') text = o.summary;
+      else if (typeof o.text === 'string') text = o.text;
+      else if (typeof o.result === 'string') text = o.result;
+    }
+  }
+  if (!text && call.input !== undefined && call.input !== null) {
+    if (typeof call.input === 'string') {
+      text = call.input;
+    } else if (typeof call.input === 'object') {
+      const inp = call.input as Record<string, unknown>;
+      if (typeof inp.summary === 'string') text = inp.summary;
+      else if (typeof inp.output === 'string') text = inp.output;
+      else if (typeof inp.text === 'string') text = inp.text;
+    }
+  }
+  if (text) {
+    const summaryPrefixMatch = text.match(/\[TASK COMPLETE\][^\n]*\n(?:Summary:\s*)?([\s\S]*)/i);
+    if (summaryPrefixMatch && summaryPrefixMatch[1]) {
+      text = summaryPrefixMatch[1].trim();
+    }
+  }
+  return text.trim();
+}
+
+export function isFinishTool(call: ToolCall | string): boolean {
+  const name = (typeof call === 'string' ? call : call.name).toLowerCase();
+  return name === 'finish_task' || name === 'finish_run' || name === 'task_complete' || name === 'complete_task';
+}
+
 function withTool(
   messages: ChatMessage[],
   target: ChatMessage,
@@ -374,6 +411,37 @@ function withTool(
     existingIdx === -1
       ? [...(target.toolCalls ?? []), updated]
       : (target.toolCalls ?? []).map((t, i) => (i === existingIdx ? updated : t));
+
+  const resolvedName = toolName ?? updated.name;
+  if (isFinishTool(resolvedName)) {
+    const text = extractFinishText(updated);
+    let parts = [...target.parts];
+    if (text) {
+      const finishKey = `finish-${updated.id}`;
+      const partIdx = parts.findIndex(
+        (p) => (p as { _toolCallId?: string })._toolCallId === finishKey
+      );
+      if (partIdx === -1) {
+        const newPart: MessagePart & { _toolCallId?: string } = {
+          type: 'markdown',
+          content: text,
+          _toolCallId: finishKey,
+        };
+        parts.push(newPart);
+      } else {
+        const existing = parts[partIdx];
+        if (existing.type === 'markdown') {
+          parts[partIdx] = { ...existing, content: text };
+        }
+      }
+    }
+    return replace(messages, {
+      ...target,
+      toolCalls,
+      parts,
+      content: messageContentFromParts(parts),
+    });
+  }
 
   const parts = [...target.parts];
   const partIdx = parts.findIndex(
@@ -430,6 +498,11 @@ export function messageContentFromParts(parts: MessagePart[]): string {
         break;
       case 'tool': {
         const call = part.toolCall;
+        if (isFinishTool(call)) {
+          const finishText = extractFinishText(call);
+          if (finishText) chunks.push(finishText);
+          break;
+        }
         const result =
           call.output === undefined
             ? ''
