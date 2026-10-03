@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-site-verification" content="gRGKEZZ_0nkrYsTEe0P3cigC6JrEGQtBpVix3hNMPDY" />
+
+  <!-- Primary Meta Tags -->
+  <title>Chapter 2: Quickstart & Installation Guide — Smoke Monkey Harness Docs</title>
+  <meta name="title" content="Chapter 2: Quickstart & Installation Guide — Smoke Monkey Harness Docs" />
+  <meta name="description" content="Get started with Smoke Monkey Harness in 60 seconds. Learn npm/pnpm installation, API key configuration, and running your first autonomous agent loop." />
+  <meta name="keywords" content="smoke monkey quickstart, install smoke monkey harness, AI agent setup, typescript autonomous agent" />
+  <meta name="author" content="Rajdeep Sadhu (RajdeepDevelopment)" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://rajdeepdevelopment.github.io/smoke-monkey-harness/getting-started.html" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://rajdeepdevelopment.github.io/smoke-monkey-harness/getting-started.html" />
+  <meta property="og:title" content="Chapter 2: Quickstart & Installation Guide — Smoke Monkey Harness Docs" />
+  <meta property="og:description" content="Get started with Smoke Monkey Harness in 60 seconds. Learn npm/pnpm installation, API key configuration, and running your first autonomous agent loop." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" />
+  <meta property="og:site_name" content="Smoke Monkey Documentation" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://rajdeepdevelopment.github.io/smoke-monkey-harness/getting-started.html" />
+  <meta name="twitter:title" content="Chapter 2: Quickstart & Installation Guide — Smoke Monkey Harness Docs" />
+  <meta name="twitter:description" content="Get started with Smoke Monkey Harness in 60 seconds. Learn npm/pnpm installation, API key configuration, and running your first autonomous agent loop." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/main/assets/smoke-monkey-harness.png" />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "TechArticle",
+        "@id": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/getting-started.html#article",
+        "headline": "Chapter 2: Quickstart & Installation Guide — Smoke Monkey Harness Docs",
+        "description": "Get started with Smoke Monkey Harness in 60 seconds. Learn npm/pnpm installation, API key configuration, and running your first autonomous agent loop.",
+        "url": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/getting-started.html",
+        "datePublished": "2026-09-30T00:00:00Z",
+        "dateModified": "2026-10-03T00:00:00Z",
+        "inLanguage": "en-US",
+        "author": {
+          "@type": "Person",
+          "name": "Rajdeep Sadhu",
+          "url": "https://github.com/RajdeepDevelopment"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "RajdeepDevelopment",
+          "url": "https://github.com/RajdeepDevelopment"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/getting-started.html#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Docs Hub",
+            "item": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Getting Started",
+            "item": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/getting-started.html"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "02. Quickstart & Installation",
+            "item": "https://rajdeepdevelopment.github.io/smoke-monkey-harness/getting-started.html"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+
+    :root {
+      --bg: #090a0f;
+      --bg-surface: #10121a;
+      --bg-card: #151824;
+      --bg-card-hover: #1c2030;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(0, 245, 212, 0.3);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --primary: #00f5d4;
+      --primary-glow: rgba(0, 245, 212, 0.15);
+      --purple: #8a2be2;
+      --blue: #3b82f6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top banner */
+    .top-banner {
+      background: linear-gradient(90deg, rgba(138, 43, 226, 0.25), rgba(0, 245, 212, 0.25));
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      text-align: center;
+      font-size: 0.875rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .top-banner a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .top-banner a:hover { text-decoration: underline; }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(9, 10, 15, 0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+    .brand span.badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      background: var(--primary-glow);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      border-radius: 9999px;
+    }
+    .search-bar {
+      flex: 1;
+      max-width: 450px;
+      position: relative;
+    }
+    .search-bar input {
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-bar input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .header-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .header-link:hover { color: var(--primary); }
+    .btn-github {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-github:hover {
+      border-color: var(--primary);
+      background: var(--bg-card-hover);
+    }
+
+    /* Layout */
+    .container {
+      display: flex;
+      max-width: 1440px;
+      margin: 0 auto;
+      min-height: calc(100vh - 120px);
+    }
+
+    /* Sidebar */
+    aside.sidebar {
+      width: 320px;
+      position: sticky;
+      top: 57px;
+      height: calc(100vh - 57px);
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      flex-shrink: 0;
+    }
+    .sidebar-section {
+      margin-bottom: 1.5rem;
+    }
+    .sidebar-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+    }
+    .sidebar-nav {
+      list-style: none;
+      padding: 0;
+    }
+    .sidebar-nav li a {
+      display: block;
+      padding: 0.45rem 0.65rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .sidebar-nav li a:hover {
+      color: #fff;
+      background: var(--bg-card);
+    }
+    .sidebar-nav li a.active {
+      color: var(--primary);
+      background: rgba(0, 245, 212, 0.08);
+      border-left: 3px solid var(--primary);
+      font-weight: 600;
+    }
+
+    /* Breadcrumbs */
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 1.5rem;
+    }
+    .breadcrumbs a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .breadcrumbs a:hover {
+      color: var(--primary);
+    }
+
+    /* Main Content */
+    main.content {
+      flex: 1;
+      padding: 2.5rem 3.5rem;
+      max-width: 1080px;
+      overflow-x: hidden;
+    }
+
+    /* Typography inside content */
+    main.content h1 {
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #fff 40%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+    main.content h2 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+    main.content h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    main.content h4 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    main.content p {
+      margin-bottom: 1.15rem;
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+    main.content a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    main.content a:hover {
+      text-decoration: underline;
+    }
+    main.content ul, main.content ol {
+      margin-bottom: 1.25rem;
+      padding-left: 1.75rem;
+      color: var(--text-muted);
+    }
+    main.content li { margin-bottom: 0.45rem; line-height: 1.6; }
+    main.content hr {
+      border: 0;
+      height: 1px;
+      background: var(--border);
+      margin: 2.5rem 0;
+    }
+    main.content blockquote {
+      background: rgba(0, 245, 212, 0.05);
+      border-left: 3px solid var(--primary);
+      padding: 0.85rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.5rem 0;
+      color: #d1d5db;
+    }
+    main.content blockquote p {
+      margin-bottom: 0;
+    }
+
+    /* Code Blocks */
+    .code-container {
+      position: relative;
+      background: #0d0f17;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1.25rem 0 1.75rem;
+      overflow: hidden;
+    }
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+    .code-copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      transition: all 0.2s;
+    }
+    .code-copy-btn:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    pre {
+      padding: 1.15rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: #e5e7eb;
+      background: #0d0f17;
+    }
+    code {
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.875em;
+      color: var(--primary);
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    /* Mermaid diagrams */
+    .diagram-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.75rem 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+    .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0 2rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    th {
+      background: var(--bg-surface);
+      color: #fff;
+      font-weight: 600;
+    }
+    tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
+
+    /* Chapter Navigation Buttons (Prev / Next) */
+    .chapter-nav-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 3.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .chapter-nav-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .chapter-nav-card:hover {
+      border-color: var(--primary);
+      background: var(--bg-card);
+      transform: translateY(-2px);
+    }
+    .chapter-nav-card.next {
+      text-align: right;
+      grid-column: 2;
+    }
+    .chapter-nav-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+    }
+    .chapter-nav-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface);
+      padding: 2.5rem 1.5rem;
+      margin-top: 4rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-dim);
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      aside.sidebar { display: none; }
+      main.content { padding: 1.5rem 1rem; }
+      main.content h1 { font-size: 1.85rem; }
+      .chapter-nav-grid { grid-template-columns: 1fr; }
+      .chapter-nav-card.next { grid-column: 1; text-align: left; }
+    }
+
+  </style>
+
+  <!-- Mermaid.js for Diagrams -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+  </script>
+</head>
+<body>
+
+  <!-- Top Announcement Banner -->
+  <div class="top-banner">
+    <span>⭐️ <strong>Love Smoke Monkey Harness?</strong> Support our open source project!</span>
+    <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness" target="_blank" rel="noopener">Star on GitHub ⭐</a>
+    <span>•</span>
+    <span>🌐 Interactive Agent Simulator:</span>
+    <a href="https://smoke-monkey-harness.vercel.app/" target="_blank" rel="noopener">smoke-monkey-harness.vercel.app ↗</a>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <a href="index.html" class="brand">
+      <span>🐒 Smoke Monkey Harness</span>
+      <span class="badge">v0.1.3</span>
+    </a>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search documentation, tools, APIs... (Press '/' to focus)" aria-label="Search documentation" />
+    </div>
+    <div class="header-links">
+      <a href="getting-started.html" class="header-link">Quickstart</a>
+      <a href="api.html" class="header-link">API Reference</a>
+      <a href="https://www.npmjs.com/package/smoke-monkey-harness" target="_blank" rel="noopener" class="header-link">npm</a>
+      <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness" target="_blank" rel="noopener" class="btn-github">
+        <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+    <aside class="sidebar" id="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-title">Portal</div>
+    <ul class="sidebar-nav">
+      <li><a href="index.html">🐒 Documentation Hub</a></li>
+    </ul>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Getting Started</div>
+    <ul class="sidebar-nav">
+      <li><a href="overview.html">01. Architecture & Overview</a></li>
+      <li><a href="getting-started.html" class="active">02. Quickstart & Installation</a></li>
+      <li><a href="agent-loop.html">03. The 6-Phase Agent Loop</a></li>
+    </ul>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Core Systems</div>
+    <ul class="sidebar-nav">
+      <li><a href="tools.html">04. Tool Registry & Custom Tools</a></li>
+      <li><a href="permissions.html">05. Permissions & 3 Pauses</a></li>
+      <li><a href="mcp.html">06. Model Context Protocol (MCP)</a></li>
+      <li><a href="skills.html">07. Just-in-Time Skills</a></li>
+      <li><a href="subcontexts.html">08. Sub-Contexts & Memory</a></li>
+      <li><a href="hooks-and-errors.html">09. Hooks, Diagnostics & Errors</a></li>
+      <li><a href="ui-components.html">10. Drop-In React Chat UI</a></li>
+    </ul>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Reference</div>
+    <ul class="sidebar-nav">
+      <li><a href="api.html">11. TypeScript API Reference</a></li>
+      <li><a href="architecture.html">12. System Architecture Internals</a></li>
+      <li><a href="providers.html">13. 18 Supported LLM Matrix</a></li>
+      <li><a href="contributing.html">14. Contributing & Verification</a></li>
+    </ul>
+  </div>
+</aside>
+
+    <main class="content">
+      <div class="breadcrumbs">
+        <a href="index.html">Docs Hub</a>
+        <span>/</span>
+        <span>Getting Started</span>
+        <span>/</span>
+        <span style="color: var(--primary);">02. Quickstart & Installation</span>
+      </div>
+
+      <h1>02. Quickstart &amp; Provider Configuration</h1>
+<blockquote>
+<p>⭐️ <strong>Love Smoke Monkey Harness?</strong> Please support the project with a star on <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness">GitHub</a>!
+🌐 <strong>Interactive Simulator:</strong> Test the agent loop and stream live at <a href="https://smoke-monkey-harness.vercel.app/">smoke-monkey-harness.vercel.app</a></p>
+</blockquote>
+<hr>
+<p>Build your first autonomous agent in under 3 minutes using <code>@smoke-monkey/harness</code>. This guide covers installation, LLM provider setup, dynamic API key resolvers, and building a running CLI agent with live streaming.</p>
+<hr>
+<h2>1. Installation</h2>
+<p>Install <code>@smoke-monkey/harness</code> via your package manager of choice:</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>bash</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-bash"># Using pnpm (recommended)
+pnpm add @smoke-monkey/harness
+
+# Using npm
+npm install @smoke-monkey/harness
+
+# Using yarn
+yarn add @smoke-monkey/harness
+</code></pre>
+    </div>
+<h3>Requirements</h3>
+<ul>
+<li><strong>Node.js</strong>: <code>&gt;= 18.0.0</code></li>
+<li><strong>TypeScript</strong>: <code>&gt;= 5.0</code> (optional, full type definitions ship bundled)</li>
+<li><strong>Module format</strong>: Supports both <strong>ESM</strong> (<code>import</code>) and <strong>CommonJS</strong> (<code>require</code>).</li>
+</ul>
+<hr>
+<h2>2. Setting Up an LLM Provider</h2>
+<p>Smoke Monkey standardizes LLM provider communication through an OpenAI-compatible runtime interface.</p>
+<h3>The Reference Provider: NVIDIA NIM</h3>
+<p>The default out-of-the-box provider is <strong>NVIDIA NIM</strong> using the high-performance <code>nvidia/nemotron-3-super-120b-a12b</code> model.</p>
+<p>Get a free developer API key from <a href="https://integrate.api.nvidia.com">NVIDIA API Catalog</a> and export it to your environment:</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>bash</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-bash">export NVIDIA_API_KEY=&quot;nvapi-...&quot;
+</code></pre>
+    </div>
+<h3>Supported Provider Matrix</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Provider</th>
+<th align="left"><code>provider</code> string</th>
+<th align="left">Default Model</th>
+<th align="left">Environment Variable</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>NVIDIA</strong> <em>(Default)</em></td>
+<td align="left"><code>&#39;nvidia&#39;</code></td>
+<td align="left"><code>nvidia/nemotron-3-super-120b-a12b</code></td>
+<td align="left"><code>NVIDIA_API_KEY</code></td>
+<td align="left">High reasoning &amp; fast tool calling.</td>
+</tr>
+<tr>
+<td align="left"><strong>OpenAI</strong></td>
+<td align="left"><code>&#39;openai&#39;</code></td>
+<td align="left"><code>gpt-5</code></td>
+<td align="left"><code>OPENAI_API_KEY</code></td>
+<td align="left">Standard OpenAI endpoints.</td>
+</tr>
+<tr>
+<td align="left"><strong>OpenRouter</strong></td>
+<td align="left"><code>&#39;openrouter&#39;</code></td>
+<td align="left"><code>anthropic/claude-3.7-sonnet</code></td>
+<td align="left"><code>OPENROUTER_API_KEY</code></td>
+<td align="left">Access to 200+ models via one key.</td>
+</tr>
+<tr>
+<td align="left"><strong>xAI</strong></td>
+<td align="left"><code>&#39;xai&#39;</code></td>
+<td align="left"><code>grok-4.6</code></td>
+<td align="left"><code>XAI_API_KEY</code></td>
+<td align="left">Fast reasoning support.</td>
+</tr>
+<tr>
+<td align="left"><strong>Google Gemini</strong></td>
+<td align="left"><code>&#39;gemini&#39;</code></td>
+<td align="left"><code>gemini-3-flash</code></td>
+<td align="left"><code>GEMINI_API_KEY</code></td>
+<td align="left">Native Google AI Studio key.</td>
+</tr>
+<tr>
+<td align="left"><strong>Hugging Face</strong></td>
+<td align="left"><code>&#39;huggingface&#39;</code></td>
+<td align="left"><code>Qwen/Qwen2.5-Coder-32B-Instruct</code></td>
+<td align="left"><code>HUGGINGFACE_API_KEY</code></td>
+<td align="left">Inference Providers router.</td>
+</tr>
+<tr>
+<td align="left"><strong>Ollama (Local)</strong></td>
+<td align="left"><code>&#39;ollama&#39;</code></td>
+<td align="left"><code>llama3.1:8b</code></td>
+<td align="left">None required</td>
+<td align="left">100% offline, privacy-first execution.</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>18+ OpenAI-compatible providers stream out of the box — including <strong>DeepSeek</strong>
+(<code>deepseek</code>), <strong>Qwen</strong>/DashScope (<code>qwen</code>), <strong>Z.ai GLM</strong> (<code>zai</code>), <strong>Moonshot Kimi</strong>
+(<code>moonshot</code>), <strong>Mistral</strong>, <strong>Cohere</strong>, <strong>Groq</strong>, <strong>Together</strong>, <strong>Fireworks</strong>, and
+<strong>Cerebras</strong>. See <a href="../providers.md"><code>docs/providers.md</code></a> for the full matrix.</p>
+</blockquote>
+<hr>
+<h2>3. Dynamic API Key Resolution (Multi-Tenant)</h2>
+<p>For production services serving multiple users, avoid static environment keys. Pass an asynchronous or synchronous resolver function:</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">import { createAgent } from &#39;@smoke-monkey/harness&#39;;
+
+const agent = createAgent({
+  provider: &#39;nvidia&#39;,
+  workspacePath: &#39;/path/to/project&#39;,
+  // Dynamic resolution based on user ID or organizational tenant
+  apiKey: async (provider, userId) =&gt; {
+    const credentials = await database.getTenantKey(userId, provider);
+    return credentials.apiKey;
+  },
+  userId: &#39;usr_enterprise_908&#39;,
+});
+</code></pre>
+    </div>
+<hr>
+<h2>4. Your First Autonomous Agent</h2>
+<p>Create a file named <code>agent.ts</code> and run it with <code>tsx agent.ts</code>:</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">import { createAgent } from &#39;@smoke-monkey/harness&#39;;
+
+async function main() {
+  // 1. Initialize the agent
+  const agent = createAgent({
+    provider: &#39;nvidia&#39;,
+    model: &#39;nvidia/nemotron-3-super-120b-a12b&#39;,
+    workspacePath: process.cwd(),
+    autoApprove: true, // Auto-approve read and edit operations for this script
+  });
+
+  console.log(&#39;🚀 Agent initialized. Running task...\n&#39;);
+
+  // 2. Stream tokens in real time
+  agent.on(&#39;text.delta&#39;, (e) =&gt; {
+    process.stdout.write(e.data.delta);
+  });
+
+  // 3. Log tool activity
+  agent.on(&#39;tool.started&#39;, (e) =&gt; {
+    console.log(`\n⚡ Tool invoked: ${e.data.toolName}`);
+  });
+
+  // 4. Execute an autonomous coding task
+  const result = await agent.run(&#39;Inspect this directory and count the lines of TypeScript code in src/&#39;);
+
+  console.log(&#39;\n\n✅ Task finished with status:&#39;, result.status);
+  console.log(&#39;Total tokens used:&#39;, result.tokens.total);
+}
+
+main().catch(console.error);
+</code></pre>
+    </div>
+<hr>
+<h2>5. Handling Interactive Pauses in the Terminal</h2>
+<p>When <code>autoApprove: false</code> is set (default), the agent pauses before executing mutating tools or when asking questions:</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">import { createAgent } from &#39;@smoke-monkey/harness&#39;;
+import * as readline from &#39;readline/promises&#39;;
+
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+const agent = createAgent({
+  workspacePath: process.cwd(),
+  autoApprove: false, // Enforce interactive human permissions
+});
+
+// Pause 1: Tool Permission Confirmation
+agent.on(&#39;permission.required&#39;, async (e) =&gt; {
+  const answer = await rl.question(
+    `\n⚠️  The agent wants to execute &quot;${e.data.toolName}&quot;. Allow? (y/n): `
+  );
+  await agent.resolvePermission(e.data.toolCallId, answer.trim().toLowerCase() === &#39;y&#39; ? &#39;allow&#39; : &#39;deny&#39;);
+});
+
+// Pause 2: Clarification Questions
+agent.on(&#39;ask_user.required&#39;, async (e) =&gt; {
+  const answer = await rl.question(`\n❓ The agent is asking: &quot;${e.data.question}&quot;\nYour answer: `);
+  await agent.respond(e.data.toolCallId, answer);
+});
+
+// Run a task that requires editing files
+await agent.run(&#39;Refactor the logger in src/utils/logger.ts&#39;);
+</code></pre>
+    </div>
+<hr>
+<h2>6. Next Steps</h2>
+<ul>
+<li>Understand how the 6-phase state machine prevents infinite loops: <a href="03-agent-loop.md">03. The 6-Phase Agent Loop</a></li>
+<li>Learn how to register custom tools and schemas: <a href="04-tools.md">04. Tool System</a></li>
+<li>Connect external databases and GitHub via MCP: <a href="06-mcp.md">06. Model Context Protocol</a></li>
+</ul>
+
+
+
+      <div class="chapter-nav-grid">
+  <a href="overview.html" class="chapter-nav-card prev">
+    <span class="chapter-nav-label">← Previous Chapter</span>
+    <span class="chapter-nav-title">01. Architecture & Overview</span>
+  </a>
+  <a href="agent-loop.html" class="chapter-nav-card next">
+    <span class="chapter-nav-label">Next Chapter →</span>
+    <span class="chapter-nav-title">03. The 6-Phase Agent Loop</span>
+  </a>
+</div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-links">
+      <a href="index.html">Docs Home</a>
+      <a href="https://smoke-monkey-harness.vercel.app/" target="_blank" rel="noopener">Interactive Simulator</a>
+      <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.npmjs.com/package/smoke-monkey-harness" target="_blank" rel="noopener">npm Registry</a>
+      <a href="contributing.html">Contributing</a>
+    </div>
+    <p>Released under the MIT License • Built with ❤️ by Rajdeep Sadhu</p>
+  </footer>
+
+  <script>
+    function copyCode(btn) {
+      const container = btn.closest('.code-container');
+      const code = container.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.color = '#00f5d4';
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.style.color = '';
+        }, 2000);
+      });
+    }
+
+    // Search filter shortcut
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+      }
+    });
+
+    // Simple search filter
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll('.sidebar-nav li').forEach(li => {
+        const text = li.textContent.toLowerCase();
+        li.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>
