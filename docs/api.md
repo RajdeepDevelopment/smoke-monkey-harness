@@ -14,7 +14,7 @@ The package's public surface is exported from `src/index.ts`. Sliced by area:
 
 ```ts
 createAgent({
-  provider,            // 'openai' | 'openrouter' | 'nvidia' | 'xai' | 'gemini' | 'opencode' | 'omniroute' | 'ollama'
+  provider,            // 'openai' | 'openrouter' | 'nvidia' | 'xai' | 'gemini' | 'opencode' | 'omniroute' | 'huggingface' | 'deepseek' | 'qwen' | 'zai' | 'moonshot' | 'mistral' | 'cohere' | 'groq' | 'together' | 'fireworks' | 'cerebras' | 'ollama'
   model,               // e.g. 'nvidia/nemotron-3-super-120b-a12b', 'gpt-5', 'anthropic/claude-3.7-sonnet'
   apiKey,              // string | (provider, userId?) => string   (omit for local ollama)
   baseUrl,             // optional OpenAI-compatible override

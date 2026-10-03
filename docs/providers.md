@@ -19,6 +19,17 @@ live in code. Constructor is `sk-...` / `nvapi-...` style keys held in env vars.
 | `gemini` | `GEMINI_API_KEY` | `https://generativelanguage.googleapis.com` |
 | `opencode` | `OPENCODE_API_KEY` | OpenAI-compatible via the opencode gateway |
 | `omniroute` | `OMNIROUTE_API_KEY` | `https://api.getomni.app/openai/v1` |
+| `huggingface` | `HUGGINGFACE_API_KEY` | `https://router.huggingface.co/v1` (Inference Providers router) |
+| `deepseek` | `DEEPSEEK_API_KEY` | `https://api.deepseek.com/v1` |
+| `qwen` | `QWEN_API_KEY` (or `DASHSCOPE_API_KEY`) | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `zai` | `ZAI_API_KEY` | `https://api.z.ai/api/paas/v4` (GLM) |
+| `moonshot` | `MOONSHOT_API_KEY` | `https://api.moonshot.ai/v1` (Kimi) |
+| `mistral` | `MISTRAL_API_KEY` | `https://api.mistral.ai/v1` |
+| `cohere` | `COHERE_API_KEY` | `https://api.cohere.com/v1` |
+| `groq` | `GROQ_API_KEY` | `https://api.groq.com/openai/v1` |
+| `together` | `TOGETHER_API_KEY` | `https://api.together.xyz/v1` |
+| `fireworks` | `FIREWORKS_API_KEY` | `https://api.fireworks.ai/inference/v1` |
+| `cerebras` | `CEREBRAS_API_KEY` | `https://api.cerebras.ai/v1` |
 | `ollama` | — | `http://localhost:11434` (local, no key) |
 
 Any OpenAI-compatible endpoint can be overridden with `options.baseUrl`.
