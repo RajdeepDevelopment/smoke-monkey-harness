@@ -513,7 +513,7 @@ def render_scene_5(frame_idx):
     draw.rounded_rectangle([doc_x, link_y, doc_x + link_w, link_y + link_h], radius=14, fill=BG_PANEL, outline=CYAN_NEON, width=2)
     draw.text((doc_x + 30, link_y + 30), "🌐 INTERACTIVE DOCS & SIMULATOR", font=FONT_LABEL, fill=GREEN_NEON)
     draw.text((doc_x + 30, link_y + 70), "smoke-monkey-harness", font=FONT_CARD_TITLE, fill=TEXT_WHITE)
-    draw.text((doc_x + 30, link_y + 104), ".vercel.app", font=FONT_CARD_TITLE, fill=CYAN_NEON)
+    draw.text((doc_x + 30, link_y + 104), "smokemonkey.in", font=FONT_CARD_TITLE, fill=CYAN_NEON)
     draw.text((doc_x + 30, link_y + 138), "10 Chapters • Live browser simulator", font=FONT_CARD_BODY, fill=TEXT_MUTED)
 
     # Bottom Tagline

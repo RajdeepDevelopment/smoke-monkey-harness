@@ -2,7 +2,7 @@
 
 A friendly, runnable demo for the **`@smoke-monkey/ui`** chat component.
 
-> 🌐 **Live Online Showcase & Simulator:** [https://smoke-monkey-harness.vercel.app/](https://smoke-monkey-harness.vercel.app/)
+> 🌐 **Live Online Showcase & Simulator:** [https://smokemonkey.in/](https://smokemonkey.in/)
 
 **No backend. No API keys. No setup.** Just run it and type.
 

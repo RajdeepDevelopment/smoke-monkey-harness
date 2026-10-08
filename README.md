@@ -9,7 +9,7 @@ assistants, autonomous developer tools, desktop agents, and MCP-powered
 applications** — with **zero runtime dependencies**.
 
 <p align="center">
-  <a href="https://smoke-monkey-harness.vercel.app/"><img src="https://img.shields.io/badge/Docs%20%26%20Demo-smoke--monkey--harness.vercel.app-00f5d4?style=for-the-badge&logo=vercel&logoColor=white" alt="Docs & Live Demo" /></a>
+  <a href="https://smokemonkey.in/"><img src="https://img.shields.io/badge/Docs%20%26%20Demo-smokemonkey.in-00f5d4?style=for-the-badge&logo=vercel&logoColor=white" alt="Docs & Live Demo" /></a>
   <a href="https://www.npmjs.com/package/smoke-monkey-harness"><img src="https://img.shields.io/npm/dt/smoke-monkey-harness.svg?style=for-the-badge&color=2ea44f&label=Downloads&logo=npm" alt="NPM Downloads" /></a>
   <a href="https://www.npmjs.com/package/@smoke-monkey/harness"><img src="https://img.shields.io/npm/v/@smoke-monkey/harness.svg?style=for-the-badge&color=007acc&logo=npm" alt="npm version" /></a>
   <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness"><img src="https://img.shields.io/github/stars/RajdeepDevelopment/smoke-monkey-harness?style=for-the-badge&logo=github&color=00f5d4" alt="GitHub Stars" /></a>
@@ -26,9 +26,9 @@ recovering from failures, and resuming work**.
 
 **No NestJS. No database. Zero dependencies. Just the agent runtime.**
 
-**docs & live simulator:** [https://smoke-monkey-harness.vercel.app/](https://smoke-monkey-harness.vercel.app/) · **npm:** [@smoke-monkey/harness](https://www.npmjs.com/package/@smoke-monkey/harness) · **dependencies:** 0 · **license:** MIT · **CI:** [passing](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions) · **types:** TypeScript
+**docs & live simulator:** [https://smokemonkey.in/](https://smokemonkey.in/) · **npm:** [@smoke-monkey/harness](https://www.npmjs.com/package/@smoke-monkey/harness) · **dependencies:** 0 · **license:** MIT · **CI:** [passing](https://github.com/RajdeepDevelopment/smoke-monkey-harness/actions) · **types:** TypeScript
 
-> 🌐 **Interactive Documentation & Live Simulator:** Visit **[https://smoke-monkey-harness.vercel.app/](https://smoke-monkey-harness.vercel.app/)** to explore interactive quickstarts, test the agent loop live in your browser, view the 6-phase state machine architecture, and try the drop-in React chat UI.
+> 🌐 **Interactive Documentation & Live Simulator:** Visit **[https://smokemonkey.in/](https://smokemonkey.in/)** to explore interactive quickstarts, test the agent loop live in your browser, view the 6-phase state machine architecture, and try the drop-in React chat UI.
 
 </div>
 
@@ -111,9 +111,9 @@ published — they are kept for existing installs, not deprecated.
 
 | Package | Use this | Replaces | Docs |
 |---|---|---|---|
-| Agent runtime | [`@smoke-monkey/harness`](https://www.npmjs.com/package/@smoke-monkey/harness) | `smoke-monkey-harness` | [Docs & Live Simulator](https://smoke-monkey-harness.vercel.app/) |
-| MCP server | [`@smoke-monkey/mcp`](https://www.npmjs.com/package/@smoke-monkey/mcp) | `smoke-monkey-harness-mcp` | [MCP Server Guide](https://smoke-monkey-harness.vercel.app/#mcp) |
-| Chat UI | [`@smoke-monkey/ui`](https://www.npmjs.com/package/@smoke-monkey/ui) | — | [Chat UI Showcase](https://smoke-monkey-harness.vercel.app/#pillars) |
+| Agent runtime | [`@smoke-monkey/harness`](https://www.npmjs.com/package/@smoke-monkey/harness) | `smoke-monkey-harness` | [Docs & Live Simulator](https://smokemonkey.in/) |
+| MCP server | [`@smoke-monkey/mcp`](https://www.npmjs.com/package/@smoke-monkey/mcp) | `smoke-monkey-harness-mcp` | [MCP Server Guide](https://smokemonkey.in/#mcp) |
+| Chat UI | [`@smoke-monkey/ui`](https://www.npmjs.com/package/@smoke-monkey/ui) | — | [Chat UI Showcase](https://smokemonkey.in/#pillars) |
 
 ---
 
@@ -128,7 +128,7 @@ agent can plan (`harness_plan`), scaffold (`harness_scaffold`), wire the loop
 bundled engineering skills category-wise (`harness_skills_by_category` /
 `harness_skill_content`) — directly through MCP.
 
-> 💡 **Interactive Guide:** See the [MCP server documentation & architecture walkthrough](https://smoke-monkey-harness.vercel.app/#mcp).
+> 💡 **Interactive Guide:** See the [MCP server documentation & architecture walkthrough](https://smokemonkey.in/#mcp).
 
 No install in your project needed:
 
@@ -333,7 +333,7 @@ Providers   + Custom Tools
 separate packages and **share no interface**, so something has to translate.
 `createHarnessBridge` is that translation, and it ships with the UI.
 
-> 💡 **Try it live:** Test the streaming chat UI, tool call execution cards, charts, and reasoning stream in the [Live Simulator](https://smoke-monkey-harness.vercel.app/#simulator).
+> 💡 **Try it live:** Test the streaming chat UI, tool call execution cards, charts, and reasoning stream in the [Live Simulator](https://smokemonkey.in/#simulator).
 
 ```ts
 // server
@@ -655,7 +655,7 @@ If Smoke Monkey Harness helps you build more reliable AI agents and agentic deve
 
 ## Community & Ecosystem
 
-- **Documentation & Live Agent Simulator**: [smoke-monkey-harness.vercel.app](https://smoke-monkey-harness.vercel.app/)
+- **Documentation & Live Agent Simulator**: [smokemonkey.in](https://smokemonkey.in/)
 - **NPM Package**: [@smoke-monkey/harness](https://www.npmjs.com/package/@smoke-monkey/harness)
 - **MCP Server Package**: [@smoke-monkey/mcp](https://www.npmjs.com/package/@smoke-monkey/mcp)
 - **Drop-in Chat UI**: [@smoke-monkey/ui](https://www.npmjs.com/package/@smoke-monkey/ui)

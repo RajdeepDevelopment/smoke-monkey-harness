@@ -1,7 +1,7 @@
 # Smoke Monkey Harness — Documentation Hub
 
 <p align="center">
-  <a href="https://smoke-monkey-harness.vercel.app/"><img src="https://img.shields.io/badge/Docs%20%26%20Demo-smoke--monkey--harness.vercel.app-00f5d4?style=for-the-badge&logo=vercel&logoColor=white" alt="Docs & Live Demo" /></a>
+  <a href="https://smokemonkey.in/"><img src="https://img.shields.io/badge/Docs%20%26%20Demo-smokemonkey.in-00f5d4?style=for-the-badge&logo=vercel&logoColor=white" alt="Docs & Live Demo" /></a>
   <a href="https://www.npmjs.com/package/smoke-monkey-harness"><img src="https://img.shields.io/npm/dt/smoke-monkey-harness.svg?style=for-the-badge&color=2ea44f&label=Downloads&logo=npm" alt="NPM Downloads" /></a>
   <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness"><img src="https://img.shields.io/github/stars/RajdeepDevelopment/smoke-monkey-harness?style=for-the-badge&logo=github&color=00f5d4" alt="GitHub Stars" /></a>
   <a href="https://github.com/modelcontextprotocol"><img src="https://img.shields.io/badge/MCP-Model%20Context%20Protocol-8a2be2.svg?style=for-the-badge&logo=anthropic" alt="MCP Ready" /></a>

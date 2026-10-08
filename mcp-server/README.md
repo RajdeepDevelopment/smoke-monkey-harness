@@ -4,14 +4,14 @@
 AI agents on [Smoke Monkey Harness](https://github.com/RajdeepDevelopment/smoke-monkey-harness)
 from any MCP client.
 
-[![Documentation & Live Demo](https://img.shields.io/badge/docs-smoke--monkey--harness.vercel.app-00f5d4?style=flat&logo=vercel)](https://smoke-monkey-harness.vercel.app/#mcp)
+[![Documentation & Live Demo](https://img.shields.io/badge/docs-smokemonkey.in-00f5d4?style=flat&logo=vercel)](https://smokemonkey.in/#mcp)
 [![npm version](https://img.shields.io/npm/v/@smoke-monkey/mcp.svg)](https://www.npmjs.com/package/@smoke-monkey/mcp)
 [![license](https://img.shields.io/npm/l/@smoke-monkey/mcp.svg)](./LICENSE)
 
 MCP server for [Smoke Monkey Harness](https://github.com/RajdeepDevelopment/smoke-monkey-harness) — an embeddable,
 framework-agnostic TypeScript agent runtime.
 
-> 🌐 **Interactive Documentation:** [https://smoke-monkey-harness.vercel.app/#mcp](https://smoke-monkey-harness.vercel.app/#mcp) — see the interactive MCP server guide, 22 tools reference, and live agent simulator.
+> 🌐 **Interactive Documentation:** [https://smokemonkey.in/#mcp](https://smokemonkey.in/#mcp) — see the interactive MCP server guide, 22 tools reference, and live agent simulator.
 
 ![Build an agentic looping workflow in seconds](https://raw.githubusercontent.com/RajdeepDevelopment/smoke-monkey-harness/development/mcp-server/smoke-monkey-harness-mcp.gif)
 
