@@ -3,6 +3,7 @@ import type { ChatErrorInfo, ChatStreamEvent, ConnectionStatus } from '../types/
 import type { ChatPromptResponse, ChatRequest, ChatTransport } from '../types/transport';
 import type { ChatPromptOption } from '../types/prompt';
 import type { ToolPresentation } from '../types/tools';
+import type { AgentTodo, ContextState } from '../types/agent';
 
 export interface SyntheticStreamOptions {
   /** Delay in ms between event batches. */
@@ -57,6 +58,14 @@ export interface SyntheticStreamOptions {
     input: Record<string, unknown>;
     result: unknown;
   }>;
+  /**
+   * Run-level task list to stream, the way `todo_write` does. Emitted after the
+   * message starts and then re-emitted once per entry as each tip completes, so
+   * the sticky task list visibly progresses.
+   */
+  todos?: AgentTodo[];
+  /** Run-level sub-context panel to stream, the way `context_manage` does. */
+  contexts?: ContextState;
 }
 
 const DEMO_ANSWER =
@@ -113,6 +122,16 @@ export class SyntheticTransport implements ChatTransport {
 
     yield { type: 'message:start', messageId, conversationId: request.conversationId, model: request.model ?? 'smoke-monkey-demo' };
     await tick();
+
+    if (this.options.contexts) {
+      yield { type: 'context:updated', messageId, ...this.options.contexts };
+      await tick();
+    }
+
+    if (this.options.todos?.length) {
+      yield { type: 'todos:updated', messageId, todos: this.options.todos };
+      await tick();
+    }
 
     if (this.options.agentSteps?.length) {
       yield { type: 'agent:start', messageId };
@@ -211,6 +230,11 @@ export class SyntheticTransport implements ChatTransport {
       await tick();
     }
 
+    if (this.options.todos?.length) {
+      const advanced = advanceTodos(this.options.todos);
+      if (advanced) yield { type: 'todos:updated', messageId, todos: advanced };
+    }
+
     if (this.options.includeChart ?? true) {
       yield {
         type: 'artifact',
@@ -261,4 +285,27 @@ export class SyntheticTransport implements ChatTransport {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Advance a task list one notch: complete every `in_progress` tip and promote
+ * the first `pending` one. Returns `null` when there is nothing left to move, so
+ * the transport does not re-emit an identical list.
+ */
+function advanceTodos(todos: AgentTodo[]): AgentTodo[] | null {
+  let promoted = false;
+  let changed = false;
+  const next = todos.map((todo) => {
+    if (todo.status === 'in_progress') {
+      changed = true;
+      return { ...todo, status: 'completed' as const };
+    }
+    if (!promoted && todo.status === 'pending') {
+      promoted = true;
+      changed = true;
+      return { ...todo, status: 'in_progress' as const };
+    }
+    return todo;
+  });
+  return changed ? next : null;
 }

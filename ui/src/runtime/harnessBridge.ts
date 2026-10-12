@@ -15,6 +15,8 @@
  *   ask_user.required             ->    prompt:ask          (run PAUSES)
  *   permission.required           ->    prompt:permission   (run PAUSES)
  *   mcp.approval_required         ->    prompt:mcp_approval (run PAUSES)
+ *   todo.updated                  ->    todos:updated       (run-level)
+ *   context.updated               ->    context:updated     (run-level)
  *   run.warning                   ->    notice              (run continues)
  *   run.interrupted               ->    notice              (terminal)
  *   run.failed                    ->    error               (terminal)
@@ -72,6 +74,7 @@ import type { ChatStreamEvent, ChatErrorInfo } from '../types/stream';
 import type { ToolPresentation, ToolPresentationMap } from '../types/tools';
 import type { ChatPromptEvent, ChatMcpApprovalDecision } from '../types/prompt';
 import type { ChatPromptResponse } from '../types/transport';
+import { normalizeContexts, normalizeTodos } from '../types/agent';
 
 /** The harness event, as it reaches a host subscriber. */
 export interface HarnessEvent {
@@ -439,14 +442,23 @@ export function mapHarnessEvent(
     case 'todo.updated':
       return [
         withMessage({
-          type: 'agent:step',
-          title: `${(data.todos as unknown[])?.length ?? 0} todos`,
-          status: 'running',
+          type: 'todos:updated',
+          todos: normalizeTodos(data.todos),
+        }),
+      ];
+
+    // The agent's live sub-context panel: which domain contexts are open right
+    // now. Run-level, so it renders above the transcript rather than inline.
+    case 'context.updated':
+      return [
+        withMessage({
+          type: 'context:updated',
+          ...normalizeContexts(data.active, data.count, data.maxActive),
         }),
       ];
 
     default:
-      // Context/state/telemetry events have no UI surface yet. Returning
+      // Other state/telemetry events have no UI surface yet. Returning
       // nothing keeps a host from having to enumerate the ones it ignores.
       return [];
   }

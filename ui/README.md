@@ -319,6 +319,8 @@ socket.on('message', (raw) => {
 | `permission.required` | `prompt:permission` | **pauses the run** |
 | `mcp.approval_required` | `prompt:mcp_approval` | **pauses the run** |
 | `ask_user.response` / `mcp.resolved` | `prompt:resolved` | the harness' own echo |
+| `todo.updated` | `todos:updated` | run-level task list, replaces wholesale |
+| `context.updated` | `context:updated` | run-level sub-context panel |
 
 `run.failed`, `run.warning` and `tool.failed` all carry a structured
 `ChatErrorInfo` (`code` · `layer` · `severity` · `message` · `retryable` ·
@@ -327,8 +329,23 @@ when it is usable. That is what lets the UI tell a retryable rate limit from a
 fatal auth failure instead of showing one red banner for both — so gate your
 retry affordance on `retryable` and branch on `code`, never on the message text.
 
-Events with no UI surface (`context.updated`, `state.changed`, …) are dropped,
-so you never have to enumerate what to ignore.
+Events with no UI surface (`state.changed`, …) are dropped, so you never have to
+enumerate what to ignore.
+
+### Sticky task list + sub-contexts
+
+`todos:updated` and `context:updated` are **run-level**: the agent replaces them
+wholesale and they never enter the transcript. `useChat` surfaces them as
+`todos` and `contexts` on its state, and `SmokeMonkeyChat` pins them above the
+chat in a sticky `AgentStatusRail` — the live task list and the active
+sub-context chips. Toggle with `features={{ todos: false }}` /
+`features={{ contexts: false }}`, or take over with `slots.rail`:
+
+```tsx
+const { messages, todos, contexts } = useChat({ transport });
+
+<AgentStatusRail todos={todos} contexts={contexts} onContextClick={(c) => …} />
+```
 
 **All three pauses suspend the run**, and none resolves on its own. An answer
 that never comes back is a hang with nothing in the logs, so a host that

@@ -20,6 +20,12 @@ export function applyChatEvent(
     case 'connection:status':
       return messages;
 
+    // Run-level surfaces (task list, sub-contexts). `ChatRuntime` owns them;
+    // they never enter the transcript, so the reducer leaves messages alone.
+    case 'todos:updated':
+    case 'context:updated':
+      return messages;
+
     case 'message:start': {
       const target = findOrCreate(messages, event.messageId, fallbackId);
 

@@ -1248,7 +1248,7 @@
     background: hsl(var(--surface-800));
   }
   .agent-card {
-    margin-left: 24px;
+    margin-left: 0;
     padding: 3px 4px;
     border: 1px solid hsl(var(--surface-600)/0.5);
     border-radius: 8px;
@@ -1274,6 +1274,13 @@
     text-align: left;
     color: hsl(var(--ink-primary));
     transition: color 150ms ease;
+    background: transparent;
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+  }
+  .agent-card__header:disabled {
+    cursor: default;
   }
   .agent-card__header:hover {
     color: hsl(var(--ink-primary));
@@ -1314,6 +1321,7 @@
     border-radius: 8px;
     background: hsl(var(--primary)/0.1);
     font-size: 10px;
+    font-family: inherit;
     line-height: 1.3;
     color: hsl(var(--primary)/0.9);
     overflow-wrap: break-word;
@@ -1323,6 +1331,9 @@
     width: 10px;
     height: 10px;
     color: hsl(var(--primary)/0.6);
+  }
+  .context-chip[type=button] {
+    cursor: pointer;
   }
   .status-event {
     display: inline-flex;

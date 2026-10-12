@@ -3,6 +3,7 @@ import type { ChatSource } from './source';
 import type { ToolCall } from './tool';
 import type { ToolPresentation } from './tools';
 import type { ChatPrompt, ChatPromptEvent } from './prompt';
+import type { AgentTodo, ActiveContext } from './agent';
 
 /**
  * Normalized, provider-agnostic token usage.
@@ -196,6 +197,22 @@ export type ChatStreamEvent =
       status: 'running' | 'complete' | 'error';
     }
   | { type: 'agent:complete'; messageId?: string }
+  /**
+   * The agent's live task list, replaced wholesale on every `todo_write` call.
+   * Run-level (not a message part): the UI pins it above the transcript.
+   */
+  | { type: 'todos:updated'; messageId?: string; todos: AgentTodo[] }
+  /**
+   * The agent's live sub-context panel. Run-level; the UI renders the active
+   * contexts as chips above the transcript.
+   */
+  | {
+      type: 'context:updated';
+      messageId?: string;
+      active: ActiveContext[];
+      count: number;
+      maxActive: number;
+    }
   | { type: 'connection:status'; status: Exclude<ConnectionStatus, 'unknown'> }
   | { type: 'message:complete'; messageId: string }
   /**

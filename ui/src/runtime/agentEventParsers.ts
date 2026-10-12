@@ -1,5 +1,6 @@
 import type { ChatStreamEvent } from '../types/stream';
 import { toChatError } from '../types/stream';
+import { normalizeContexts, normalizeTodos } from '../types/agent';
 import type { StreamParserFn } from './StreamParser';
 
 /**
@@ -48,6 +49,8 @@ function messageIdFor(
  *   - `tool.failed`      → `tool:error` (scoped to one call, run continues)
  *   - `run.interrupted`  → `notice`  (informational)
  *   - `run.failed`       → `error`   (terminal; closes the stream)
+ *   - `todo.updated`     → `todos:updated`   (run-level task list)
+ *   - `context.updated`  → `context:updated` (run-level sub-context panel)
  *
  * Usage:
  * ```ts
@@ -98,6 +101,26 @@ export function createAgentEventParsers(
           status: 'answered',
           answer: String(p.response ?? ''),
         },
+      };
+    },
+
+    // Run-level task list, replaced wholesale. Rendered above the transcript.
+    'todo.updated': (data): ChatStreamEvent => {
+      const p = data as AgentEventPayload;
+      return {
+        type: 'todos:updated',
+        messageId: messageIdFor(p, opts),
+        todos: normalizeTodos(p.todos),
+      };
+    },
+
+    // Run-level sub-context panel. Rendered as chips above the transcript.
+    'context.updated': (data): ChatStreamEvent => {
+      const p = data as AgentEventPayload;
+      return {
+        type: 'context:updated',
+        messageId: messageIdFor(p, opts),
+        ...normalizeContexts(p.active, p.count, p.maxActive),
       };
     },
     'permission.required': (data): ChatStreamEvent => {

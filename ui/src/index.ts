@@ -20,6 +20,7 @@ export * from './types/artifact';
 export * from './types/message';
 export * from './types/transport';
 export * from './types/options';
+export * from './types/agent';
 
 // ── Lib helpers ──────────────────────────────────────────────────────────
 export { cn } from './lib/cn';
@@ -114,6 +115,8 @@ export { ChatMessages } from './components/chat/ChatMessages';
 export type { ChatMessagesProps } from './components/chat/ChatMessages';
 export { ChatPanel } from './components/chat/ChatPanel';
 export type { ChatPanelProps } from './components/chat/ChatPanel';
+export { AgentStatusRail } from './components/chat/AgentStatusRail';
+export type { AgentStatusRailProps } from './components/chat/AgentStatusRail';
 export { SmokeMonkeyChat } from './components/chat/SmokeMonkeyChat';
 export type { SmokeMonkeyChatProps } from './components/chat/SmokeMonkeyChat';
 export { ToolCallCard } from './components/chat/ToolCallCard';

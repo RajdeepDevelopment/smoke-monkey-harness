@@ -111,6 +111,16 @@ export interface SmokeMonkeyChatFeatures {
   codeBlocks?: boolean;
   /** Render assistant prose as Markdown. Default true. */
   markdown?: boolean;
+  /**
+   * Sticky task-list rail pinned above the transcript (`todo_write`). Default
+   * true. Only renders when the agent has written a list.
+   */
+  todos?: boolean;
+  /**
+   * Active sub-context chips pinned above the transcript (`context_manage`).
+   * Default true. Only renders when the agent has opened a context.
+   */
+  contexts?: boolean;
   // ── Scroll / misc ───────────────────────────────────────────────────
   autoScroll?: boolean;
   timestamps?: boolean;
@@ -133,6 +143,15 @@ export interface SmokeMonkeyChatSlots {
   empty?: ReactNode;
   beforeList?: ReactNode;
   afterList?: ReactNode;
+  /**
+   * Replaces the sticky agent status rail. Receives the live run-level state,
+   * so a host can render its own task list / sub-context chrome. Return `null`
+   * to show nothing for the current run.
+   */
+  rail?: ComponentType<{
+    todos: import('./agent').AgentTodo[];
+    contexts: import('./agent').ContextState | null;
+  }>;
   /** Replaces the default composer. */
   composer?: ReactNode;
   /** Replaces <MessageBubble/> for every message. */

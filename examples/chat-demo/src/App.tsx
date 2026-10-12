@@ -18,7 +18,9 @@ import {
   toolLabel,
 } from '@smoke-monkey/ui';
 import type {
+  AgentTodo,
   ChatMessage,
+  ContextState,
   SmokeMonkeyChatCustomTheme,
   SmokeMonkeyChatTheme,
   ToolCall,
@@ -665,6 +667,21 @@ void store.createConversation({
   messages: SEED_MESSAGES,
 });
 
+const DEMO_TODOS: AgentTodo[] = [
+  { content: 'Audit the rendered DOM for paint bottlenecks', status: 'completed', priority: 'high' },
+  { content: 'Benchmark content-visibility vs. contain', status: 'in_progress', priority: 'high' },
+  { content: 'Write up the recommendations', status: 'pending', priority: 'medium' },
+];
+
+const DEMO_CONTEXTS: ContextState = {
+  active: [
+    { id: 'performance', title: 'Performance' },
+    { id: 'css_rendering', title: 'CSS rendering' },
+  ],
+  count: 2,
+  maxActive: 4,
+};
+
 /**
  * A tiny custom "tool call" card — just to show how `slots` work.
  * Swap out any built-in piece (message, codeBlock, toolCall, chart, table,
@@ -908,7 +925,25 @@ function syntheticFor(errorCase: ErrorCase, streamCase: StreamCase): SyntheticTr
         ],
       });
     default:
-      return new SyntheticTransport();
+      return new SyntheticTransport({
+        // The sticky status rail reads these: a live task list plus the
+        // sub-contexts the agent currently has loaded. Both are run-level, so
+        // the agent replaces them wholesale as it works — the list below
+        // advances one tip per tool round.
+        todos: [
+          { content: 'Audit the rendered DOM for paint bottlenecks', status: 'completed', priority: 'high' },
+          { content: 'Benchmark content-visibility vs. contain', status: 'in_progress', priority: 'high' },
+          { content: 'Write up the recommendations', status: 'pending', priority: 'medium' },
+        ],
+        contexts: {
+          active: [
+            { id: 'performance', title: 'Performance' },
+            { id: 'css_rendering', title: 'CSS rendering' },
+          ],
+          count: 2,
+          maxActive: 4,
+        },
+      });
   }
 }
 
@@ -1116,6 +1151,8 @@ export function App() {
           toolPresentations={DEMO_TOOL_PRESENTATIONS}
           store={store}
           conversationId={DEMO_CONVERSATION_ID}
+          initialTodos={DEMO_TODOS}
+          initialContexts={DEMO_CONTEXTS}
 
           // ── Brand ───────────────────────────────────────────────────
           //  Put your own logo + product name in the header. Omit `brand`

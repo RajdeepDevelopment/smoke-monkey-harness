@@ -11,6 +11,7 @@ import type { ToolPresentationMap } from '../../types/tools';
 import { ChatPanel } from './ChatPanel';
 import type { ChatRuntimeOptions } from '../../types/transport';
 import type { ChatSource } from '../../types/source';
+import type { AgentTodo, ContextState } from '../../types/agent';
 import type {
   ApiKeyOption,
   ChatModelOption,
@@ -41,6 +42,10 @@ export interface SmokeMonkeyChatProps {
   system?: string;
   /** Static extras merged into every request. */
   request?: ChatRuntimeOptions['request'];
+  /** Seed todos for the status rail before the first live stream update. */
+  initialTodos?: AgentTodo[];
+  /** Seed sub-contexts for the status rail before the first live stream update. */
+  initialContexts?: ContextState | null;
 
   // ── Data ────────────────────────────────────────────────────────────
   models?: ChatModelOption[];
@@ -158,6 +163,8 @@ const DEFAULT_FEATURES: Required<Omit<SmokeMonkeyChatFeatures, 'header'>> = {
   timestamps: true,
   stopButton: true,
   emptyState: true,
+  todos: true,
+  contexts: true,
 };
 
 function featuresWithDefaults(
@@ -521,6 +528,8 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
     model: initialModel,
     system,
     request,
+    initialTodos,
+    initialContexts,
     models,
     workspaces,
     mcpServers,
@@ -571,13 +580,15 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
   const [selectedWorkspace, setSelectedWorkspace] = useState(workspaces?.[0]?.id);
   useEffect(() => setSelectedModel(initialModel ?? models?.[0]?.id), [initialModel, models]);
 
-  const { messages, isStreaming, error, connectionStatus, ready, clear, runtime } = useChat({
+  const { messages, isStreaming, error, connectionStatus, ready, clear, runtime, todos, contexts } = useChat({
     transport,
     store: store ?? null,
     conversationId,
     model: initialModel,
     system,
     request,
+    initialTodos,
+    initialContexts,
   });
 
   // Hot-swap model options onto the runtime so the next send uses the picker.
@@ -847,6 +858,21 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
     slots?.afterList
   );
 
+  // Sticky agent status rail: the live task list + active sub-contexts. A host
+  // that supplies `slots.rail` takes over; otherwise the built-in card rail
+  // renders, gated by the `todos` / `contexts` feature flags.
+  const RailSlot = slots?.rail;
+  const railNode = RailSlot ? (
+    <RailSlot todos={todos} contexts={contexts} />
+  ) : featuresResolved.todos || featuresResolved.contexts ? (
+    {
+      todos,
+      contexts,
+      showTodos: featuresResolved.todos,
+      showContexts: featuresResolved.contexts,
+    }
+  ) : undefined;
+
   const headerHidden = position.header === 'hidden' || features?.header === false;
   const handleModelChange = (id: string) => {
     setSelectedModel(id);
@@ -945,6 +971,7 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
         empty={customEmpty}
         beforeList={beforeList}
         afterList={afterList}
+        rail={railNode}
         composer={slots?.composer ?? defaultComposer}
         composerPosition={composerPosition}
         hideComposer={bottomCenter}

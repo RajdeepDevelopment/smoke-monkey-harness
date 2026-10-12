@@ -1,6 +1,7 @@
 import type { ChatMessage } from './message';
 import type { ChatStreamEvent, ConnectionStatus, ChatErrorInfo, TokenUsage } from './stream';
 import type { ChatMcpApprovalDecision, ChatPromptKind } from './prompt';
+import type { AgentTodo, ContextState } from './agent';
 
 export interface ChatRequest {
   conversationId?: string;
@@ -107,6 +108,14 @@ export interface ChatRuntimeState {
   usage: TokenUsage | null;
   connectionStatus: ConnectionStatus;
   hasMoreMessages: boolean;
+  /**
+   * The agent's live task list (`todo_write`). Empty until the agent writes
+   * one; replaced wholesale on each update. Run-level, so it is not tied to a
+   * message — the UI pins it above the transcript.
+   */
+  todos: AgentTodo[];
+  /** The agent's live sub-context panel, or `null` before the first update. */
+  contexts: ContextState | null;
 }
 
 export interface ChatRuntimeOptions {
@@ -118,4 +127,6 @@ export interface ChatRuntimeOptions {
   /** Static extras merged into every request. */
   request?: Omit<ChatRequest, 'text' | 'messages' | 'signal'>;
   onStateChange?: (state: ChatRuntimeState) => void;
+  initialTodos?: AgentTodo[];
+  initialContexts?: ContextState | null;
 }

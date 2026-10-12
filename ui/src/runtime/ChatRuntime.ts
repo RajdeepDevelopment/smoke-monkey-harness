@@ -2,6 +2,7 @@ import { createId } from '../lib/id';
 import { applyChatEvent } from './EventReducer';
 import type { ChatMessage } from '../types/message';
 import type { ChatStreamEvent, ConnectionStatus, ChatErrorInfo, TokenUsage } from '../types/stream';
+import type { AgentTodo, ContextState } from '../types/agent';
 import type {
   ChatRequest,
   ChatRuntimeOptions,
@@ -23,12 +24,16 @@ export class ChatRuntime {
   private error: ChatErrorInfo | null = null;
   private usage: TokenUsage | null = null;
   private connectionStatus: ConnectionStatus = 'unknown';
+  private todos: AgentTodo[] = [];
+  private contexts: ContextState | null = null;
   private controller: AbortController | null = null;
   private notify: (state: ChatRuntimeState) => void;
   private generation = 0;
 
   constructor(private options: ChatRuntimeOptions) {
     this.notify = options.onStateChange ?? (() => {});
+    if (options.initialTodos) this.todos = [...options.initialTodos];
+    if (options.initialContexts !== undefined) this.contexts = options.initialContexts;
   }
 
   /**
@@ -39,6 +44,8 @@ export class ChatRuntime {
     if (next.model !== undefined) this.options.model = next.model;
     if (next.system !== undefined) this.options.system = next.system;
     if (next.request !== undefined) this.options.request = next.request;
+    if (next.initialTodos !== undefined && !this.todos.length) this.todos = [...next.initialTodos];
+    if (next.initialContexts !== undefined && this.contexts === null) this.contexts = next.initialContexts;
     if (onStateChange) this.notify = onStateChange;
   }
 
@@ -54,6 +61,8 @@ export class ChatRuntime {
       usage: this.usage,
       connectionStatus: this.connectionStatus,
       hasMoreMessages: false,
+      todos: this.todos,
+      contexts: this.contexts,
     };
   }
 
@@ -182,6 +191,8 @@ export class ChatRuntime {
     this.conversationId = undefined;
     this.error = null;
     this.usage = null;
+    this.todos = [];
+    this.contexts = null;
     this.emit();
   }
 
@@ -208,6 +219,11 @@ export class ChatRuntime {
         if (this.generation !== token) return;
         if (onEvent && !onEvent(raw)) continue;
         const event = this.remap(raw, streamId);
+        if (event.type === 'todos:updated') {
+          this.todos = event.todos;
+        } else if (event.type === 'context:updated') {
+          this.contexts = { active: event.active, count: event.count, maxActive: event.maxActive };
+        }
         if (event.type === 'message:complete' || event.type === 'error') {
           this.streamingId = null;
         }

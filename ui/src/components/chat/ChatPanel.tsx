@@ -3,6 +3,8 @@ import { TriangleAlert, X } from 'lucide-react';
 import { ChatComposer } from './ChatComposer';
 import { ChatEmptyState } from './ChatEmptyState';
 import { ChatMessages } from './ChatMessages';
+import { AgentStatusRail } from './AgentStatusRail';
+import type { AgentStatusRailProps } from './AgentStatusRail';
 import type { MessageBubbleFeatures, MessageBubbleProps, MessageBubbleSlots } from './MessageBubble';
 import type { ChatPrompt } from '../../types/prompt';
 import type { ToolPresentationMap } from '../../types/tools';
@@ -29,6 +31,12 @@ export interface ChatPanelProps {
   beforeList?: ReactNode;
   /** Rendered below the messages list. */
   afterList?: ReactNode;
+  /**
+   * Agent status rail props (task list + sub-contexts). Rendered sticky at the
+   * top of the scroll area when there is anything to show. Pass `rail={false}`
+   * to suppress it, or a node to replace it.
+   */
+  rail?: AgentStatusRailProps | ReactNode | false;
   showTimestamps?: boolean;
   showSources?: boolean;
   autoScroll?: boolean;
@@ -77,6 +85,7 @@ export function ChatPanel({
   composer,
   beforeList,
   afterList,
+  rail,
   showTimestamps,
   showSources: _showSources,
   autoScroll = true,
@@ -111,6 +120,25 @@ export function ChatPanel({
       placeholder={placeholder}
     />
   );
+
+  const railNode =
+    rail === false || rail == null ? null : isReactNode(rail) ? (
+      (rail as ReactNode)
+    ) : (
+      <AgentStatusRail {...(rail as AgentStatusRailProps)} />
+    );
+
+  // The status rail lives ABOVE the transcript, outside the scroll container, so
+  // it is always visible. Pinning it inside a scroller (position: sticky) breaks
+  // whenever the host's layout lets the page scroll instead of the messages area —
+  // the rail stays in the DOM but ends up off-screen.
+  const railRegion = railNode ? (
+    <div className={cn('shrink-0 px-4 pt-4 sm:px-6', innerClassName)}>
+      <div className="mx-auto w-full max-w-3xl" style={columnMaxWidth ? { maxWidth: columnMaxWidth } : undefined}>
+        {railNode}
+      </div>
+    </div>
+  ) : null;
 
   const messagesColumn = (
     <div
@@ -198,11 +226,31 @@ export function ChatPanel({
         </div>
       )}
 
+      {railRegion}
+
       {messagesColumn}
 
       {errorBanner}
 
       {composerPosition !== 'top' && !hideComposer && composerSaddle}
     </section>
+  );
+}
+
+/**
+ * Is this a renderable React node rather than an `AgentStatusRailProps` object?
+ *
+ * React elements carry a `$$typeof` symbol, and primitives are obvious. A plain
+ * object with neither is treated as props to spread onto `<AgentStatusRail/>`.
+ */
+function isReactNode(value: unknown): boolean {
+  return (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'function' ||
+    (typeof value === 'object' && '$$typeof' in (value as object)) ||
+    Array.isArray(value)
   );
 }
