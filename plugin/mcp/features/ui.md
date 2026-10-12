@@ -117,10 +117,26 @@ The bridge translates the harness' events into the UI's:
 | `ask_user.required` | `prompt:ask` | **pauses the run** |
 | `permission.required` | `prompt:permission` | **pauses the run** |
 | `ask_user.response` | `prompt:resolved` | closes the prompt |
-| `todo.updated` | `agent:step` | |
+| `todo.updated` | `todos:updated` | run-level task list (replaces wholesale) |
+| `context.updated` | `context:updated` | run-level sub-context panel |
 
-Anything with no UI surface (`context.updated`, `state.changed`, `mcp.resolved`)
-is dropped, so you never have to enumerate what to ignore.
+Anything with no UI surface (`state.changed`, `mcp.resolved`) is dropped, so you
+never have to enumerate what to ignore.
+
+### The status rail (task list + sub-contexts)
+
+`todos:updated` and `context:updated` are *run-level*: they describe what the
+agent is doing right now, and the agent replaces them wholesale as it works.
+`ChatRuntime` surfaces them on its state as `todos` and `contexts`, and
+`SmokeMonkeyChat` pins them above the transcript in a sticky `AgentStatusRail`:
+
+```tsx
+const { messages, todos, contexts } = useChat({ transport });
+// → <AgentStatusRail todos={todos} contexts={contexts} /> is rendered for you
+```
+
+Toggle them with `features={{ todos: false }}` / `features={{ contexts: false }}`,
+or replace the rail entirely with `slots.rail` (it receives `{ todos, contexts }`).
 
 The distinction that matters most: **`tool:error` is scoped to one call,
 `error` ends the run.** A failing tool inside a healthy run is a normal,
