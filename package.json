@@ -1,6 +1,6 @@
 {
   "name": "smoke-monkey-harness",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Open source AI agent harness and agentic AI runtime in TypeScript. 6-phase state machine, 24 tools, human-in-the-loop permissions, MCP server, and composable agent APIs. Zero runtime dependencies.",
   "license": "MIT",
   "author": {
