@@ -36,6 +36,7 @@ createAgent({
   mcp,                 // McpServerConfig[] — stdio (command/args) or streamable-HTTP (url/headers)
   skills,              // Skill[] (or build from SKILL.md dirs)
   skillsDir,           // string | string[] of SKILL.md folders
+  checkpoints,         // true | { dir?, maxCheckpoints? } — opt-in revert/undo (shadow git); default off
   logger,              // LoggerOptions
 })
 ```
@@ -51,6 +52,9 @@ registerTool(tool)                                    // add a tool after constr
 getToolPresentations()                                // { name: { icon, label, family, tone } }
 addMcpServer(cfg) / removeMcpServer(id) / listMcpServers()
 abort()                                  // interrupt the current run
+revert(runId?, { files?, messages?, dryRun? })   // undo a run's file changes + messages (needs `checkpoints`)
+previewRevert(runId) / listCheckpoints(sessionId?) // what a revert would change / the restore points
+getRunState(sessionId?)                  // { todos, contexts } the UI rail shows — seed initialTodos/initialContexts after a refresh
 on(type, fn) / onAny(fn) / events        // subscribe (see events below)
 .skills.all() / .get(id) / count         // registered skills
 .agentId                                 // 'build' | 'plan' | 'explore' | 'general'
@@ -76,6 +80,7 @@ startedAt, endedAt, messages, steps: Snapshot, tokens, phases, … }`
   `ask_user.required` / `ask_user.response`; `request_mcp_approval` /
   `mcp.approval_required` → `resolveMcpDecision`; `mcp.resolved`
 - Context — `context.updated` · `state.changed` · `agent.state` · `todo.updated`
+- Checkpoints — `checkpoint.created` (before a run; `e.runId` is what `revert()` takes) · `checkpoint.reverted`
 - Other — `llm.thinking` · `compaction.started` · `compaction.completed`
 
 Wire every pause to your UI — or set `autoApprove: true` and just resolve
@@ -191,6 +196,54 @@ glyph key, `tone` accent), so it survives the trip to a browser untouched. Send
 *before* the first `tool.started`, and to keep their icons in a history
 replayed from storage. In the UI, per-event presentation wins over the host
 map, field by field.
+## checkpoints — revert / undo a run
+
+Opt-in (`checkpoints: true`, default off). Before each run the workspace is
+snapshotted into a **shadow git repository** under `.smoke/checkpoints`; the
+project's own `.git` is never read or written. A revert restores every file the
+run created, edited or deleted — including changes made by `run_command` — and
+drops the run's messages, so a user can rewind a chat message and edit it.
+
+```ts
+const agent = createAgent({ workspacePath: '/repo', sessionId: 's1', checkpoints: true });
+
+const { runId } = await agent.run('rename the config loader');
+
+const preview = await agent.previewRevert(runId);   // nothing is modified
+preview.changes;   // { added: ['src/new.ts'], modified: ['src/config.ts'], deleted: [] }
+
+const done = await agent.revert(runId);             // files + messages
+done.task;         // 'rename the config loader' — put it back in the input box
+```
+
+| Method | Returns |
+| :-- | :-- |
+| `agent.revert(runId?, { files?, messages?, dryRun? })` | `RevertResult` — omit `runId` to revert the latest run |
+| `agent.previewRevert(runId)` | the same, as a dry run |
+| `agent.listCheckpoints(sessionId?)` | `Checkpoint[]`, oldest first |
+
+`RevertResult` is `{ ok, runId, error?, dryRun, changes: { added, modified, deleted },
+filesReverted, messagesReverted, task? }`.
+
+- **Scope.** Reverting a run undoes it **and every later run** (their
+  checkpoints are forgotten). Files matched by `.gitignore`, and
+  `.git` / `node_modules` / `dist` / `build` / `.smoke`, are neither
+  snapshotted nor modified. Nothing outside `workspacePath` is touched.
+- **Safety.** Refused while a run is active, and when checkpoints are off or
+  `git` is not installed (`{ ok: false, error }`; the agent itself is unaffected).
+  Hand edits made since the run started are overwritten, so show
+  `previewRevert()` first.
+- **Events.** `checkpoint.created` (before the run; `e.runId` is the id to pass
+  to `revert`) and `checkpoint.reverted`.
+- **Storage.** Dropping messages uses the **optional**
+  `Storage.truncateMessages?(sessionId, keepCount)`, which `MemoryStore`
+  implements. A custom store without it still works — files are restored and
+  `messagesReverted` is `false`.
+- **Not undone.** Side effects outside the workspace (network calls,
+  databases, `git push`).
+
+`checkpoints` also accepts `{ dir?, maxCheckpoints? }` (default 100 kept).
+
 ## hooks — lifecycle extension points
 
 `hooks` lets an embedding application observe and guard the two things an

@@ -50,6 +50,13 @@ export interface ContextSnapshot {
    * (the FE has no catalog of sub-context titles).
    */
   activeContexts?: Array<{ id: string; title: string }>;
+  /**
+   * The agent's task list as last written by `todo_write`. Kept with the
+   * session so it survives the end of a run: it is re-announced when the next
+   * run starts and can be read back with `agent.getRunState()` after a refresh.
+   * Absent on sessions created before the field existed.
+   */
+  todos?: Array<{ content: string; status: string; priority?: string }>;
 }
 
 /**

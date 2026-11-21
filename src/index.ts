@@ -14,7 +14,14 @@ export {
   type PermissionRequest,
   type PermissionDecision,
   type ToolGroupName,
+  type RevertOptions,
+  type RevertResult,
+  type RunState,
+  type Checkpoint,
+  type CheckpointDiff,
+  type CheckpointOptions,
 } from './harness.js';
+export { CheckpointService } from './services/checkpoints.js';
 
 export { buildToolRegistry } from './harness.js';
 

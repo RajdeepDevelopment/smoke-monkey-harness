@@ -9,7 +9,9 @@ import { PillRow, usePillNarrowContext } from './pill-collapse';
 import type { ChatPrompt } from '../../types/prompt';
 import type { ToolPresentationMap } from '../../types/tools';
 import { ChatPanel } from './ChatPanel';
-import type { ChatRuntimeOptions } from '../../types/transport';
+import type { ChatRevertResult, ChatRuntimeOptions } from '../../types/transport';
+import type { ChatMessage } from '../../types/message';
+import type { RevertControl } from './RevertButton';
 import type { ChatSource } from '../../types/source';
 import type { AgentTodo, ContextState } from '../../types/agent';
 import type {
@@ -114,6 +116,14 @@ export interface SmokeMonkeyChatProps {
    * persist answers, route them to a human, or answer on the user's behalf.
    */
   onPromptRespond?: (prompt: ChatPrompt, answer: string) => void;
+  /**
+   * Called after the user reverts to a message (files restored, transcript
+   * cut). The removed prompt is put back in the composer automatically.
+   * Revert controls only appear when `transport.revert` exists — e.g.
+   * `FetchTransport({ revertUrl })` or `WebSocketTransport` against a server
+   * running a `checkpoints: true` harness.
+   */
+  onReverted?: (info: { messageId: string; result: ChatRevertResult }) => void;
   /**
    * Presentation for tools that arrive without one — a replayed history, or a
    * tool list fetched on connect. Keyed by tool name; anything the live event
@@ -552,6 +562,7 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
     onStop,
     onRetry,
   onPromptRespond,
+  onReverted,
   toolPresentations,
     onRegenerate,
     onModelChange,
@@ -597,6 +608,33 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
   }, [runtime, selectedModel]);
 
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Revert-to-here. A control is cached per (message, checkpoint) so the
+  // memoised bubbles do not re-render on every streamed token.
+  const [composerPrefill, setComposerPrefill] = useState<{ text: string; nonce: number } | undefined>();
+  const revertCache = useRef(new Map<string, RevertControl>());
+  const onRevertedRef = useRef(onReverted);
+  onRevertedRef.current = onReverted;
+  const getRevert = (message: ChatMessage): RevertControl | undefined => {
+    if (isStreaming || !runtime.canRevert(message.id)) return undefined;
+    const key = `${message.id}:${String(message.metadata?.checkpointRunId)}`;
+    let control = revertCache.current.get(key);
+    if (!control) {
+      control = {
+        preview: () => runtime.previewRevert(message.id),
+        confirm: async () => {
+          const result = await runtime.revertTo(message.id);
+          if (result.ok) {
+            setComposerPrefill((prev) => ({ text: result.task ?? message.content, nonce: (prev?.nonce ?? 0) + 1 }));
+            onRevertedRef.current?.({ messageId: message.id, result });
+          }
+          return result;
+        },
+      };
+      revertCache.current.set(key, control);
+    }
+    return control;
+  };
 
   const handleSend = (text: string) => {
     if (isStreaming) return;
@@ -783,6 +821,7 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
       disabled={!transport && !onSend}
       placeholder={enterText}
       attachments={featuresResolved.attachments}
+      prefill={composerPrefill}
       toolbar={
         <>
           {modelChip}
@@ -967,6 +1006,7 @@ export function SmokeMonkeyChat(props: SmokeMonkeyChatProps) {
         onRetry={handleRetry}
         onPromptRespond={featuresResolved.prompts === false ? undefined : handlePromptRespond}
         toolPresentations={toolPresentations}
+        getRevert={getRevert}
         placeholder={enterText}
         empty={customEmpty}
         beforeList={beforeList}

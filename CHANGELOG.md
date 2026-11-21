@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Revert / undo for agent runs (opt-in, additive).** New `checkpoints` option
+  (`createAgent({ ..., checkpoints: true })`). Before each run the workspace is
+  snapshotted into a shadow git repo under `.smoke/checkpoints` (the project's
+  own `.git` is never touched; `.gitignore`d and harness-ignored paths are left
+  alone). New `agent.revert(runId?, { files, messages, dryRun })`,
+  `agent.previewRevert(runId)` and `agent.listCheckpoints(sessionId?)` restore
+  files the run created/edited/deleted (including via `run_command`) and drop the
+  run's messages so the user can edit and resend the prompt. Emits
+  `checkpoint.created` / `checkpoint.reverted`. `Storage.truncateMessages?` is
+  optional, so custom stores keep working. Off by default: no behaviour change
+  unless enabled. Requires the `git` binary (self-disables if missing).
+  - **UI (`@smoke-monkey/ui`)**: user messages with a restore point get a ↶ revert
+    control that dry-runs the revert, lists the files, and on confirm restores them,
+    cuts the transcript, and puts the prompt back in the composer. Appears only when
+    the transport implements the new optional `ChatTransport.revert()`
+    (`WebSocketTransport` built in; `FetchTransport({ revertUrl })`). New
+    `revertHarnessRun(agent, request)` for the server side, `checkpoint:created`
+    stream event, `ChatRuntime.canRevert/previewRevert/revertTo`,
+    `SmokeMonkeyChat` `onReverted`. All additive; no existing prop or event changed.
+  - **MCP/plugin**: new `harness_guide_checkpoints_revert_and_undo` deep-dive,
+    playbook Step 6c, `harness_plan` hint, and the `checkpoints` option /
+    `revert` surface / `checkpoint.*` events in the API reference and the
+    mirrored skill copies.
+  - **Example**: `examples/revert-demo` — runnable in a browser, offline (scripted mock
+    model; real harness, tools, checkpoints and revert).
+  - **Audit fixes**: the chat store now re-saves a user message once it is linked to
+    its run (otherwise the revert control vanished after a reload);
+    `createNormalizedStreamParser()` and a raw `checkpoint.created` parser stop
+    `StreamParser` from silently dropping the new event.
+  - **Fix — task list / sub-contexts vanishing between runs.** The harness never
+    saved the agent's `todo_write` list, so a refresh or reconnect lost it and the next
+    run did not restore it; clearing the list also emitted nothing, leaving the UI on
+    a stale list. Now the list is kept in the session snapshot, re-announced at every
+    run start (alongside the sub-contexts), an explicit clear emits an empty
+    `todo.updated`, and `agent.getRunState(sessionId?)` lets a UI seed its rail after
+    a refresh. A revert rewinds the rail too (`RevertResult.state`). Additive:
+    `ContextSnapshot.todos` is optional.
+  - **Docs**: `docs/api.md` (+ HTML), UI chapter "Reverting to a Previous
+    Message" (+ HTML), README, `ui/README.md`.
 - **New direct cloud providers (OpenAI-compatible, native endpoints + per-provider API keys):**
   `huggingface` (router.huggingface.co), `deepseek`, `qwen` (DashScope),
   `zai` (Z.ai GLM), `moonshot` (Kimi), `mistral`, `cohere`, `groq`, `together`,

@@ -32,6 +32,7 @@ createAgent({
   mcp,                 // McpServerConfig[] — stdio (command/args) or streamable-HTTP (url/headers)
   skills,              // Skill[] (or build from SKILL.md dirs)
   skillsDir,           // string | string[] of SKILL.md folders
+  checkpoints,         // true | { dir?, maxCheckpoints? } — opt-in revert/undo (shadow git); default off
   logger,              // LoggerOptions
 })
 ```
@@ -45,6 +46,9 @@ resolvePermission(toolCallId, allow | deny)       // resolve permission.required
 resolveMcpDecision(toolCallId, { action, names }) // enable/leave/deny mcp servers
 addMcpServer(cfg) / removeMcpServer(id) / listMcpServers()
 abort()                                  // interrupt the current run
+revert(runId?, { files?, messages?, dryRun? })   // undo a run's file changes + messages (needs `checkpoints`)
+previewRevert(runId) / listCheckpoints(sessionId?) // what a revert would change / the restore points
+getRunState(sessionId?)                  // { todos, contexts } the UI rail shows — seed initialTodos/initialContexts after a refresh
 on(type, fn) / onAny(fn) / events        // subscribe (see `events` area)
 .skills.all() / .get(id) / count         // registered skills
 .agentId                                 // 'build' | 'plan' | 'explore' | 'general'
@@ -63,6 +67,7 @@ Pauses (resolve via surface methods) · `permission.required` → `resolvePermis
 `ask_user.required` · `ask_user.response` · `request_mcp_approval` / `mcp.approval_required`
 `mcp.resolved`
 Context · `context.updated` · `state.changed` · `agent.state` · `todo.updated`
+Checkpoints · `checkpoint.created` · `checkpoint.reverted`
 Other · `llm.thinking` · `compaction.started` · `compaction.completed`
 
 Wire every pause to your UI — or set `autoApprove: true` and just resolve

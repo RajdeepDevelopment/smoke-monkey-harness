@@ -264,5 +264,6 @@ export function mergeSnapshot(prev: ContextSnapshot, summary: string, cutIndex: 
     plan: prev.plan || [],
     activeSubContexts: prev.activeSubContexts || [],
     activeContexts: prev.activeContexts || [],
+    todos: prev.todos,
   };
 }

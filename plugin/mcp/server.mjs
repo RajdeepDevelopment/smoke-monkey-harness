@@ -13,7 +13,7 @@
  *       tools_custom_tool_implementation · loop_phases_guards_and_compaction ·
  *       permissions_the_three_pauses · storage_sessions_runs_messages ·
  *       events_streaming_and_ui_wiring · ui_bridge_and_components ·
- *       errors_validation_and_pauses
+ *       errors_validation_and_pauses · checkpoints_revert_and_undo
  *     - harness_events()                   → the event catalog (UI wiring)
  *     - harness_status()                   → installed library + scaffold facts
  *     - harness_scaffold({ targetDir, name? }) → generate a starter agent project
@@ -76,6 +76,7 @@ const FEATURES = {
   events: 'events.md',
   ui: 'ui.md',
   errors: 'errors.md',
+  checkpoints: 'checkpoints.md',
 };
 
 /**
@@ -100,6 +101,7 @@ const FEATURE_TOOL_NAMES = {
   events: 'harness_guide_events_streaming_and_ui_wiring',
   ui: 'harness_guide_ui_bridge_and_components',
   errors: 'harness_guide_errors_validation_and_pauses',
+  checkpoints: 'harness_guide_checkpoints_revert_and_undo',
 };
 
 /** Reverse index so a tool NAME routes back to its guide file. */
@@ -211,7 +213,9 @@ function plan(goal) {
         `             answered, so an unrouted one deadlocks it silently.\n` +
         `     Full mapping and component choice: harness_guide_ui_bridge_and_components().\n` +
         `     Error handling, tool-input validation and the three pauses: harness_guide_errors_validation_and_pauses().\n` +
-        `   - Pass a store + sessionId to resume sessions; guard budget via resolveTokenBudget; keep loop guards on.\n\n` +
+        `   - Pass a store + sessionId to resume sessions; guard budget via resolveTokenBudget; keep loop guards on.\n` +
+        `   - Want users to undo / edit a previous message (revert the agent's file changes)? createAgent({ checkpoints: true })\n` +
+        `     then agent.revert(runId). Opt-in; see harness_guide_checkpoints_revert_and_undo().\n\n` +
         `Dig deeper anytime with harness_api({ area }) or harness_guide({ topic: "..." }).`,
     }],
     isError: false,
@@ -480,6 +484,7 @@ const FEATURE_TOOL_DEFS = Object.entries(FEATURES).map(([key, file]) => ({
       storage: 'the Storage interface, MemoryStore, sessions/runs/messages, and resuming a run with sessionId + store.',
       events: 'the event catalog with payloads and the reference UI wiring (streaming chat, tool cards, pause dialogs).',
       ui: 'connecting @smoke-monkey/ui to a run — createHarnessBridge, the event mapping, routing answers to paused runs, tool presentation, and composing the components yourself.',
+      checkpoints: 'revert / undo a run — the opt-in `checkpoints` option, agent.revert / previewRevert / listCheckpoints, what is and is not restored (shadow git, run_command included), checkpoint.* events, Storage.truncateMessages, and wiring the chat UI revert control with revertHarnessRun + FetchTransport.revertUrl / WebSocketTransport.revert.',
       errors: 'the AgentErrorInfo model, recoverable vs terminal events, tool-input validation layers (validateToolCalls / safeParseObject / your schema), and the three pauses with their buffering, abort and denial semantics.',
     }[key] +
     ' WHEN TO CALL: when your current task touches this feature and you need the exact API details. ' +

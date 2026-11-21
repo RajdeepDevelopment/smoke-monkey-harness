@@ -106,6 +106,57 @@ export function AgentWorkspaceView({ toolPresentations }) {
 
 ---
 
+## Reverting to a Previous Message
+
+Edit-a-message / undo-the-agent, like other coding agents. It needs a harness
+created with `checkpoints: true` (see [API → checkpoints](api.md)) and is
+invisible otherwise, so existing apps are unaffected.
+
+User messages that have a restore point show a ↶ control. It dry-runs the
+revert and lists the files that will change; **Revert** then restores them on
+disk, cuts the transcript at that message, and puts the prompt back in the
+composer to edit and resend. Nothing is changed until the user confirms.
+
+**Server** — answer a `revert` request with `revertHarnessRun` (it never throws;
+a failure is `{ ok: false, error }`):
+
+```ts
+import { revertHarnessRun } from '@smoke-monkey/ui';
+
+socket.on('message', async (raw) => {
+  const msg = JSON.parse(String(raw));
+  if (msg.type === 'revert') {
+    socket.send(JSON.stringify({
+      type: 'revert_result',
+      requestId: msg.requestId,
+      data: await revertHarnessRun(agent, msg.data),
+    }));
+  }
+});
+// HTTP: app.post('/revert', async (req, res) => res.json(await revertHarnessRun(agent, req.body)));
+```
+
+**Browser** — `WebSocketTransport` has `revert()` built in (it opens a short-lived
+socket, because a run's socket closes when the run ends). For `FetchTransport`
+set `revertUrl`. If your server forwards the bridge's events unchanged, build the
+parser with `createNormalizedStreamParser()`: `StreamParser` silently skips any
+event type it was not told about, so a hand-written list would drop
+`checkpoint:created` and no message would get a revert control.
+Runnable end to end (offline, no API key): [`examples/revert-demo`](https://github.com/RajdeepDevelopment/smoke-monkey-harness/tree/main/examples/revert-demo).
+
+```tsx
+<SmokeMonkeyChat
+  transport={new FetchTransport({ url: '/api/chat', parser: createNormalizedStreamParser(), revertUrl: '/api/revert' })}
+  onReverted={({ messageId, result }) => console.log('reverted', result.changes)}
+/>
+```
+
+Headless apps use the runtime directly: `runtime.canRevert(messageId)`,
+`await runtime.previewRevert(messageId)`, `await runtime.revertTo(messageId)`.
+The link between a message and its run is `message.metadata.checkpointRunId`,
+set from the `checkpoint.created` harness event (mapped by
+`createHarnessBridge` to the `checkpoint:created` stream event).
+
 ## Key Features & Component Breakdown
 
 ```

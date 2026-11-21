@@ -8,6 +8,7 @@ import type { AgentStatusRailProps } from './AgentStatusRail';
 import type { MessageBubbleFeatures, MessageBubbleProps, MessageBubbleSlots } from './MessageBubble';
 import type { ChatPrompt } from '../../types/prompt';
 import type { ToolPresentationMap } from '../../types/tools';
+import type { RevertControl } from './RevertButton';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
 import type { ChatMessage } from '../../types/message';
 import type { ChatSource } from '../../types/source';
@@ -63,6 +64,10 @@ export interface ChatPanelProps {
   onPromptRespond?: (prompt: ChatPrompt, answer: string) => void;
   /** Passed through to every <MessageBubble/>; keyed by tool name. */
   toolPresentations?: ToolPresentationMap;
+  /** Revert-to-here control per message (see `ChatMessages`). */
+  getRevert?: (message: ChatMessage) => RevertControl | undefined;
+  /** Replaces the composer text (the chat uses it to put a reverted prompt back). */
+  composerPrefill?: { text: string; nonce: number };
   className?: string;
   innerClassName?: string;
 }
@@ -101,6 +106,8 @@ export function ChatPanel({
   onRetry,
   onPromptRespond,
   toolPresentations,
+  getRevert,
+  composerPrefill,
   className,
   innerClassName,
 }: ChatPanelProps) {
@@ -117,6 +124,7 @@ export function ChatPanel({
       onStop={onStop}
       isStreaming={!!isStreaming}
       disabled={!onSend}
+      prefill={composerPrefill}
       placeholder={placeholder}
     />
   );
@@ -166,6 +174,7 @@ export function ChatPanel({
             onRetry={onRetry}
             onPromptRespond={onPromptRespond}
             toolPresentations={toolPresentations}
+            getRevert={getRevert}
             features={messageFeatures}
             slots={messageSlots}
             Message={Message}

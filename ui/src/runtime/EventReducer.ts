@@ -26,6 +26,25 @@ export function applyChatEvent(
     case 'context:updated':
       return messages;
 
+    // Links the harness run to the turn's user message (and the reply), so a
+    // "revert to here" control knows which checkpoint to rewind to. A no-op
+    // when the reply is not in the list yet or no user message precedes it.
+    case 'checkpoint:created': {
+      const replyIndex = messages.findIndex((m) => m.id === (event.messageId ?? fallbackId));
+      let userIndex = -1;
+      for (let i = (replyIndex === -1 ? messages.length : replyIndex) - 1; i >= 0; i -= 1) {
+        if (messages[i]!.role === 'user') {
+          userIndex = i;
+          break;
+        }
+      }
+      if (userIndex === -1) return messages;
+      const next = [...messages];
+      const user = next[userIndex]!;
+      next[userIndex] = { ...user, metadata: { ...user.metadata, checkpointRunId: event.runId } };
+      return next;
+    }
+
     case 'message:start': {
       const target = findOrCreate(messages, event.messageId, fallbackId);
 

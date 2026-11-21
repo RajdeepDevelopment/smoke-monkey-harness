@@ -25,6 +25,12 @@ export interface ChatComposerProps {
   toolbar?: ReactNode;
   /** Token meter: 🧠 used / limit with a tiny progress bar. */
   tokenUsage?: { used: number; limit: number };
+  /**
+   * Replace the text (and focus) whenever `nonce` changes — e.g. to put a
+   * reverted prompt back for editing. Works in uncontrolled mode; a controlled
+   * owner just sets `value` itself.
+   */
+  prefill?: { text: string; nonce: number };
   className?: string;
 }
 
@@ -52,6 +58,7 @@ export function ChatComposer({
   onAttach,
   toolbar,
   tokenUsage,
+  prefill,
   className,
 }: ChatComposerProps) {
   const internalRef = useRef<HTMLTextAreaElement | null>(null);
@@ -86,6 +93,14 @@ export function ChatComposer({
     const el = internalRef.current;
     if (autoFocus && el) el.focus();
   }, [autoFocus]);
+
+  const prefillNonce = prefill?.nonce;
+  useEffect(() => {
+    if (prefillNonce === undefined || prefill === undefined) return;
+    setText(prefill.text);
+    internalRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillNonce]);
 
   const attach = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(event.target.files ?? []);

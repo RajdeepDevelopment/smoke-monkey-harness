@@ -44,7 +44,7 @@ export { ChatPromptCard } from './components/chat/ChatPromptCard';
 export type { ChatPromptCardProps } from './components/chat/ChatPromptCard';
 export { ErrorCard } from './components/chat/ErrorCard';
 export type { ErrorCardProps } from './components/chat/ErrorCard';
-export { StreamParser } from './runtime/StreamParser';
+export { StreamParser, createNormalizedStreamParser } from './runtime/StreamParser';
 export type { StreamParserFn } from './runtime/StreamParser';
 export { createAgentEventParsers } from './runtime/agentEventParsers';
 export type { AgentEventParserOptions } from './runtime/agentEventParsers';
@@ -52,7 +52,7 @@ export { ChatRuntime } from './runtime/ChatRuntime';
 // The harness <-> UI translation layer. A host needs this to connect a live
 // `AgentHarness` run to a chat surface, and to route paused-run answers back
 // into the run. See the module doc for the full event mapping.
-export { createHarnessBridge, mapHarnessEvent } from './runtime/harnessBridge';
+export { createHarnessBridge, mapHarnessEvent, revertHarnessRun } from './runtime/harnessBridge';
 export type {
   BridgeAgent,
   HarnessBridge,
@@ -107,6 +107,8 @@ export * from './components/visuals/WorkflowBlock';
 // ── Chat UI ───────────────────────────────────────────────────────────────
 export { MessageBubble } from './components/chat/MessageBubble';
 export type { MessageBubbleProps } from './components/chat/MessageBubble';
+export { RevertButton } from './components/chat/RevertButton';
+export type { RevertControl } from './components/chat/RevertButton';
 export { ChatComposer } from './components/chat/ChatComposer';
 export type { ChatComposerProps } from './components/chat/ChatComposer';
 export { ChatEmptyState } from './components/chat/ChatEmptyState';

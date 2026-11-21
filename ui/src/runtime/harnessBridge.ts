@@ -73,7 +73,7 @@
 import type { ChatStreamEvent, ChatErrorInfo } from '../types/stream';
 import type { ToolPresentation, ToolPresentationMap } from '../types/tools';
 import type { ChatPromptEvent, ChatMcpApprovalDecision } from '../types/prompt';
-import type { ChatPromptResponse } from '../types/transport';
+import type { ChatPromptResponse, ChatRevertRequest, ChatRevertResult } from '../types/transport';
 import { normalizeContexts, normalizeTodos } from '../types/agent';
 
 /** The harness event, as it reaches a host subscriber. */
@@ -103,6 +103,50 @@ export interface BridgeAgent {
   resolvePermission?(toolCallId: string, decision: 'allow' | 'deny'): void | Promise<void>;
   /** Answers an `mcp.approval_required` pause. */
   resolveMcpDecision?(toolCallId: string, decision: ChatMcpApprovalDecision): void | Promise<void>;
+  /** Undoes a run (harness `checkpoints: true`). See `revertHarnessRun`. */
+  revert?(runId?: string, opts?: { files?: boolean; messages?: boolean; dryRun?: boolean }): Promise<ChatRevertResult>;
+}
+
+/**
+ * Answer a client's revert request from a checkpoint-enabled harness.
+ *
+ * Revert happens BETWEEN runs, so it has no bridge: call this from the same
+ * socket/route that serves chat requests, for the `revert` command the
+ * transports send, and send the result back as JSON.
+ *
+ * ```ts
+ * if (msg.type === 'revert') {
+ *   socket.send(JSON.stringify({ type: 'revert_result', requestId: msg.requestId,
+ *     data: await revertHarnessRun(agent, msg.data) }));
+ * }
+ * ```
+ *
+ * Never throws: an agent without checkpoints (or a failed restore) yields
+ * `{ ok: false, error }` so the UI can say why instead of hanging.
+ */
+export async function revertHarnessRun(
+  agent: BridgeAgent,
+  request: ChatRevertRequest,
+): Promise<ChatRevertResult> {
+  const empty = { added: [], modified: [], deleted: [] };
+  if (!agent.revert) {
+    return {
+      ok: false, runId: request.runId, dryRun: request.dryRun, changes: empty,
+      filesReverted: false, messagesReverted: false,
+      error: 'This agent cannot revert (upgrade smoke-monkey-harness and set `checkpoints: true`).',
+    };
+  }
+  try {
+    return await agent.revert(request.runId, {
+      files: request.files, messages: request.messages, dryRun: request.dryRun,
+    });
+  } catch (err) {
+    return {
+      ok: false, runId: request.runId, dryRun: request.dryRun, changes: empty,
+      filesReverted: false, messagesReverted: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 export interface HarnessBridgeOptions {
@@ -438,6 +482,10 @@ export function mapHarnessEvent(
           },
         }),
       ];
+
+    // A restore point for this run exists; lets the UI offer "revert to here".
+    case 'checkpoint.created':
+      return [withMessage({ type: 'checkpoint:created', runId: event.runId ?? '' })];
 
     case 'todo.updated':
       return [

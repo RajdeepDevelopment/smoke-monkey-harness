@@ -51,11 +51,12 @@ import {
   COMPACTION_THRESHOLD,
   KEEP_RECENT_MESSAGES,
 } from './services/run-context.js';
-import { renderContextPanel, SubContextManager, getSubContext, registerSubContext } from './context/sub-context.js';
+import { renderContextPanel, SubContextManager, getSubContext, registerSubContext, MAX_ACTIVE_CONTEXTS } from './context/sub-context.js';
 import type { SubContext } from './context/sub-context.js';
 import { ToolRegistry, type ToolDefinition, type ToolPresentation } from './tools/tool-registry.js';
 import { withCustomTools } from './services/tool-library.js';
 import { shapeSpilledOutput } from './services/artifact-store.js';
+import { CheckpointService, type Checkpoint, type CheckpointDiff, type CheckpointOptions } from './services/checkpoints.js';
 import { McpManager, type McpServerConfig } from './services/mcp-manager.js';
 import {
   getReadFileTool,
@@ -186,7 +187,51 @@ export interface AgentOptions {
   hooks?: AgentHooks;
   /** Logger configuration. */
   logger?: LoggerOptions;
+  /**
+   * Enable revert/undo (default: OFF — nothing changes for existing users).
+   *
+   * When on, the workspace is snapshotted into a shadow git repo under
+   * `.smoke/checkpoints` before every run, so `revert(runId)` can undo all
+   * file changes the run made (including via `run_command`) and drop the run's
+   * messages from the conversation. The user's own `.git` is never touched.
+   * Requires the `git` binary; if absent, checkpoints disable themselves.
+   */
+  checkpoints?: boolean | CheckpointOptions;
 }
+
+export interface RevertOptions {
+  /** Restore workspace files (default true). */
+  files?: boolean;
+  /** Drop the run's (and later runs') messages from the session (default true). */
+  messages?: boolean;
+  /** Only report what would change; modify nothing (default false). */
+  dryRun?: boolean;
+}
+
+/** The agent's run-level status: what the chat UI's task list and sub-context chips show. */
+export interface RunState {
+  sessionId: string;
+  todos: Array<{ content: string; status: string; priority?: string }>;
+  contexts: { active: Array<{ id: string; title: string }>; count: number; maxActive: number };
+}
+
+export interface RevertResult {
+  ok: boolean;
+  runId: string;
+  error?: string;
+  dryRun: boolean;
+  /** Files created / edited / deleted since the checkpoint. */
+  changes: CheckpointDiff;
+  filesReverted: boolean;
+  /** False when messages were not dropped (option off, or a custom store without truncateMessages). */
+  messagesReverted: boolean;
+  /** The task text of the reverted run — handy for pre-filling the chat input to edit and resend. */
+  task?: string;
+  /** The session's task list / sub-contexts after the revert (so a UI can refresh its rail). */
+  state?: RunState;
+}
+
+export type { Checkpoint, CheckpointDiff, CheckpointOptions };
 
 export interface RunOptions {
   sessionId?: string;
@@ -267,6 +312,7 @@ export class AgentHarness {
   private readonly logger: Logger;
   private readonly opts: Required<Pick<AgentOptions, 'workspacePath'>> & AgentOptions;
   private readonly llm: LLMClient;
+  private readonly checkpointService: CheckpointService | null;
   private readonly compaction: ContextCompactionService;
   private readonly loopDeps: AgentLoopDeps;
   private readonly permissionPolicy: PermissionPolicy;
@@ -293,7 +339,12 @@ export class AgentHarness {
     this.logger = new Logger('AgentHarness');
     this.events = new AgentEventEmitter();
     this.store = options.store ?? new MemoryStore();
+    // Keep the agent's task list with the session, so it outlives the run.
+    this.events.on('todo.updated', (e) => this.rememberTodos(e.sessionId, e.data.todos));
     this.permissionPolicy = options.permission ?? 'ask-default';
+    this.checkpointService = options.checkpoints
+      ? new CheckpointService(options.workspacePath, options.checkpoints === true ? {} : options.checkpoints)
+      : null;
     this.autoApprove = options.autoApprove ?? false;
 
     for (const sub of options.subContexts ?? []) {
@@ -556,6 +607,104 @@ export class AgentHarness {
     this.activeSignal?.abort();
   }
 
+  // ── Run state (task list + sub-contexts) ─────────────────────────────────
+
+  private rememberTodos(sessionId: string, todos: unknown): void {
+    if (!Array.isArray(todos) || !this.store.getSession(sessionId)) return;
+    const snap = (this.store.getSession(sessionId)?.snapshot as ContextSnapshot | null | undefined) ?? createEmptySnapshot('');
+    this.store.setSessionSnapshot(sessionId, { ...snap, todos: todos as ContextSnapshot['todos'] });
+  }
+
+  /**
+   * The session's task list and open sub-contexts, as of the end of the last
+   * run. Read it to seed a chat UI after a page refresh or reconnect
+   * (`initialTodos` / `initialContexts`) — the next run also re-announces both
+   * on its own. Both stay until the agent changes them.
+   */
+  getRunState(sessionId?: string): RunState {
+    const id = sessionId ?? this.opts.sessionId ?? this.activeSessionId ?? '';
+    const snap = this.store.getSession(id)?.snapshot as ContextSnapshot | null | undefined;
+    const active = snap?.activeContexts ?? (snap?.activeSubContexts ?? []).map((cid) => ({ id: cid, title: getSubContext(cid)?.title ?? cid }));
+    return {
+      sessionId: id,
+      todos: snap?.todos ?? [],
+      contexts: { active, count: active.length, maxActive: MAX_ACTIVE_CONTEXTS },
+    };
+  }
+
+  // ── Checkpoints / revert ─────────────────────────────────────────────────
+
+  /** Checkpoints taken before runs (empty unless `checkpoints` is enabled). Oldest first. */
+  async listCheckpoints(sessionId?: string): Promise<Checkpoint[]> {
+    return this.checkpointService ? this.checkpointService.list(sessionId) : [];
+  }
+
+  /** What `revert(runId)` would change, without changing anything. */
+  async previewRevert(runId: string): Promise<RevertResult> {
+    return this.revert(runId, { dryRun: true });
+  }
+
+  /**
+   * Undo a run: restore the workspace to how it was BEFORE `runId` started and
+   * drop that run (and any later ones) from the conversation. Pass the runId of
+   * the message the user is rewinding to; omit it to revert the latest run.
+   *
+   * Refuses while a run is active. Edits you made by hand since the run started
+   * are overwritten too — use `previewRevert()` to show the file list first.
+   */
+  async revert(runId?: string, opts: RevertOptions = {}): Promise<RevertResult> {
+    const dryRun = opts.dryRun === true;
+    const empty: CheckpointDiff = { added: [], modified: [], deleted: [] };
+    const fail = (id: string, error: string): RevertResult => ({
+      ok: false, runId: id, error, dryRun, changes: empty, filesReverted: false, messagesReverted: false,
+    });
+
+    if (!this.checkpointService) return fail(runId ?? '', 'checkpoints are not enabled (set `checkpoints: true`)');
+    if (this.activeRunId) return fail(runId ?? '', 'a run is in progress — abort() it first');
+
+    const all = await this.checkpointService.list();
+    const cp = runId ? all.find((c) => c.runId === runId) : all[all.length - 1];
+    if (!cp) return fail(runId ?? '', runId ? `no checkpoint for run "${runId}"` : 'no checkpoints yet');
+
+    const wantFiles = opts.files !== false;
+    const wantMessages = opts.messages !== false;
+    let changes = empty;
+    let filesReverted = false;
+    let messagesReverted = false;
+
+    try {
+      if (dryRun) {
+        changes = await this.checkpointService.diff(cp);
+      } else if (wantFiles) {
+        changes = await this.checkpointService.restore(cp);
+        filesReverted = true;
+      }
+    } catch (err) {
+      return fail(cp.runId, err instanceof Error ? err.message : String(err));
+    }
+
+    if (!dryRun && wantMessages && typeof this.store.truncateMessages === 'function') {
+      this.store.truncateMessages(cp.sessionId, cp.messageCount);
+      if (cp.sessionSnapshot !== undefined) this.store.setSessionSnapshot(cp.sessionId, cp.sessionSnapshot as never);
+      messagesReverted = true;
+    }
+    // Messages-only revert must still forget the rewound checkpoints.
+    if (!dryRun && !wantFiles && messagesReverted) {
+      const keep = all.filter((c) => c.createdAt < cp.createdAt);
+      if (keep.length !== all.length) await this.checkpointService.forgetFrom(cp);
+    }
+
+    if (!dryRun) {
+      this.events.emitRun(cp.sessionId, cp.runId, 'checkpoint.reverted', {
+        filesReverted, messagesReverted, changes,
+      });
+    }
+    return {
+      ok: true, runId: cp.runId, dryRun, changes, filesReverted, messagesReverted, task: cp.task,
+      ...(!dryRun && messagesReverted ? { state: this.getRunState(cp.sessionId) } : {}),
+    };
+  }
+
   // ── The run ──────────────────────────────────────────────────────────────
 
   /**
@@ -578,6 +727,17 @@ export class AgentHarness {
 
     this.store.ensureSession(sessionId, { agentId: this.agentId, workspacePath: this.opts.workspacePath });
     this.store.ensureRun(runId, sessionId);
+
+    if (this.checkpointService) {
+      const cp = await this.checkpointService.create({
+        runId,
+        sessionId,
+        task,
+        messageCount: this.store.listMessages(sessionId).length,
+        sessionSnapshot: this.store.getSession(sessionId)?.snapshot ?? undefined,
+      });
+      if (cp) this.events.emitRun(sessionId, runId, 'checkpoint.created', { messageCount: cp.messageCount, createdAt: cp.createdAt });
+    }
 
     this.store.addMessage(sessionId, { role: 'user', content: task });
     this.events.emitRunStarted(sessionId, runId, this.agentId);
@@ -814,6 +974,9 @@ export class AgentHarness {
         ...ctx.observations.filter((o) => /error|fail/i.test(o)),
       ]),
       plan: ctx.plan.length ? ctx.plan : current.plan,
+      // Written by `todo_write` DURING the run (straight into the store), so the
+      // run-start copy in `current` is stale — read the latest.
+      todos: (this.store.getSession(ctx.sessionId)?.snapshot as ContextSnapshot | null | undefined)?.todos ?? current.todos,
       activeSubContexts: [...ctx.contextManager.activeIds],
       activeContexts: [...ctx.contextManager.activeIds].map((id) => {
         const c = getSubContext(id);

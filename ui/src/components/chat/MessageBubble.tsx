@@ -9,6 +9,8 @@ import {
   Loader2,
   Sparkles,
 } from 'lucide-react';
+import { RevertButton } from './RevertButton';
+import type { RevertControl } from './RevertButton';
 import type { ChatArtifact, FileArtifact } from '../../types/artifact';
 import type { ChatMessage, MessagePart } from '../../types/message';
 import type { ChatSource } from '../../types/source';
@@ -76,6 +78,12 @@ export interface MessageBubbleSlots {
 
 export interface MessageBubbleProps {
   message: ChatMessage;
+  /**
+   * Revert-to-here control for a user message. Supplied by the chat only when
+   * the transport can revert and this turn has a restore point; omitted, no
+   * control renders.
+   */
+  revert?: RevertControl;
   /** Right-aligned filled bubble for user messages (default true). */
   userStyle?: 'bubble' | 'plain';
   showModel?: boolean;
@@ -340,6 +348,7 @@ function filterArtifacts(
 
 function MessageBubbleView({
   message,
+  revert,
   userStyle,
   showModel,
   showCopy = true,
@@ -393,6 +402,7 @@ function MessageBubbleView({
             {time && <span className="text-[10px] text-ink-muted">{time}</span>}
             <span className="text-[10px] text-ink-muted">You</span>
             {showCopy && <CopyButton content={copyText} label="Copy message" />}
+            {revert && <RevertButton control={revert} />}
           </div>
         </div>
       </div>

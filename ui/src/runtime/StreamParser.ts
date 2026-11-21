@@ -72,3 +72,37 @@ export class StreamParser {
     return Array.isArray(result) ? result : [result];
   }
 }
+
+/**
+ * Every normalized event type. The `satisfies` + `Missing` pair makes adding a
+ * type to `ChatStreamEvent` without listing it here a COMPILE error, so a new
+ * event can never be silently dropped by `createNormalizedStreamParser`.
+ */
+const NORMALIZED_EVENT_TYPES = [
+  'message:start', 'text:delta', 'reasoning:start', 'reasoning:delta',
+  'tool:start', 'tool:delta', 'tool:result', 'tool:error',
+  'prompt:ask', 'prompt:permission', 'prompt:mcp_approval', 'prompt:resolved',
+  'artifact', 'source', 'usage',
+  'agent:start', 'agent:step', 'agent:complete',
+  'todos:updated', 'context:updated', 'checkpoint:created',
+  'connection:status', 'message:complete', 'notice', 'error',
+] as const satisfies readonly ChatStreamEvent['type'][];
+
+type MissingEventTypes = Exclude<ChatStreamEvent['type'], (typeof NORMALIZED_EVENT_TYPES)[number]>;
+const _allEventTypesListed: [MissingEventTypes] extends [never] ? true : never = true;
+void _allEventTypesListed;
+
+/**
+ * A `StreamParser` that passes already-normalized `ChatStreamEvent`s straight
+ * through — what a host wants when its server forwards `createHarnessBridge`
+ * output unchanged. Unlike a hand-written list it covers every event type, so
+ * run-level ones such as `checkpoint:created` (which enables the revert
+ * control) are never silently skipped.
+ */
+export function createNormalizedStreamParser(): StreamParser {
+  const parser = new StreamParser();
+  for (const type of NORMALIZED_EVENT_TYPES) {
+    parser.register(type, (data) => data as ChatStreamEvent);
+  }
+  return parser;
+}

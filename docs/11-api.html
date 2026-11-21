@@ -628,7 +628,7 @@
 <hr>
 <p>The package&#39;s public surface is exported from <code>src/index.ts</code>. Sliced by area:
 <strong>options</strong> · <strong>surface</strong> · <strong>events</strong> · <strong>tools</strong> · <strong>providers</strong> ·
-<strong>subcontexts</strong> · <strong>skills</strong> · <strong>mcp</strong> · <strong>loop</strong> · <strong>permissions</strong> · <strong>hooks</strong>.</p>
+<strong>subcontexts</strong> · <strong>skills</strong> · <strong>mcp</strong> · <strong>loop</strong> · <strong>permissions</strong> · <strong>checkpoints</strong> · <strong>hooks</strong>.</p>
 <h2>options — <code>createAgent({…})</code> AgentOptions</h2>
 <div class="code-container">
       <div class="code-header">
@@ -658,6 +658,7 @@
   mcp,                 // McpServerConfig[] — stdio (command/args) or streamable-HTTP (url/headers)
   skills,              // Skill[] (or build from SKILL.md dirs)
   skillsDir,           // string | string[] of SKILL.md folders
+  checkpoints,         // true | { dir?, maxCheckpoints? } — opt-in revert/undo (shadow git); default off
   logger,              // LoggerOptions
 })
 </code></pre>
@@ -676,6 +677,9 @@ registerTool(tool)                                    // add a tool after constr
 getToolPresentations()                                // { name: { icon, label, family, tone } }
 addMcpServer(cfg) / removeMcpServer(id) / listMcpServers()
 abort()                                  // interrupt the current run
+revert(runId?, { files?, messages?, dryRun? })   // undo a run&#39;s file changes + messages (needs `checkpoints`)
+previewRevert(runId) / listCheckpoints(sessionId?) // what a revert would change / the restore points
+getRunState(sessionId?)                  // { todos, contexts } the UI rail shows — seed initialTodos/initialContexts after a refresh
 on(type, fn) / onAny(fn) / events        // subscribe (see events below)
 .skills.all() / .get(id) / count         // registered skills
 .agentId                                 // &#39;build&#39; | &#39;plan&#39; | &#39;explore&#39; | &#39;general&#39;
@@ -699,6 +703,7 @@ when declared; <code>tool.failed</code> does not require a presentation)</li>
 <code>ask_user.required</code> / <code>ask_user.response</code>; <code>request_mcp_approval</code> /
 <code>mcp.approval_required</code> → <code>resolveMcpDecision</code>; <code>mcp.resolved</code></li>
 <li>Context — <code>context.updated</code> · <code>state.changed</code> · <code>agent.state</code> · <code>todo.updated</code></li>
+<li>Checkpoints — <code>checkpoint.created</code> (before a run; <code>e.runId</code> is what <code>revert()</code> takes) · <code>checkpoint.reverted</code></li>
 <li>Other — <code>llm.thinking</code> · <code>compaction.started</code> · <code>compaction.completed</code></li>
 </ul>
 <p>Wire every pause to your UI — or set <code>autoApprove: true</code> and just resolve
@@ -841,6 +846,69 @@ glyph key, <code>tone</code> accent), so it survives the trip to a browser untou
 <em>before</em> the first <code>tool.started</code>, and to keep their icons in a history
 replayed from storage. In the UI, per-event presentation wins over the host
 map, field by field.</p>
+<h2>checkpoints — revert / undo a run</h2>
+<p>Opt-in (<code>checkpoints: true</code>, default off). Before each run the workspace is
+snapshotted into a <strong>shadow git repository</strong> under <code>.smoke/checkpoints</code>; the
+project&#39;s own <code>.git</code> is never read or written. A revert restores every file the
+run created, edited or deleted — including changes made by <code>run_command</code> — and
+drops the run&#39;s messages, so a user can rewind a chat message and edit it.</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">const agent = createAgent({ workspacePath: &#39;/repo&#39;, sessionId: &#39;s1&#39;, checkpoints: true });
+
+const { runId } = await agent.run(&#39;rename the config loader&#39;);
+
+const preview = await agent.previewRevert(runId);   // nothing is modified
+preview.changes;   // { added: [&#39;src/new.ts&#39;], modified: [&#39;src/config.ts&#39;], deleted: [] }
+
+const done = await agent.revert(runId);             // files + messages
+done.task;         // &#39;rename the config loader&#39; — put it back in the input box
+</code></pre>
+    </div>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>agent.revert(runId?, { files?, messages?, dryRun? })</code></td>
+<td><code>RevertResult</code> — omit <code>runId</code> to revert the latest run</td>
+</tr>
+<tr>
+<td><code>agent.previewRevert(runId)</code></td>
+<td>the same, as a dry run</td>
+</tr>
+<tr>
+<td><code>agent.listCheckpoints(sessionId?)</code></td>
+<td><code>Checkpoint[]</code>, oldest first</td>
+</tr>
+</tbody></table>
+<p><code>RevertResult</code> is <code>{ ok, runId, error?, dryRun, changes: { added, modified, deleted },
+filesReverted, messagesReverted, task? }</code>.</p>
+<ul>
+<li><strong>Scope.</strong> Reverting a run undoes it <strong>and every later run</strong> (their
+checkpoints are forgotten). Files matched by <code>.gitignore</code>, and
+<code>.git</code> / <code>node_modules</code> / <code>dist</code> / <code>build</code> / <code>.smoke</code>, are neither
+snapshotted nor modified. Nothing outside <code>workspacePath</code> is touched.</li>
+<li><strong>Safety.</strong> Refused while a run is active, and when checkpoints are off or
+<code>git</code> is not installed (<code>{ ok: false, error }</code>; the agent itself is unaffected).
+Hand edits made since the run started are overwritten, so show
+<code>previewRevert()</code> first.</li>
+<li><strong>Events.</strong> <code>checkpoint.created</code> (before the run; <code>e.runId</code> is the id to pass
+to <code>revert</code>) and <code>checkpoint.reverted</code>.</li>
+<li><strong>Storage.</strong> Dropping messages uses the <strong>optional</strong>
+<code>Storage.truncateMessages?(sessionId, keepCount)</code>, which <code>MemoryStore</code>
+implements. A custom store without it still works — files are restored and
+<code>messagesReverted</code> is <code>false</code>.</li>
+<li><strong>Not undone.</strong> Side effects outside the workspace (network calls,
+databases, <code>git push</code>).</li>
+</ul>
+<p><code>checkpoints</code> also accepts <code>{ dir?, maxCheckpoints? }</code> (default 100 kept).</p>
 <h2>hooks — lifecycle extension points</h2>
 <p><code>hooks</code> lets an embedding application observe and guard the two things an
 agent spends its time on: model calls and tool calls. Each point takes a

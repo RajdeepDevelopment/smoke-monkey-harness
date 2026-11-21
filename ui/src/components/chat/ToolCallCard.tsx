@@ -177,7 +177,7 @@ export function ToolCallCard({ call, compact, className }: ToolCallCardProps) {
             >
               <span className="text-[12px]">👁️</span>
               <span>
-                View {d.agentName ? `"${d.agentName}"` : `Agent (${d.agentId.slice(0, 10)}...)`} Session
+                View {d.agentName ? `"${d.agentName}"` : (d.agentId.includes(" ") || !d.agentId.startsWith("agent_") ? `"${d.agentId}"` : `Agent (${d.agentId.slice(0, 10)}...)`)} Session
               </span>
               <span className="opacity-60 transition-transform group-hover:translate-x-0.5">➔</span>
             </button>

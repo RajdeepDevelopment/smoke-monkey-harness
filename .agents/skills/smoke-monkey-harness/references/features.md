@@ -1,4 +1,4 @@
-# Feature digests — the 11 building blocks
+# Feature digests — the 12 building blocks
 
 Standalone learning when the MCP server is not available. Each digest
 condenses the full feature guide (which the MCP server also serves via
@@ -263,3 +263,28 @@ the tool result, so it can work around it.
 `READ_ONLY_TOOLS` name set. And a `PermissionPolicy` function receives
 `args: {}`, so anything argument-dependent belongs in a `beforeToolCall` hook,
 which does see the real input.
+
+## 12. Checkpoints — revert / undo a run
+
+Opt-in: `createAgent({ ..., checkpoints: true })`. Before every run the
+workspace is snapshotted into a shadow git repo (`.smoke/checkpoints`; the
+project's own `.git` is never touched). `agent.previewRevert(runId)` lists what
+would change; `agent.revert(runId?, { files, messages, dryRun })` restores every
+file the run created, edited or deleted — including through `run_command` — and
+drops that run's (and later runs') messages. `result.task` is the prompt to put
+back in the input box ("edit a previous message"). `.gitignore`d paths and
+`node_modules`/`dist`/`.smoke` are neither snapshotted nor touched.
+
+Events: `checkpoint.created` (before a run; `e.runId` is what `revert` takes) ·
+`checkpoint.reverted`. Needs the `git` binary (self-disables without it).
+Refuses mid-run. Hand edits since the run started are overwritten too, so show
+the `previewRevert()` list first. Custom `Storage`: implement optional
+`truncateMessages(sessionId, keepCount)` for the message rewind; without it,
+files are restored and `messagesReverted` is `false`.
+
+Chat UI: answer a client's `revert` request with `revertHarnessRun(agent, msg.data)`
+(from `@smoke-monkey/ui`); set `revertUrl` on `FetchTransport` (WebSocketTransport
+has `revert()` built in). User messages with a restore point then show a ↶
+control with a file-list confirm. Forwarding bridge events? Build the browser parser
+with `createNormalizedStreamParser()` — a hand-written `StreamParser` list silently
+drops `checkpoint:created`. Demo: `examples/revert-demo`. Headless: `runtime.canRevert/previewRevert/revertTo(messageId)`.

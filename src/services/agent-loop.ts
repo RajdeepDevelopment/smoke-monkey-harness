@@ -274,6 +274,15 @@ export class AgentLoop {
       this.deps.eventEmitter.emitContextUpdated(sessionId, runId, initial, ctx.contextManager.activeCount, ctx.contextManager.maxActive);
     }
 
+    // The task list is run-level state like the sub-contexts above: re-announce
+    // what the session already has, so a new run (or a reconnected UI) starts
+    // with the rail the user last saw instead of an empty one.
+    // (`snapshot?.` — a host that builds its own RunContext may not carry one.)
+    const rememberedTodos = ctx.snapshot?.todos;
+    if (rememberedTodos?.length) {
+      this.deps.eventEmitter.emitTodoUpdated(sessionId, runId, rememberedTodos);
+    }
+
     const guards: RunGuards = createRunGuards();
 
     try {

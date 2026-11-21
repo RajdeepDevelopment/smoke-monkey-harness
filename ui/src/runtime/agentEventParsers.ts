@@ -104,6 +104,14 @@ export function createAgentEventParsers(
       };
     },
 
+    // A restore point exists for this run (harness `checkpoints: true`); lets
+    // the UI offer "revert to here" on the turn's user message.
+    'checkpoint.created': (data): ChatStreamEvent | null => {
+      const p = data as AgentEventPayload;
+      if (typeof p.runId !== 'string' || !p.runId) return null;
+      return { type: 'checkpoint:created', messageId: messageIdFor(p, opts), runId: p.runId };
+    },
+
     // Run-level task list, replaced wholesale. Rendered above the transcript.
     'todo.updated': (data): ChatStreamEvent => {
       const p = data as AgentEventPayload;

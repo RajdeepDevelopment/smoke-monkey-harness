@@ -44,6 +44,15 @@ const agent = createAgent({
 - Omit `sessionId` → each run gets a fresh session (`run.sessionId` on result).
 - `agent.store` is exposed for direct reads (e.g. render history in a UI).
 
+## Task list + sub-contexts (run state)
+
+The agent's `todo_write` list and its open sub-contexts live with the **session** (in
+the session snapshot), not the run: they survive the end of a run, are re-announced
+(`todo.updated`, `context.updated`) when the next run starts, and clear only when the
+agent changes or closes them. `agent.getRunState(sessionId?)` returns
+`{ todos, contexts }` so a UI can show them immediately after a refresh. This needs a
+**stable `sessionId`** — a fresh session per run starts with nothing.
+
 ## Runs & token accounting
 
 `HarnessRun` tracks `status`, step count (`bumpRunStep`), and token/cost

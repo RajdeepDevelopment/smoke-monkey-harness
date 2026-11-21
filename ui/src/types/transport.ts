@@ -48,6 +48,40 @@ export interface ChatPromptResponse {
   mcpDecision?: ChatMcpApprovalDecision;
 }
 
+/** Ask the backend to undo a run (`agent.revert(runId)` on the harness). */
+export interface ChatRevertRequest {
+  conversationId?: string;
+  /** The run to rewind to: the workspace returns to how it was BEFORE it started. */
+  runId: string;
+  /** Only report what would change; modify nothing. */
+  dryRun?: boolean;
+  /** Restore workspace files (default true). */
+  files?: boolean;
+  /** Drop the run's messages server-side (default true). */
+  messages?: boolean;
+}
+
+/** What a revert did (or, for a dry run, would do). Mirrors the harness `RevertResult`. */
+export interface ChatRevertResult {
+  ok: boolean;
+  runId: string;
+  error?: string;
+  dryRun?: boolean;
+  changes: { added: string[]; modified: string[]; deleted: string[] };
+  filesReverted: boolean;
+  messagesReverted: boolean;
+  /** The reverted turn's prompt — pre-filled into the composer to edit and resend. */
+  task?: string;
+  /**
+   * The task list / sub-contexts as they were before the reverted run. When
+   * present, the rail is reset to it, so it never shows the undone run's list.
+   */
+  state?: {
+    todos?: unknown;
+    contexts?: { active?: unknown; count?: unknown; maxActive?: unknown };
+  };
+}
+
 export interface ChatTransport {
   send(request: ChatRequest): AsyncIterable<ChatStreamEvent>;
   /** Optional: give the transport a chance to cancel an in-flight request. */
@@ -59,6 +93,13 @@ export interface ChatTransport {
    * renders prompts read-only instead of showing controls that go nowhere.
    */
   respond?(response: ChatPromptResponse): void | Promise<void>;
+  /**
+   * Optional: undo a finished run (files + messages) on the backend.
+   *
+   * Absent on transports that cannot reach a checkpoint-enabled harness; the
+   * chat then shows no revert control at all.
+   */
+  revert?(request: ChatRevertRequest): Promise<ChatRevertResult>;
 }
 
 export interface ConversationSummary {

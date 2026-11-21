@@ -355,6 +355,8 @@ export function getTodoWriteTool(): ToolDefinition {
       }
 
       if (todos.length === 0) {
+        // Announce the clear, or a UI keeps showing the list the agent just dropped.
+        context.eventEmitter?.emitTodoUpdated(context.sessionId, context.runId, []);
         return { content: [{ type: 'text', text: 'Todo list cleared.' }] };
       }
 

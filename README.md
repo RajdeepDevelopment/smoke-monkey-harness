@@ -259,6 +259,13 @@ Continue work across runs with a persistent `sessionId`:
 const agent = createAgent({ /* ... */, sessionId: 'project-123' })
 ```
 
+**⏪ Revert / Undo (opt-in)**
+`checkpoints: true` snapshots the workspace (in a shadow git repo — your own
+`.git` is never touched) before every run. `agent.revert(runId)` then undoes
+everything the run did on disk, including via `run_command`, and drops its
+messages so the user can edit and resend the prompt. The chat UI adds a ↶
+control with a file-list confirm. Off by default; existing apps are unaffected.
+
 **🌐 Multi-provider LLMs**
 `openai`, `openrouter`, `nvidia`, `xai`, `gemini`, `opencode`, `omniroute`,
 `huggingface`, `deepseek`, `qwen`, `zai`, `moonshot`, `mistral`, `cohere`,
@@ -367,6 +374,17 @@ import '@smoke-monkey/ui/ui.css';
 > **`permission.required` and `ask_user.required` pause the run.** Nothing
 > resolves them on their own. Render them *and* route the answer back, or the
 > run deadlocks with nothing logged — it looks like a hung request, not a bug.
+
+**Undo from the chat.** With a `checkpoints: true` harness, answer the
+`revert` request the transport sends and user messages gain a ↶ revert control
+(see [Reverting to a previous message](docs/10-ui-components.md#reverting-to-a-previous-message)):
+
+```ts
+if (msg.type === 'revert') {
+  socket.send(JSON.stringify({ type: 'revert_result', requestId: msg.requestId,
+    data: await revertHarnessRun(agent, msg.data) }));   // import from '@smoke-monkey/ui'
+}
+```
 
 A runnable example lives in
 [`examples/chat-demo`](examples/chat-demo) — it consumes both packages from npm.
@@ -509,6 +527,7 @@ so list-wise behavior never drifts between the skill loader and the server.
 - `agent.addMcpServer(config)` / `agent.removeMcpServer(id)` / `agent.listMcpServers()` — manage MCP servers at runtime.
 - `agent.skills` — the live `SkillRegistry` (`.all()`, `.get(id)`, `.count`).
 - `agent.abort()` — stop the current run.
+- `agent.revert(runId?, opts?)` / `agent.previewRevert(runId)` / `agent.listCheckpoints()` — undo a run's file changes and messages (needs `checkpoints: true`).
 - `agent.on(type, cb)` / `agent.onAny(cb)` — subscribe to events.
 - `agent.events` / `agent.store` — the raw emitter and store, for advanced wiring.
 
@@ -517,7 +536,7 @@ so list-wise behavior never drifts between the skill loader and the server.
 `tool.started`/`tool.completed` include `presentation` when declared (precedence: per-call event → host map → inferred),
 `ask_user.required`, `permission.required`, `mcp.approval_required`,
 `mcp.resolved`, `compaction.started/completed`, `llm.thinking`,
-`todo.updated`, `run.completed/failed/interrupted`.
+`todo.updated`, `checkpoint.created/reverted`, `run.completed/failed/interrupted`.
 
 For the full sliced-by-area surface (tools, providers, subcontexts, loop,
 permissions, hooks) see **[docs/api.md](docs/api.md)**, and start with

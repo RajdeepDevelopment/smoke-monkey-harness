@@ -729,6 +729,59 @@ export function AgentWorkspaceView({ toolPresentations }) {
 </code></pre>
     </div>
 <hr>
+<h2>Reverting to a Previous Message</h2>
+<p>Edit-a-message / undo-the-agent, like other coding agents. It needs a harness
+created with <code>checkpoints: true</code> (see <a href="api.html">API → checkpoints</a>) and is
+invisible otherwise, so existing apps are unaffected.</p>
+<p>User messages that have a restore point show a ↶ control. It dry-runs the
+revert and lists the files that will change; <strong>Revert</strong> then restores them on
+disk, cuts the transcript at that message, and puts the prompt back in the
+composer to edit and resend. Nothing is changed until the user confirms.</p>
+<p><strong>Server</strong> — answer a <code>revert</code> request with <code>revertHarnessRun</code> (it never throws;
+a failure is <code>{ ok: false, error }</code>):</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>ts</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-ts">import { revertHarnessRun } from &#39;@smoke-monkey/ui&#39;;
+
+socket.on(&#39;message&#39;, async (raw) =&gt; {
+  const msg = JSON.parse(String(raw));
+  if (msg.type === &#39;revert&#39;) {
+    socket.send(JSON.stringify({
+      type: &#39;revert_result&#39;,
+      requestId: msg.requestId,
+      data: await revertHarnessRun(agent, msg.data),
+    }));
+  }
+});
+// HTTP: app.post(&#39;/revert&#39;, async (req, res) =&gt; res.json(await revertHarnessRun(agent, req.body)));
+</code></pre>
+    </div>
+<p><strong>Browser</strong> — <code>WebSocketTransport</code> has <code>revert()</code> built in (it opens a short-lived
+socket, because a run&#39;s socket closes when the run ends). For <code>FetchTransport</code>
+set <code>revertUrl</code>. If your server forwards the bridge&#39;s events unchanged, build the
+parser with <code>createNormalizedStreamParser()</code>: <code>StreamParser</code> silently skips any
+event type it was not told about, so a hand-written list would drop
+<code>checkpoint:created</code> and no message would get a revert control.
+Runnable end to end (offline, no API key): <a href="https://github.com/RajdeepDevelopment/smoke-monkey-harness/tree/main/examples/revert-demo"><code>examples/revert-demo</code></a>.</p>
+<div class="code-container">
+      <div class="code-header">
+        <span>tsx</span>
+        <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-tsx">&lt;SmokeMonkeyChat
+  transport={new FetchTransport({ url: &#39;/api/chat&#39;, parser: createNormalizedStreamParser(), revertUrl: &#39;/api/revert&#39; })}
+  onReverted={({ messageId, result }) =&gt; console.log(&#39;reverted&#39;, result.changes)}
+/&gt;
+</code></pre>
+    </div>
+<p>Headless apps use the runtime directly: <code>runtime.canRevert(messageId)</code>,
+<code>await runtime.previewRevert(messageId)</code>, <code>await runtime.revertTo(messageId)</code>.
+The link between a message and its run is <code>message.metadata.checkpointRunId</code>,
+set from the <code>checkpoint.created</code> harness event (mapped by
+<code>createHarnessBridge</code> to the <code>checkpoint:created</code> stream event).</p>
 <h2>Key Features &amp; Component Breakdown</h2>
 <div class="code-container">
       <div class="code-header">

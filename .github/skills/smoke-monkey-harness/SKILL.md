@@ -43,7 +43,7 @@ Decide which path is available:
 
 ## Workflow (standalone path)
 
-1. Read `references/features.md` for the 11 feature digests and `references/api.md` for signatures.
+1. Read `references/features.md` for the 12 feature digests and `references/api.md` for signatures.
 2. Scaffold manually (or `npx create-…` if one exists) from this skeleton:
 
 ```ts
@@ -99,7 +99,7 @@ task and require `result.status === "completed"`. Loop → tool-call → verify 
 ## Support files
 
 - `references/mcp-tools.md` — the 22 MCP server tools, args, and call order.
-- `references/features.md` — the 11 feature digests (standalone learning).
+- `references/features.md` — the 12 feature digests (standalone learning).
 - `references/api.md` — condensed API reference (options/surface/events/tools).
 - Repo source of truth: `src/` + `examples/` in
   https://github.com/RajdeepDevelopment/smoke-monkey-harness

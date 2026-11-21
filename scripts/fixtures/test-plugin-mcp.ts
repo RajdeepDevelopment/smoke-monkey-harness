@@ -34,6 +34,7 @@ const GUIDES: Record<string, string> = {
   events: 'harness_guide_events_streaming_and_ui_wiring',
   ui: 'harness_guide_ui_bridge_and_components',
   errors: 'harness_guide_errors_validation_and_pauses',
+  checkpoints: 'harness_guide_checkpoints_revert_and_undo',
 };
 
 const child = spawn(process.execPath, [server], { stdio: ['pipe', 'pipe', 'inherit'] });

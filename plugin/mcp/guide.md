@@ -167,6 +167,18 @@ only fires when the agent happens to recommend an MCP server. The error model,
 tool-input validation, and what each pause does on abort are in
 `harness_guide_errors_validation_and_pauses()`.
 
+### Step 6c — Optional: let users undo a run (revert / "edit a previous message")
+
+Off by default. Add `checkpoints: true` to `createAgent` and the harness
+snapshots the workspace into a shadow git repo before every run (the project's
+own `.git` is never touched). Then `agent.previewRevert(runId)` lists what would
+change and `agent.revert(runId)` restores every file the run created, edited or
+deleted — including via `run_command` — and drops the run's messages; the result's
+`task` is the prompt to put back in the input box. In the chat UI, answer a
+`revert` request with `revertHarnessRun(agent, msg.data)` and the ↶ control on
+user messages lights up (set `revertUrl` on `FetchTransport`). Full details and
+gotchas: `harness_guide_checkpoints_revert_and_undo()`.
+
 ### Step 7 — Ship
 - Persist memory: pass a `store` (implement the small `Storage` interface) +
   a stable `sessionId` to resume across runs.
@@ -222,7 +234,7 @@ configs via `stockToMcpConfig(findStockEntry('…'))`.
    `..._tools_custom_tool_implementation`, `..._loop_phases_guards_and_compaction`,
    `..._permissions_the_three_pauses`, `..._storage_sessions_runs_messages`,
    `..._events_streaming_and_ui_wiring`, `..._ui_bridge_and_components`,
-   `..._errors_validation_and_pauses`.
+   `..._errors_validation_and_pauses`, `..._checkpoints_revert_and_undo`.
 5. `harness_api({ area })` — exact API shapes (options, surface, events, …).
 6. `harness_scaffold` — generate the project.
 7. `harness_examples` + `harness_read_example` — study the smallest correct programs.

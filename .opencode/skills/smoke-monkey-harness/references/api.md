@@ -25,6 +25,7 @@
 | `subContexts` / `defaultSubContexts` | `SubContext[]` / ids | custom guidance blocks |
 | `skills` / `skillsDir` | `Skill[]` / path(s) | SKILL.md just-in-time loading |
 | `mcp` | `McpServerConfig[]` | stdio (`command`/`args`) or streamable-HTTP (`url`) |
+| `checkpoints` | `true` \| `{ dir?, maxCheckpoints? }` | opt-in revert/undo via shadow git; default off |
 
 ## Agent harness surface
 - `agent.run(task, opts?)` → `RunResult { sessionId, runId, status, messages, agentState }`
@@ -43,6 +44,9 @@ each pending pause to no: `''` / `'deny'` / `{ action: 'skip', names: [] }`.
   before the first event arrives. A `presentation` passed on the individual
   event overrides the registered one.
 - `agent.abort()` — stop the run
+- `agent.revert(runId?, { files?, messages?, dryRun? })` → `{ ok, changes: {added,modified,deleted}, filesReverted, messagesReverted, task? }` — undo a run (needs `checkpoints`)
+- `agent.getRunState(sessionId?)` → `{ todos, contexts }` — the task list + open sub-contexts (kept with the session; re-announced at every run start; seed the UI rail after a refresh)
+- `agent.previewRevert(runId)` / `agent.listCheckpoints(sessionId?)` — what a revert would change / the restore points
 - `agent.on(type, cb)` / `agent.onAny(cb)` / `agent.events` / `agent.store`
 
 ## Events (bind UI here)
@@ -50,7 +54,8 @@ each pending pause to no: `''` / `'deny'` / `{ action: 'skip', names: [] }`.
 `tool.started/output/progress/completed/failed` · `text.delta/thought/end` ·
 `phase.changed` · `context.updated` · `permission.required` ·
 `ask_user.required` · `mcp.approval_required` · `mcp.resolved` ·
-`compaction.started/completed` · `llm.thinking` · `todo.updated`
+`compaction.started/completed` · `llm.thinking` · `todo.updated` ·
+`checkpoint.created` (before a run) · `checkpoint.reverted`
 
 Tool events (`tool.started/output/progress/completed/failed`) all carry
 `toolName`, and tool cards carry `presentation` (`{label, icon, tone, group}`)

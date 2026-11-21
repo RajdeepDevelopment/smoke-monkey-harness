@@ -1,5 +1,5 @@
 import type { ChatStreamEvent } from '../types/stream';
-import type { ChatRequest, ChatTransport } from '../types/transport';
+import type { ChatRequest, ChatRevertRequest, ChatRevertResult, ChatTransport } from '../types/transport';
 import { StreamParser } from '../runtime/StreamParser';
 import { toChatError } from '../types/stream';
 import { readSSELines } from '../lib/sse';
@@ -26,6 +26,12 @@ export interface FetchTransportOptions {
   body?: (request: ChatRequest) => unknown;
   /** Injectable fetch (testing, Node 18+ polyfills). */
   fetch?: typeof fetch;
+  /**
+   * Endpoint that answers revert requests (POST `ChatRevertRequest` JSON,
+   * respond with `ChatRevertResult` JSON — see `revertHarnessRun`). Setting it
+   * is what turns the chat's revert control on for this transport.
+   */
+  revertUrl?: string;
 }
 
 /**
@@ -38,7 +44,24 @@ export class FetchTransport implements ChatTransport {
 
   constructor(private readonly options: FetchTransportOptions) {
     this.streamParser = this.options.parser instanceof StreamParser ? this.options.parser : null;
+    if (this.options.revertUrl) this.revert = (request) => this.postRevert(request);
   }
+
+  private async postRevert(request: ChatRevertRequest): Promise<ChatRevertResult> {
+    const doFetch = this.options.fetch ?? fetch;
+    const headers = await resolveHeaders(this.options.headers ?? {});
+    const response = await doFetch(this.options.revertUrl!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(request),
+      credentials: this.options.credentials,
+    });
+    if (!response.ok) throw new Error(`Revert failed (${response.status})`);
+    return (await response.json()) as ChatRevertResult;
+  }
+
+  /** Present only when `revertUrl` is set, so the UI hides revert otherwise. */
+  revert?: (request: ChatRevertRequest) => Promise<ChatRevertResult>;
 
   async *send(request: ChatRequest): AsyncGenerator<ChatStreamEvent> {
     const headers: Record<string, string> = await resolveHeaders(this.options.headers ?? {});

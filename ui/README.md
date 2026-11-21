@@ -404,10 +404,61 @@ for (const [type, fn] of Object.entries(
 | `run.interrupted` | `notice` (info) |
 | `tool.failed` | `tool:error` |
 | `run.failed` | `error` (terminal) |
+| `checkpoint.created` | `checkpoint:created` (links the run id to the turn's user message) |
 
 A `ToolCall.error` is rendered by the built-in `ToolCallCard`. If you supply
 your own via the `toolCall` slot, render `call.error` with `<ErrorCard
 error={call.error} dense />` — otherwise the row is just a silent "Failed".
+
+### The rail outlives the run
+
+The task list and open sub-contexts are the *agent's* state, so they stay until the
+agent changes or closes them — not until a run ends. The UI never clears them when
+the user sends the next message. The harness keeps them with the session and
+re-announces both (`todo.updated`, `context.updated`) at the start of every run.
+After a **page refresh** the browser has no memory, so seed the rail from the
+server (the next run restores it on its own, but the user sees it right away):
+
+```ts
+// server: GET /state  →  agent.getRunState(sessionId)  =  { todos, contexts: { active, count, maxActive } }
+const { todos, contexts } = await (await fetch('/state')).json();
+<SmokeMonkeyChat initialTodos={todos} initialContexts={contexts.active.length ? contexts : null} … />
+```
+
+Use a **stable `sessionId`** for the conversation: each new session starts with an empty
+rail, because sub-contexts and the task list belong to the session. When the agent
+clears its list (`todo_write` with `[]`) the harness now emits an empty `todo.updated`,
+so the card disappears instead of showing a stale list.
+
+## Reverting to a previous message
+
+With a `checkpoints: true` harness, user messages that have a restore point show
+a ↶ control: it dry-runs the revert, lists the files that will change, and on
+confirm restores them, cuts the transcript there, and puts the prompt back in the
+composer. It only renders when the transport has `revert()`, so existing apps are
+unchanged.
+
+```ts
+// server — one handler per transport; never throws ({ ok:false, error } on failure)
+import { revertHarnessRun } from '@smoke-monkey/ui';
+// WebSocket: { type: 'revert', requestId, data: { runId, dryRun? } }
+//   → reply { type: 'revert_result', requestId, data: await revertHarnessRun(agent, msg.data) }
+// HTTP:     app.post('/revert', async (req, res) => res.json(await revertHarnessRun(agent, req.body)))
+```
+
+```tsx
+// browser — WebSocketTransport has revert() built in; FetchTransport needs revertUrl.
+// Forwarding the bridge's events unchanged? Use createNormalizedStreamParser():
+// a StreamParser silently skips types it was not told about, so a hand-written
+// list would drop `checkpoint:created` and no message would get a revert control.
+new FetchTransport({ url: '/api/chat', parser: createNormalizedStreamParser(), revertUrl: '/api/revert' });
+<SmokeMonkeyChat transport={transport} onReverted={({ result }) => console.log(result.changes)} />
+```
+
+Headless: `runtime.canRevert(id)` · `await runtime.previewRevert(id)` ·
+`await runtime.revertTo(id)`. Runnable demo (offline, no API key):
+[`examples/revert-demo`](../examples/revert-demo). A custom `ChatTransport` opts in by implementing
+`revert(request: ChatRevertRequest): Promise<ChatRevertResult>`.
 
 ## Building a custom transport
 

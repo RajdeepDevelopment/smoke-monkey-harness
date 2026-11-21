@@ -3,8 +3,10 @@ import { applyChatEvent } from './EventReducer';
 import type { ChatMessage } from '../types/message';
 import type { ChatStreamEvent, ConnectionStatus, ChatErrorInfo, TokenUsage } from '../types/stream';
 import type { AgentTodo, ContextState } from '../types/agent';
+import { normalizeContexts, normalizeTodos } from '../types/agent';
 import type {
   ChatRequest,
+  ChatRevertResult,
   ChatRuntimeOptions,
   ChatRuntimeState,
   ChatTransport,
@@ -181,6 +183,85 @@ export class ChatRuntime {
     }
   }
 
+  /**
+   * The harness run a user message can be rewound to, or `undefined` when it
+   * cannot (no checkpoint was taken, an assistant message, or a transport
+   * without `revert`).
+   */
+  revertTarget(messageId: string): string | undefined {
+    if (!this.options.transport.revert) return undefined;
+    const message = this.messages.find((m) => m.id === messageId);
+    if (message?.role !== 'user') return undefined;
+    const runId = message.metadata?.checkpointRunId;
+    return typeof runId === 'string' && runId ? runId : undefined;
+  }
+
+  /** True when `revertTo(messageId)` is available (and nothing is streaming). */
+  canRevert(messageId: string): boolean {
+    return !this.isStreaming && this.revertTarget(messageId) !== undefined;
+  }
+
+  /** What reverting to this message would change on disk. Modifies nothing. */
+  async previewRevert(messageId: string): Promise<ChatRevertResult> {
+    return this.callRevert(messageId, true);
+  }
+
+  /**
+   * Rewind to just before this user message: the backend restores the workspace
+   * and drops the run, then the transcript is cut here too. Resolves with the
+   * backend result (`task` is the removed prompt, for the composer). On
+   * failure the transcript is left untouched.
+   */
+  async revertTo(messageId: string): Promise<ChatRevertResult> {
+    const result = await this.callRevert(messageId, false);
+    if (!result.ok) return result;
+    const index = this.messages.findIndex((m) => m.id === messageId);
+    if (index !== -1) {
+      const removed = this.messages.slice(index);
+      this.messages = this.messages.slice(0, index);
+      this.error = null;
+      // Rewind the rail too: the task list / sub-contexts belong to the state
+      // the session is going back to, not to the run that was just undone.
+      if (result.state) {
+        this.todos = normalizeTodos(result.state.todos);
+        const c = result.state.contexts;
+        const next = c ? normalizeContexts(c.active, c.count, c.maxActive) : null;
+        this.contexts = next && next.active.length ? next : null;
+      }
+      this.emit();
+      this.dropFromStore(removed);
+    }
+    return result;
+  }
+
+  private async callRevert(messageId: string, dryRun: boolean): Promise<ChatRevertResult> {
+    const empty = { added: [], modified: [], deleted: [] };
+    const runId = this.revertTarget(messageId);
+    const fail = (error: string): ChatRevertResult => ({
+      ok: false, runId: runId ?? '', error, dryRun, changes: empty, filesReverted: false, messagesReverted: false,
+    });
+    if (!runId) return fail('This message has no restore point.');
+    if (this.isStreaming) return fail('Stop the running agent before reverting.');
+    try {
+      return await this.options.transport.revert!({ conversationId: this.conversationId, runId, dryRun });
+    } catch (err) {
+      return fail(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  private persistCheckpointLink(runId: string): void {
+    const linked = this.messages.find((m) => m.role === 'user' && m.metadata?.checkpointRunId === runId);
+    if (linked) this.saveToStore(linked);
+  }
+
+  /** Best-effort: rewrite the persisted thread without the removed messages. */
+  private dropFromStore(removed: ChatMessage[]): void {
+    const stored = this.options.store;
+    const conversation = this.conversationId;
+    if (!stored || !conversation || !removed.length) return;
+    void stored.updateConversation(conversation, { messages: this.messages }).catch(() => {});
+  }
+
   /** Reset transcript (and drop the persisted thread when a store is set). */
   async clearConversation(): Promise<void> {
     this.stop();
@@ -228,6 +309,10 @@ export class ChatRuntime {
           this.streamingId = null;
         }
         this.messages = applyChatEvent(this.messages, event, streamId);
+        // The user message was saved at send time, before this event linked it
+        // to its run. Save it again, or after a reload the revert control is
+        // gone for every turn the store restores.
+        if (event.type === 'checkpoint:created') this.persistCheckpointLink(event.runId);
         if (event.type === 'usage') this.usage = event.usage;
         if (event.type === 'error') this.error = toChatError(event.error);
         this.emit();

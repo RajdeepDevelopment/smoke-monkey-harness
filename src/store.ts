@@ -24,6 +24,12 @@ export interface Storage {
   addMessage(sessionId: string, message: Partial<AgentMessage>): Promise<AgentMessage>;
   updateMessage(sessionId: string, message: AgentMessage): Promise<void>;
   listMessages(sessionId: string): AgentMessage[];
+  /**
+   * OPTIONAL. Drop every message after the first `keepCount` (used by
+   * `AgentHarness.revert()`). Custom stores that omit it still work: a revert
+   * restores files but reports `messagesReverted: false`.
+   */
+  truncateMessages?(sessionId: string, keepCount: number): void;
 }
 
 export class MemoryStore implements Storage {
@@ -160,6 +166,11 @@ export class MemoryStore implements Storage {
 
   listMessages(sessionId: string): AgentMessage[] {
     return this.messages.get(sessionId) ?? [];
+  }
+
+  truncateMessages(sessionId: string, keepCount: number): void {
+    const list = this.messages.get(sessionId);
+    if (list && keepCount >= 0 && keepCount < list.length) list.length = keepCount;
   }
 }
 

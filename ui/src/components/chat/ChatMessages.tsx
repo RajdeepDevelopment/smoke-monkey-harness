@@ -7,6 +7,7 @@ import type { FileEntry } from '../visuals/fileUtils';
 import { cn } from '../../lib/cn';
 import type { ChatPrompt } from '../../types/prompt';
 import type { ToolPresentationMap } from '../../types/tools';
+import type { RevertControl } from './RevertButton';
 
 export interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -18,6 +19,11 @@ export interface ChatMessagesProps {
   onPromptRespond?: (prompt: ChatPrompt, answer: string) => void;
   /** Host-supplied tool presentation, keyed by tool name. */
   toolPresentations?: ToolPresentationMap;
+  /**
+   * Revert-to-here control for a message, or `undefined` for none. Return a
+   * STABLE object per message (the bubbles are memoised).
+   */
+  getRevert?: (message: ChatMessage) => RevertControl | undefined;
   /** Rendered between consecutive messages (e.g. day separators). */
   between?: (message: ChatMessage, index: number) => ReactNode;
   /** Per-feature render toggles (SmokeMonkeyChat `features`). */
@@ -38,6 +44,7 @@ export function ChatMessages({
   onRetry,
   onPromptRespond,
   toolPresentations,
+  getRevert,
   between,
   features,
   slots,
@@ -57,6 +64,7 @@ export function ChatMessages({
             onRetry={onRetry}
             onPromptRespond={onPromptRespond}
             toolPresentations={toolPresentations}
+            revert={getRevert?.(message)}
             features={features}
             slots={slots}
           />

@@ -1,5 +1,5 @@
 import type { ChatStreamEvent } from '../types/stream';
-import type { ChatPromptResponse, ChatRequest, ChatTransport } from '../types/transport';
+import type { ChatPromptResponse, ChatRequest, ChatRevertRequest, ChatRevertResult, ChatTransport } from '../types/transport';
 import { StreamParser } from '../runtime/StreamParser';
 
 export interface WebSocketTransportOptions {
@@ -9,6 +9,8 @@ export interface WebSocketTransportOptions {
   parser: StreamParser;
   /** Serializes the request into the payload sent after connect. */
   payload?: (request: ChatRequest) => unknown;
+  /** Max wait for a revert reply, in ms. Default 30000. */
+  revertTimeoutMs?: number;
 }
 
 /**
@@ -144,6 +146,48 @@ export class WebSocketTransport implements ChatTransport {
    * text)`, `agent.resolvePermission(toolCallId, decision)` and
    * `agent.resolveMcpDecision(toolCallId, decision)`.
    */
+  /**
+   * Undo a finished run. A run's socket closes when it completes, so this
+   * opens a short-lived one: it sends `{ type: 'revert', requestId, data }` and
+   * resolves with the `data` of the `{ type: 'revert_result', requestId }`
+   * reply (server side: `revertHarnessRun`).
+   */
+  revert(request: ChatRevertRequest): Promise<ChatRevertResult> {
+    const { url, protocols } = this.options;
+    const requestId = `rv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const empty = { added: [], modified: [], deleted: [] };
+    return new Promise<ChatRevertResult>((resolve) => {
+      const socket = new WebSocket(url, protocols);
+      let settled = false;
+      const finish = (result: ChatRevertResult) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try {
+          socket.close();
+        } catch {
+          /* already closed */
+        }
+        resolve(result);
+      };
+      const fail = (error: string) =>
+        finish({ ok: false, runId: request.runId, error, changes: empty, filesReverted: false, messagesReverted: false });
+      const timer = setTimeout(() => fail('Revert timed out.'), this.options.revertTimeoutMs ?? 30_000);
+      socket.onopen = () => socket.send(JSON.stringify({ type: 'revert', requestId, data: request }));
+      socket.onerror = () => fail('Could not reach the server to revert.');
+      socket.onclose = () => fail('The server closed the connection before replying.');
+      socket.onmessage = (event: MessageEvent) => {
+        if (typeof event.data !== 'string') return;
+        try {
+          const msg = JSON.parse(event.data) as { type?: string; requestId?: string; data?: ChatRevertResult };
+          if (msg.type === 'revert_result' && msg.requestId === requestId && msg.data) finish(msg.data);
+        } catch {
+          /* not for us */
+        }
+      };
+    });
+  }
+
   respond(response: ChatPromptResponse): void {
     const socket = this.socket;
     if (!socket || socket.readyState !== WebSocket.OPEN) {

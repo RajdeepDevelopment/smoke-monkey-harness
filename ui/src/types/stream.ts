@@ -213,6 +213,12 @@ export type ChatStreamEvent =
       count: number;
       maxActive: number;
     }
+  /**
+   * A restore point was taken just before this run started (harness
+   * `checkpoints: true`). The reducer links `runId` to the turn's user message
+   * so the UI can offer "revert to here".
+   */
+  | { type: 'checkpoint:created'; messageId?: string; runId: string }
   | { type: 'connection:status'; status: Exclude<ConnectionStatus, 'unknown'> }
   | { type: 'message:complete'; messageId: string }
   /**
